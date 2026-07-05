@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Viswedstrijden · Plas van der Ende</title>
+<meta name="description" content="Karperwedstrijden op de Plas van der Ende: loting, stekkeuze, vangstregistratie en live leaderboard.">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎣</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <a href="#/" class="brand">🎣 Plas van der Ende</a>
+  <span id="topcode" class="topcode"></span>
+</header>
+
+<!-- ============ HOME ============ -->
+<main id="view-home" class="container" hidden>
+  <section class="hero card">
+    <h1>Karperwedstrijden<br>Plas van der Ende</h1>
+    <p class="sub">Loting, stekkeuze, vangstregistratie en live klassement, alles op één plek.</p>
+  </section>
+
+  <section class="card">
+    <h2>Meedoen of meekijken</h2>
+    <p class="muted">Vul de wedstrijdcode in die je van de organisator hebt gekregen.</p>
+    <form id="form-open" class="row">
+      <input id="open-code" type="text" placeholder="bijv. K7X2M4" maxlength="6" autocapitalize="characters" autocomplete="off" required>
+      <button type="submit" class="btn primary">Openen</button>
+    </form>
+    <p id="open-fout" class="fout" hidden></p>
+    <div id="recente" class="recente"></div>
+  </section>
+
+  <section class="card">
+    <h2>Nieuwe wedstrijd <span class="muted">(organisator)</span></h2>
+    <form id="form-nieuw" class="stack">
+      <label>Naam van de wedstrijd
+        <input id="nw-naam" type="text" maxlength="60" placeholder="bijv. Voorjaarswedstrijd 2027" required>
+      </label>
+      <label>Type
+        <select id="nw-mode">
+          <option value="individueel">Individueel (1 stek per visser)</option>
+          <option value="koppel">Koppels (2 stekken naast elkaar)</option>
+        </select>
+      </label>
+      <div class="row2">
+        <label>Start
+          <input id="nw-start" type="datetime-local" required>
+        </label>
+        <label>Einde
+          <input id="nw-eind" type="datetime-local" required>
+        </label>
+      </div>
+      <label>Pincode organisator <span class="muted">(min. 4 tekens, onthoud deze goed)</span>
+        <input id="nw-pin" type="text" minlength="4" maxlength="20" autocomplete="off" required>
+      </label>
+      <button type="submit" class="btn primary">Wedstrijd aanmaken</button>
+      <p id="nieuw-fout" class="fout" hidden></p>
+    </form>
+  </section>
+</main>
+
+<!-- ============ WEDSTRIJD ============ -->
+<main id="view-wedstrijd" class="container" hidden>
+  <section class="card klok-card">
+    <div class="w-kop">
+      <h1 id="w-naam"></h1>
+      <span id="w-status" class="chip"></span>
+    </div>
+    <div id="w-tijden" class="muted klein"></div>
+    <div id="klok" class="klok"></div>
+    <div id="klok-sub" class="muted klein"></div>
+  </section>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="kaart" class="actief">Kaart</button>
+    <button data-tab="klassement">Klassement</button>
+    <button data-tab="vangsten">Vangsten</button>
+    <button data-tab="team">Mijn team</button>
+    <button data-tab="beheer">Beheer</button>
+  </nav>
+
+  <!-- Kaart -->
+  <section id="tab-kaart" class="tab">
+    <div class="card">
+      <div id="kaart-melding" class="melding" hidden></div>
+      <div id="kaart-houder" class="kaart-houder"></div>
+      <div class="kaart-legenda">
+        <span><i class="dot vrij"></i> vrij</span>
+        <span><i class="dot bezet"></i> bezet</span>
+        <span><i class="dot mijn"></i> mijn stek</span>
+        <span><i class="dot keuze"></i> selectie</span>
+      </div>
+      <div id="stek-actie" hidden>
+        <button id="btn-kies" class="btn primary breed" disabled></button>
+      </div>
+    </div>
+    <div class="card" id="loting-card">
+      <h2>Loting &amp; volgorde</h2>
+      <div id="loting-lijst"></div>
+    </div>
+  </section>
+
+  <!-- Klassement -->
+  <section id="tab-klassement" class="tab" hidden>
+    <div class="card">
+      <div class="schakel">
+        <button id="kl-totaal" class="actief">Totaalgewicht</button>
+        <button id="kl-grootste">Grootste vis</button>
+      </div>
+      <div id="klassement-inhoud"></div>
+    </div>
+  </section>
+
+  <!-- Vangsten -->
+  <section id="tab-vangsten" class="tab" hidden>
+    <div class="card">
+      <h2>Vangsten</h2>
+      <div id="vangsten-feed"></div>
+    </div>
+  </section>
+
+  <!-- Mijn team -->
+  <section id="tab-team" class="tab" hidden>
+    <div class="card" id="join-card" hidden>
+      <h2>Meedoen</h2>
+      <p id="join-uitleg" class="muted"></p>
+      <form id="form-join" class="stack">
+        <label>Naam <input id="join-naam" type="text" maxlength="40" required></label>
+        <label id="join-naam2-label" hidden>Naam koppelmaat <input id="join-naam2" type="text" maxlength="40"></label>
+        <button type="submit" class="btn primary">Aanmelden</button>
+        <p id="join-fout" class="fout" hidden></p>
+      </form>
+    </div>
+
+    <div class="card" id="team-card" hidden>
+      <h2 id="team-titel"></h2>
+      <p id="team-info" class="muted"></p>
+    </div>
+
+    <div class="card" id="registreer-card" hidden>
+      <h2>Vangst registreren</h2>
+      <form id="form-vangst" class="stack">
+        <label>Gewicht (kg) <input id="v-gewicht" type="text" inputmode="decimal" placeholder="bijv. 12,45" required></label>
+        <label class="fotoknop">
+          <input id="v-foto" type="file" accept="image/*" capture="environment" required>
+          <span id="v-foto-label">📷 Foto maken of kiezen</span>
+        </label>
+        <img id="v-preview" class="preview" hidden alt="voorbeeld vangstfoto">
+        <button type="submit" class="btn primary" id="v-submit">Registreer vangst</button>
+        <p id="v-fout" class="fout" hidden></p>
+        <p id="v-ok" class="ok" hidden></p>
+      </form>
+    </div>
+    <div class="card" id="dicht-card" hidden>
+      <p id="dicht-tekst"></p>
+    </div>
+    <div class="card" id="mijn-vangsten-card" hidden>
+      <h2>Mijn vangsten</h2>
+      <div id="mijn-vangsten"></div>
+    </div>
+  </section>
+
+  <!-- Beheer -->
+  <section id="tab-beheer" class="tab" hidden>
+    <div class="card" id="pin-card">
+      <h2>Beheer (organisator)</h2>
+      <form id="form-pin" class="row">
+        <input id="pin-input" type="password" placeholder="pincode" autocomplete="off">
+        <button type="submit" class="btn">Ontgrendel</button>
+      </form>
+      <p id="pin-fout" class="fout" hidden></p>
+    </div>
+    <div id="beheer-inhoud" hidden>
+      <div class="card">
+        <h2>Wedstrijd</h2>
+        <p class="muted">Deel deze code met de deelnemers: <b id="b-code" class="codegroot"></b></p>
+        <p class="muted">Directe link: <span id="b-link" class="klein"></span> <button id="b-kopieer" class="btn klein-btn">kopieer</button></p>
+        <div class="row2">
+          <label>Start <input id="b-start" type="datetime-local"></label>
+          <label>Einde <input id="b-eind" type="datetime-local"></label>
+        </div>
+        <button id="b-tijden" class="btn">Tijden opslaan</button>
+        <p id="b-fout" class="fout" hidden></p>
+      </div>
+      <div class="card">
+        <h2>Loting</h2>
+        <p class="muted">Start de loting als alle deelnemers aangemeld zijn. De site bepaalt willekeurig de volgorde; daarna kiest iedereen op zijn beurt een stek op de kaart.</p>
+        <div class="row">
+          <button id="b-loting" class="btn primary">🎲 Start loting</button>
+          <button id="b-reset" class="btn gevaar">Reset loting</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Deelnemers</h2>
+        <div id="b-teams"></div>
+      </div>
+      <div class="card">
+        <h2>Vangsten corrigeren</h2>
+        <div id="b-vangsten"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="foto-groot" class="lightbox" hidden><img alt="vangstfoto"><span class="sluit">✕</span></div>
+
+<script src="config.js"></script>
+<script src="kaart.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
