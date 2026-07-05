@@ -29,6 +29,23 @@ vangstregistratie met foto, live klassement met aftelklok.
   Date.now), eindtijd wordt ALTIJD ook server-side afgedwongen in
   `w_registreer_vangst`.
 
+## v2-features (5 jul 2026)
+
+- **Organisatie-gate:** nieuwe wedstrijden alleen met het organisatie-wachtwoord
+  (tabel `wedstrijd.instellingen`, check server-side in `w_maak_wedstrijd`/`w_org_check`;
+  wijzigen via `w_org_wachtwoord`). Wachtwoord NOOIT in deze repo zetten.
+- **Zones:** `wedstrijden.zones` jsonb `[{naam, stekken[]}]`, beheer via `w_admin_zones`
+  (alleen tijdens aanmelden), keuze via `w_kies_zone` (1 tik op de kaart selecteert de
+  hele zone). Zonder zones werkt `w_kies_stek` zoals voorheen.
+- **Teamnaam:** optioneel bij koppels (`teams.team_naam`), weergave "Teamnaam (lid & lid)".
+- **Join-first:** deelnemer zonder sessie landt automatisch op de Mijn team-tab.
+- **Push:** service worker `docs/sw.js` + VAPID (public key in config.js, private in
+  `wedstrijd.instellingen`) + edge function `push-vangst` (custom auth via x-push-secret,
+  verify_jwt uit). `w_registreer_vangst` triggert de push via pg_net, best effort.
+  Eigen team krijgt geen melding. In-app toast als fallback.
+- **Camo-thema:** kleurvariabelen in styles.css heten nog `--blauw-*` maar bevatten
+  legergroen; kaartmarkers gebruiken bewust `--kaart-blauw` (leesbaar op het water).
+
 ## Domeinbegrippen
 
 - **Stekken:** 96 stuks, nummers 1-100 waarbij **12-18 niet bestaan** (stuk oever
