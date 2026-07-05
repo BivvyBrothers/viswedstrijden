@@ -231,20 +231,42 @@ function initHome() {
   });
 
   // organisatie-gate: nieuwe wedstrijden alleen met het organisatie-wachtwoord
-  const toonNieuwForm = () => { $('#org-gate').hidden = true; $('#form-nieuw').hidden = false; };
+  const toonNieuwForm = (check) => {
+    $('#org-gate').hidden = true;
+    $('#form-nieuw').hidden = false;
+    $('#org-zones-card').hidden = false;
+    if (check && $('#org-zones').value.trim() === '') {
+      $('#org-zones').value = zonesNaarTekst(check.standaard_zones);
+    }
+  };
   $('#form-org').addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#org-fout'); foutEl.hidden = true;
     const ww = $('#org-ww').value.trim();
     try {
-      await rpc('w_org_check', { p_wachtwoord: ww });
+      const check = await rpc('w_org_check', { p_wachtwoord: ww });
       sessie.zetOrgWw(ww);
-      toonNieuwForm();
+      toonNieuwForm(check);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
   if (sessie.orgWw()) {
     rpc('w_org_check', { p_wachtwoord: sessie.orgWw() }).then(toonNieuwForm).catch(() => {});
   }
+
+  $('#org-zones-opslaan').addEventListener('click', async () => {
+    const foutEl = $('#org-zones-fout'), okEl = $('#org-zones-ok');
+    foutEl.hidden = true; okEl.hidden = true;
+    let zones;
+    try { zones = parseZones($('#org-zones').value); }
+    catch (err) { foutEl.textContent = err.message; foutEl.hidden = false; return; }
+    try {
+      const res = await rpc('w_org_standaard_zones', { p_wachtwoord: sessie.orgWw() || '', p_zones: zones });
+      okEl.textContent = res.zones === 0
+        ? 'Vaste indeling gewist: nieuwe wedstrijden loten per losse stek.'
+        : `Vaste indeling met ${res.zones} zones opgeslagen. Elke nieuwe wedstrijd gebruikt deze automatisch.`;
+      okEl.hidden = false;
+    } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+  });
 
   $('#form-nieuw').addEventListener('submit', async (e) => {
     e.preventDefault();

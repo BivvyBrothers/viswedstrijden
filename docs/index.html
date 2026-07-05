@@ -75,6 +75,17 @@
       <p id="nieuw-fout" class="fout" hidden></p>
     </form>
   </section>
+
+  <section class="card" id="org-zones-card" hidden>
+    <h2>Vaste zone-indeling van de plas</h2>
+    <p class="muted klein">Deze indeling geldt automatisch voor elke nieuwe wedstrijd.
+    Eén regel per zone, formaat <b>Naam: steknummers</b>, bijv. <b>Zone A: 20-30</b> of <b>B: 55</b>
+    (een zone mag ook uit 1 stek bestaan). Leeg = loting per losse stek.</p>
+    <textarea id="org-zones" rows="8"></textarea>
+    <button id="org-zones-opslaan" class="btn primary">Vaste indeling opslaan</button>
+    <p id="org-zones-fout" class="fout" hidden></p>
+    <p id="org-zones-ok" class="ok" hidden></p>
+  </section>
 </main>
 
 <!-- ============ WEDSTRIJD ============ -->
@@ -207,10 +218,10 @@
       </div>
       <div class="card">
         <h2>Zones <span class="muted">(optioneel)</span></h2>
-        <p class="muted klein">Verdeel het water in zones: 1 regel per zone, formaat <b>Naam: steknummers</b>.
-        Bijv. <b>Zone A: 20-30</b> (even nummers 20 t/m 30) of <b>B: 1,3,5,7</b>.
-        Bij de loting kiest een team dan een hele zone in plaats van een losse stek.
-        Leeg laten = gewone loting per stek. Alleen aan te passen vóór de loting.</p>
+        <p class="muted klein">Nieuwe wedstrijden krijgen automatisch de vaste zone-indeling van de plas
+        (te beheren op de homepagina, achter het organisatie-wachtwoord). Pas hieronder alleen aan als deze
+        wedstrijd afwijkt, bijv. een zone die dicht is. Formaat: <b>Naam: steknummers</b>, 1 regel per zone.
+        Leeg = loting per losse stek. Alleen aan te passen vóór de loting.</p>
         <textarea id="b-zones" rows="6" placeholder="Zone A: 20-30&#10;Zone B: 32-44&#10;Zone C: 54-70"></textarea>
         <button id="b-zones-opslaan" class="btn">Zones opslaan</button>
         <p id="b-zones-fout" class="fout" hidden></p>
