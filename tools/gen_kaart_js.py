@@ -186,8 +186,9 @@ for nr, pt, off in stekken:
     x, y = T(pt)
     cx, cy = x + off[0], y + off[1]
     parts.append(f'<g class="stek" data-stek="{nr}" style="cursor:pointer">'
-                 f'<line x1="{fmt(x)}" y1="{fmt(y)}" x2="{fmt(cx)}" y2="{fmt(cy)}" stroke="#1d4e79" stroke-width="0.8"/>'
-                 f'<circle cx="{fmt(cx)}" cy="{fmt(cy)}" r="7.4" fill="#ffffff" stroke="#1d4e79" stroke-width="1.1"/>'
+                 f'<circle cx="{fmt(cx)}" cy="{fmt(cy)}" r="13" fill="transparent" stroke="none"/>'
+                 f'<line x1="{fmt(x)}" y1="{fmt(y)}" x2="{fmt(cx)}" y2="{fmt(cy)}" stroke="#1d4e79" stroke-width="0.8" pointer-events="none"/>'
+                 f'<circle class="stek-dot" cx="{fmt(cx)}" cy="{fmt(cy)}" r="7.4" fill="#ffffff" stroke="#1d4e79" stroke-width="1.1"/>'
                  f'<text x="{fmt(cx)}" y="{fmt(cy + 2.8)}" fill="#123c5e" font-weight="600" text-anchor="middle" pointer-events="none">{nr}</text>'
                  f'<title></title></g>')
 parts.append('</g>')

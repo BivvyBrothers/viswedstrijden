@@ -18,18 +18,22 @@ body {
   background: var(--zand);
   color: var(--tekst);
   font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
 }
+button, a, .stek, .tabs button { touch-action: manipulation; }
+input, select { font-size: 16px; }
 
 .topbar {
   position: sticky; top: 0; z-index: 20;
   background: var(--blauw-donker); color: #fff;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 16px;
+  padding: calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px calc(16px + env(safe-area-inset-left));
 }
 .brand { color: #fff; text-decoration: none; font-weight: 700; font-size: 17px; }
 .topcode { font-family: ui-monospace, Menlo, monospace; letter-spacing: 2px; opacity: .85; }
 
-.container { max-width: 860px; margin: 0 auto; padding: 12px 12px 80px; }
+.container { max-width: 860px; margin: 0 auto; padding: 12px calc(12px + env(safe-area-inset-right)) calc(80px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
 
 .card {
   background: #fff; border-radius: 14px; padding: 16px;
@@ -62,6 +66,7 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 .btn {
   padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer;
   background: var(--zand-donker); color: var(--blauw-donker); font-weight: 700;
+  min-height: 44px;
 }
 .btn.primary { background: var(--blauw); color: #fff; }
 .btn.gevaar { background: #f3ded9; color: var(--rood); }
@@ -100,11 +105,12 @@ label input, label select { margin-top: 5px; font-weight: 400; }
   flex: 1; white-space: nowrap; border: none; border-radius: 999px;
   padding: 9px 12px; background: #fff; color: var(--grijs); font-weight: 700; cursor: pointer;
   box-shadow: 0 1px 3px rgba(42,39,33,.08); font-size: 13.5px;
+  min-height: 42px;
 }
 .tabs button.actief { background: var(--blauw); color: #fff; }
 
 /* kaart */
-.kaart-houder { width: 100%; overflow-x: auto; border-radius: 10px; }
+.kaart-houder { width: 100%; overflow-x: auto; border-radius: 10px; -webkit-overflow-scrolling: touch; }
 .kaart-houder svg { min-width: 700px; width: 100%; height: auto; display: block; }
 .kaart-legenda { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--grijs); }
 .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--blauw); vertical-align: -1px; }
@@ -119,14 +125,14 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 .melding.groen { background: #eaf5e9; border-color: var(--groen); color: var(--groen); }
 #stek-actie { margin-top: 10px; }
 
-/* stek-status via klassen op de svg-groepen */
-.stek.bezet circle { fill: var(--blauw); }
+/* stek-status via klassen op de svg-groepen (alleen de zichtbare stip) */
+.stek.bezet .stek-dot { fill: var(--blauw); }
 .stek.bezet text { fill: #fff; }
-.stek.mijn circle { fill: var(--groen); stroke: var(--groen); }
+.stek.mijn .stek-dot { fill: var(--groen); stroke: var(--groen); }
 .stek.mijn text { fill: #fff; }
-.stek.keuze circle { fill: var(--oranje); stroke: var(--oranje); }
+.stek.keuze .stek-dot { fill: var(--oranje); stroke: var(--oranje); }
 .stek.keuze text { fill: #fff; }
-.stek.kiesbaar circle { stroke-width: 2.2; stroke: var(--oranje); }
+.stek.kiesbaar .stek-dot { stroke-width: 2.2; stroke: var(--oranje); }
 
 /* loting */
 .loting-rij {
