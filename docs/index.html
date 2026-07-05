@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Viswedstrijden · Plas van der Ende</title>
 <meta name="description" content="Karperwedstrijden op de Plas van der Ende: loting, stekkeuze, vangstregistratie en live leaderboard.">
-<meta name="theme-color" content="#123c5e">
+<meta name="theme-color" content="#353d2a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -41,8 +41,16 @@
   </section>
 
   <section class="card">
-    <h2>Nieuwe wedstrijd <span class="muted">(organisator)</span></h2>
-    <form id="form-nieuw" class="stack">
+    <h2>Nieuwe wedstrijd <span class="muted">(alleen organisatie)</span></h2>
+    <div id="org-gate">
+      <p class="muted">Dit onderdeel is alleen voor organisatoren. Voer het organisatie-wachtwoord in.</p>
+      <form id="form-org" class="row">
+        <input id="org-ww" type="password" placeholder="organisatie-wachtwoord" autocomplete="off" required>
+        <button type="submit" class="btn">Ontgrendel</button>
+      </form>
+      <p id="org-fout" class="fout" hidden></p>
+    </div>
+    <form id="form-nieuw" class="stack" hidden>
       <label>Naam van de wedstrijd
         <input id="nw-naam" type="text" maxlength="60" placeholder="bijv. Voorjaarswedstrijd 2027" required>
       </label>
@@ -79,6 +87,10 @@
     <div id="w-tijden" class="muted klein"></div>
     <div id="klok" class="klok"></div>
     <div id="klok-sub" class="muted klein"></div>
+    <div class="push-rij">
+      <button id="btn-push" class="btn klein-btn" hidden>🔔 Meldingen aan</button>
+      <span id="push-tip" class="muted klein" hidden></span>
+    </div>
   </section>
 
   <nav class="tabs" id="tabs">
@@ -137,6 +149,7 @@
       <form id="form-join" class="stack">
         <label>Naam <input id="join-naam" type="text" maxlength="40" required></label>
         <label id="join-naam2-label" hidden>Naam koppelmaat <input id="join-naam2" type="text" maxlength="40"></label>
+        <label id="join-teamnaam-label" hidden>Teamnaam <span class="muted">(optioneel)</span> <input id="join-teamnaam" type="text" maxlength="40" placeholder="bijv. De Bivvy Brothers"></label>
         <button type="submit" class="btn primary">Aanmelden</button>
         <p id="join-fout" class="fout" hidden></p>
       </form>
@@ -193,6 +206,17 @@
         <p id="b-fout" class="fout" hidden></p>
       </div>
       <div class="card">
+        <h2>Zones <span class="muted">(optioneel)</span></h2>
+        <p class="muted klein">Verdeel het water in zones: 1 regel per zone, formaat <b>Naam: steknummers</b>.
+        Bijv. <b>Zone A: 20-30</b> (even nummers 20 t/m 30) of <b>B: 1,3,5,7</b>.
+        Bij de loting kiest een team dan een hele zone in plaats van een losse stek.
+        Leeg laten = gewone loting per stek. Alleen aan te passen vóór de loting.</p>
+        <textarea id="b-zones" rows="6" placeholder="Zone A: 20-30&#10;Zone B: 32-44&#10;Zone C: 54-70"></textarea>
+        <button id="b-zones-opslaan" class="btn">Zones opslaan</button>
+        <p id="b-zones-fout" class="fout" hidden></p>
+        <p id="b-zones-ok" class="ok" hidden></p>
+      </div>
+      <div class="card">
         <h2>Loting</h2>
         <p class="muted">Start de loting als alle deelnemers aangemeld zijn. De site bepaalt willekeurig de volgorde; daarna kiest iedereen op zijn beurt een stek op de kaart.</p>
         <div class="row">
@@ -213,6 +237,7 @@
 </main>
 
 <div id="foto-groot" class="lightbox" hidden><img alt="vangstfoto"><span class="sluit">✕</span></div>
+<div id="toast" class="toast" hidden></div>
 
 <script src="config.js"></script>
 <script src="kaart.js"></script>

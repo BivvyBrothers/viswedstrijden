@@ -1,21 +1,23 @@
 :root {
-  --blauw-donker: #123c5e;
-  --blauw: #1d4e79;
-  --blauw-mid: #2b6a99;
-  --blauw-licht: #b9dcf2;
-  --zand: #f2eee1;
-  --zand-donker: #e6e0cd;
-  --tekst: #2a2721;
-  --grijs: #6b6353;
+  /* camouflage-thema */
+  --blauw-donker: #353d2a;   /* donker legergroen (headers, klok) */
+  --blauw: #4d5839;          /* legergroen (primaire knoppen) */
+  --blauw-mid: #6d7355;      /* olijf (accenten, focus) */
+  --blauw-licht: #d9dcc2;    /* licht olijf (chips) */
+  --zand: #e6e4d0;           /* kaki-achtergrond */
+  --zand-donker: #cfccb0;
+  --tekst: #29271e;
+  --grijs: #6b6853;
   --groen: #2e7d32;
-  --rood: #b3382a;
+  --rood: #a63c2c;
   --oranje: #d97b29;
+  --kaart-blauw: #1d4e79;    /* stekmarkers op de (blauwe) kaart */
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
   font-family: system-ui, 'Segoe UI', Arial, sans-serif;
-  background: var(--zand);
+  background: var(--zand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='%23dcd9c1'%3E%3Cpath d='M40 60c30-25 85-15 95 15s-20 60-60 55S10 85 40 60z'/%3E%3Cpath d='M280 300c40-20 90 5 85 45s-70 55-100 25 -15-55 15-70z'/%3E%3Cpath d='M330 90c25-18 65-5 60 28s-55 40-75 18 -5-32 15-46z'/%3E%3C/g%3E%3Cg fill='%23d0cdb3'%3E%3Cpath d='M120 260c25-30 75-20 80 10s-30 65-70 50-35-35-10-60z'/%3E%3Cpath d='M240 130c20-22 60-12 62 15s-38 45-62 30-15-28 0-45z'/%3E%3C/g%3E%3Cg fill='%23e0ddc6'%3E%3Cpath d='M60 350c22-16 58-6 56 22s-48 38-66 18-8-26 10-40z'/%3E%3C/g%3E%3C/svg%3E") fixed;
   color: var(--tekst);
   font-size: 16px;
   -webkit-tap-highlight-color: transparent;
@@ -39,7 +41,7 @@ input, select { font-size: 16px; }
   background: #fff; border-radius: 14px; padding: 16px;
   margin: 12px 0; box-shadow: 0 1px 4px rgba(42,39,33,.08);
 }
-.hero { background: linear-gradient(150deg, var(--blauw-donker), var(--blauw-mid)); color: #fff; }
+.hero { background: linear-gradient(150deg, #2c331f, #4d5839 55%, #6d7355); color: #fff; }
 .hero h1 { margin: 4px 0 8px; font-size: 26px; line-height: 1.2; }
 .hero .sub { margin: 0; opacity: .9; }
 
@@ -113,9 +115,9 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 .kaart-houder { width: 100%; overflow-x: auto; border-radius: 10px; -webkit-overflow-scrolling: touch; }
 .kaart-houder svg { min-width: 700px; width: 100%; height: auto; display: block; }
 .kaart-legenda { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--grijs); }
-.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--blauw); vertical-align: -1px; }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--kaart-blauw); vertical-align: -1px; }
 .dot.vrij { background: #fff; }
-.dot.bezet { background: var(--blauw); }
+.dot.bezet { background: var(--kaart-blauw); }
 .dot.mijn { background: var(--groen); border-color: var(--groen); }
 .dot.keuze { background: var(--oranje); border-color: var(--oranje); }
 .melding {
@@ -126,7 +128,7 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 #stek-actie { margin-top: 10px; }
 
 /* stek-status via klassen op de svg-groepen (alleen de zichtbare stip) */
-.stek.bezet .stek-dot { fill: var(--blauw); }
+.stek.bezet .stek-dot { fill: var(--kaart-blauw); }
 .stek.bezet text { fill: #fff; }
 .stek.mijn .stek-dot { fill: var(--groen); stroke: var(--groen); }
 .stek.mijn text { fill: #fff; }
@@ -145,7 +147,7 @@ label input, label select { margin-top: 5px; font-weight: 400; }
   font-weight: 800; color: var(--blauw-donker); padding: 4px 0;
 }
 .loting-rij.beurt { background: #fdf3e3; border-radius: 8px; }
-.loting-rij .stekjes { margin-left: auto; font-weight: 700; color: var(--blauw-mid); white-space: nowrap; }
+.loting-rij .stekjes { margin-left: auto; font-weight: 700; color: var(--blauw); white-space: nowrap; }
 
 /* klassement */
 .schakel { display: flex; gap: 6px; margin-bottom: 12px; }
@@ -207,3 +209,17 @@ td .thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; cu
   .tabs { top: 42px; }
   .tabs button { font-size: 12px; padding: 8px 8px; }
 }
+
+textarea {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--zand-donker);
+  border-radius: 10px; font: inherit; font-size: 16px; margin-bottom: 8px; resize: vertical;
+}
+textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-mid); }
+.push-rij { margin-top: 8px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: var(--blauw-donker); color: #fff; padding: 12px 18px; border-radius: 12px;
+  font-weight: 700; z-index: 90; box-shadow: 0 4px 14px rgba(0,0,0,.3); max-width: 92vw;
+}
+.toast[hidden] { display: none; }
+.leden { color: var(--grijs); font-weight: 400; font-size: 13px; }

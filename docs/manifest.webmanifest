@@ -4,8 +4,8 @@
   "description": "Loting, stekkeuze, vangstregistratie en live klassement",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#f2eee1",
-  "theme_color": "#123c5e",
+  "background_color": "#e6e4d0",
+  "theme_color": "#353d2a",
   "lang": "nl",
   "icons": [
     {
