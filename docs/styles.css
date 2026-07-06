@@ -64,6 +64,8 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 .row { display: flex; gap: 8px; }
 .row input { flex: 1; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row2 input { min-width: 0; }
+@media (max-width: 430px) { .row2 { grid-template-columns: 1fr; } }
 
 .btn {
   padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer;
