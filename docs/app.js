@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 4; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 5; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -14,7 +14,7 @@ const FOUTEN = {
   aanmelden_gesloten: 'Het aanmelden is gesloten: de loting is al gestart.',
   ongeldige_naam: 'Vul een geldige naam in (max. 40 tekens).',
   tweede_naam_verplicht: 'Dit is een koppelwedstrijd: vul ook de naam van je koppelmaat in.',
-  naam_bestaat_al: 'Deze naam is al aangemeld. Kies een andere naam.',
+  naam_bestaat_al: 'Deze naam is al aangemeld. Ben jij dat en wil je verder onder deze naam? Gebruik dan je herstel-link, of vraag de organisator die voor je op te zoeken in Beheer.',
   wedstrijd_vol: 'De wedstrijd zit vol: het maximale aantal deelnemers is bereikt.',
   ongeldig_maximum: 'Het maximum moet tussen 2 en 200 liggen.',
   pin_onjuist: 'Pincode onjuist.',
@@ -976,6 +976,15 @@ function initWedstrijd() {
     knop.disabled = false; knop.textContent = 'Registreer vangst';
   });
 
+  $('#btn-herstel').addEventListener('click', async () => {
+    const t = sessie.team(CODE);
+    if (!t) return;
+    const link = location.origin + location.pathname + '#/w/' + CODE + '?t=' + t.token;
+    const ok = await kopieerTekst(link);
+    $('#btn-herstel').textContent = ok ? '✅ Gekopieerd! Bewaar hem goed' : 'Kopiëren mislukt';
+    setTimeout(() => { $('#btn-herstel').textContent = '🔑 Kopieer mijn herstel-link'; }, 3000);
+  });
+
   initBeheerKnoppen();
 
   document.body.addEventListener('click', (e) => {
@@ -1176,8 +1185,19 @@ async function renderBeheer(magPrefill) {
     <div class="b-rij">
       <span class="naam">${teamNaamHtml(t)}</span>
       <span class="muted klein">${t.lot_nummer ? 'lot ' + t.lot_nummer : ''} ${t.zone ? '· ' + esc(zoneLabel(t.zone)) : (t.stekken || []).length ? '· stek ' + t.stekken.join('+') : ''}</span>
+      <button class="btn klein-btn" data-team-link="${t.id}">🔑 herstel-link</button>
       ${w.status === 'aanmelden' ? `<button class="btn gevaar klein-btn" data-team-weg="${t.id}">verwijder</button>` : ''}
     </div>`).join('') : '<p class="muted">Nog geen deelnemers.</p>';
+  $('#b-teams').querySelectorAll('[data-team-link]').forEach((b) => {
+    b.onclick = async () => {
+      try {
+        const r = await rpc('w_admin_teamlink', { p_code: CODE, p_pin: sessie.pin(CODE), p_team_id: b.dataset.teamLink });
+        const link = location.origin + location.pathname + '#/w/' + CODE + '?t=' + r.token;
+        const ok = await kopieerTekst(link);
+        toast(ok ? 'Herstel-link gekopieerd: stuur hem naar de deelnemer.' : 'Kopiëren mislukt.');
+      } catch (err) { toast(foutTekst(err)); }
+    };
+  });
   $('#b-teams').querySelectorAll('[data-team-weg]').forEach((b) => {
     b.onclick = () => tikNogmaals(b, 'zeker?', () => beheerActie('w_admin_verwijder_team', { p_team_id: b.dataset.teamWeg }));
   });
