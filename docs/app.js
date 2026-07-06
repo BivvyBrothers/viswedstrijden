@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 5; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 6; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -199,12 +199,6 @@ const sessie = {
   zetPin(code, pin) { sessionStorage.setItem('pin:' + code, pin); },
   orgWw() { return sessionStorage.getItem('orgww'); },
   zetOrgWw(ww) { sessionStorage.setItem('orgww', ww); },
-  recent() { try { return JSON.parse(localStorage.getItem('recente')) || []; } catch { return []; } },
-  zetRecent(code, naam) {
-    const lijst = this.recent().filter((r) => r.code !== code);
-    lijst.unshift({ code, naam });
-    localStorage.setItem('recente', JSON.stringify(lijst.slice(0, 6)));
-  },
 };
 
 const nu = () => Date.now() + TIJD_OFFSET;
@@ -230,6 +224,7 @@ const zoneLabel = (naam) => /^zone/i.test(String(naam).trim()) ? String(naam).tr
 /* ---------- routing ---------- */
 window.addEventListener('hashchange', route);
 window.addEventListener('DOMContentLoaded', () => {
+  localStorage.removeItem('recente'); // opruiming: Recent-sectie is vervallen
   initHome(); initWedstrijd(); route();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   checkVersie();
@@ -279,7 +274,6 @@ function route() {
     CODE = null; KIJKER = false;
     $('#topcode').textContent = '';
     toonView('home');
-    renderRecente();
   }
 }
 function toonView(naam) {
@@ -399,17 +393,9 @@ function initHome() {
         p_max_teams: $('#nw-max').value ? parseInt($('#nw-max').value, 10) : null,
       });
       sessie.zetPin(res.code, res.pin);
-      sessie.zetRecent(res.code, $('#nw-naam').value.trim());
       location.hash = '#/w/' + res.code;
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
-}
-function renderRecente() {
-  const el = $('#recente');
-  const lijst = sessie.recent();
-  el.innerHTML = lijst.length
-    ? '<span class="muted klein">Recent: </span>' + lijst.map((r) => `<a href="#/w/${esc(r.code)}">${esc(r.naam)} (${esc(r.code)})</a>`).join('')
-    : '';
 }
 
 /* ---------- wedstrijd: state laden ---------- */
@@ -422,7 +408,6 @@ async function laadState(eerste) {
     if (!s?.wedstrijd) { toonNietGevonden(); return; }
     STATE = s;
     TIJD_OFFSET = new Date(s.server_now).getTime() - Date.now();
-    if (eerste && !KIJKER) sessie.zetRecent(CODE, s.wedstrijd.naam);
     if (eerste && !KIJKER && PENDING_TOKEN) {
       try {
         const team = await rpc('w_mijn_team', { p_code: CODE, p_token: PENDING_TOKEN });
