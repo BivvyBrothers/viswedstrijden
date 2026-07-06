@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 13; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 14; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -219,8 +219,12 @@ function zoneVanStek(nr) {
 function zoneBezet(naam) {
   return STATE.teams.some((t) => (t.zone || '').toLowerCase() === String(naam).toLowerCase());
 }
-// voorkomt "zone Zone A" wanneer de naam zelf al met "zone" begint
-const zoneLabel = (naam) => /^zone/i.test(String(naam).trim()) ? String(naam).trim() : 'zone ' + naam;
+// voorkomt "zone Zone A"; een puur numerieke zonenaam is een losse stek en heet "stek N"
+const zoneLabel = (naam) => {
+  const n = String(naam).trim();
+  if (/^\d+$/.test(n)) return 'stek ' + n;
+  return /^zone/i.test(n) ? n : 'zone ' + n;
+};
 
 /* ---------- routing ---------- */
 window.addEventListener('hashchange', route);
@@ -667,10 +671,14 @@ function renderKaart() {
     const eigenaar = bezetDoor[nr];
     const zone = zoneVanStek(nr);
     const titel = g.querySelector('title');
-    const zLabel = zone ? `${zoneLabel(zone.naam)} · ` : '';
+    const zLabel = (zone && String(zone.naam).trim() !== String(nr)) ? `${zoneLabel(zone.naam)} · ` : '';
+    const doetMee = !heeftZones() || !!zone;
+    g.classList.toggle('uit', !doetMee && !eigenaar);
     if (eigenaar) {
       g.classList.add(mijn && eigenaar.id === mijn.id ? 'mijn' : 'bezet');
       if (titel) titel.textContent = `Stek ${nr}: ${zLabel}${teamNaam(eigenaar)}`;
+    } else if (!doetMee) {
+      if (titel) titel.textContent = `Stek ${nr}: doet niet mee in deze wedstrijd`;
     } else {
       if (titel) titel.textContent = `Stek ${nr}: ${zLabel}vrij`;
       if (SELECTIE.includes(nr)) g.classList.add('keuze');
@@ -688,8 +696,10 @@ function renderKaart() {
       if (heeftZones()) {
         melding.className = 'melding groen';
         melding.textContent = SELECTIE_ZONE
-          ? `${zoneLabel(SELECTIE_ZONE)} geselecteerd (stek ${SELECTIE.slice().sort((a, b) => a - b).join(', ')}).`
-          : 'Jij bent aan de beurt! Tik op een stek om die zone te kiezen.';
+          ? (/^\d+$/.test(SELECTIE_ZONE)
+              ? `Stek ${SELECTIE_ZONE} geselecteerd.`
+              : `${zoneLabel(SELECTIE_ZONE)} geselecteerd (stek ${SELECTIE.slice().sort((a, b) => a - b).join(', ')}).`)
+          : 'Jij bent aan de beurt! Tik op een gekleurde stek om te kiezen.';
         knop.disabled = !SELECTIE_ZONE;
         knop.textContent = SELECTIE_ZONE ? `Bevestig ${zoneLabel(SELECTIE_ZONE)}` : 'Selecteer een zone';
       } else {

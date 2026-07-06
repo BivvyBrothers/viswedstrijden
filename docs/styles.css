@@ -59,6 +59,7 @@ input, select {
 }
 input:focus, select:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-mid); }
 label { display: block; margin: 0 0 10px; font-weight: 600; font-size: 14px; color: var(--blauw-donker); }
+label[hidden] { display: none; }
 label input, label select { margin-top: 5px; font-weight: 400; }
 .stack { display: flex; flex-direction: column; }
 .row { display: flex; gap: 8px; }
@@ -265,3 +266,8 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 }
 .terug-knop[hidden] { display: none; }
 .topbar .brand { margin-right: auto; }
+
+/* stekken die niet meedoen in deze wedstrijd */
+.stek.uit { cursor: default; }
+.stek.uit .stek-dot { opacity: .3; }
+.stek.uit text, .stek.uit line { opacity: .3; }
