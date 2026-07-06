@@ -145,6 +145,7 @@ let KIJKER = false;          // true = kijkersweergave (alleen klassement)
 let ROL = 'deelnemer';       // 'deelnemer' | 'kijker' | 'organisator' 
 let ORG_POLL = null;
 let BEKENDE_VANGSTEN = null; // Set van vangst-ids voor in-app meldingen
+let PENDING_TOKEN = null;    // token uit een teamlink (#/w/CODE?t=...)
 
 const sessie = {
   team(code) { try { return JSON.parse(localStorage.getItem('team:' + code)); } catch { return null; } },
@@ -191,6 +192,8 @@ window.addEventListener('DOMContentLoaded', () => {
 function route() {
   const mW = location.hash.match(/^#\/w\/([A-Za-z0-9]{4,8})/);
   const mK = location.hash.match(/^#\/k\/([A-Za-z0-9]{4,8})/);
+  const mT = location.hash.match(/[?&]t=([0-9a-f-]{36})/i);
+  PENDING_TOKEN = mT ? mT[1] : null;
   clearInterval(POLL); clearInterval(KLOKTIK); clearInterval(ORG_POLL);
   if (mW || mK) {
     KIJKER = !!mK;
@@ -354,6 +357,14 @@ async function laadState(eerste) {
     STATE = s;
     TIJD_OFFSET = new Date(s.server_now).getTime() - Date.now();
     if (eerste && !KIJKER) sessie.zetRecent(CODE, s.wedstrijd.naam);
+    if (eerste && !KIJKER && PENDING_TOKEN) {
+      try {
+        const team = await rpc('w_mijn_team', { p_code: CODE, p_token: PENDING_TOKEN });
+        if (team) sessie.zetTeam(CODE, { id: team.id, token: PENDING_TOKEN, naam: team.naam });
+      } catch { /* ongeldige teamlink: negeren */ }
+      PENDING_TOKEN = null;
+      history.replaceState(null, '', location.pathname + '#/w/' + CODE);
+    }
     if (eerste && !KIJKER) {
       const pin = sessie.pin(CODE);
       if (pin) {
