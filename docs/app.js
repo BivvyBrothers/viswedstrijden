@@ -13,6 +13,8 @@ const FOUTEN = {
   ongeldige_naam: 'Vul een geldige naam in (max. 40 tekens).',
   tweede_naam_verplicht: 'Dit is een koppelwedstrijd: vul ook de naam van je koppelmaat in.',
   naam_bestaat_al: 'Deze naam is al aangemeld. Kies een andere naam.',
+  wedstrijd_vol: 'De wedstrijd zit vol: het maximale aantal deelnemers is bereikt.',
+  ongeldig_maximum: 'Het maximum moet tussen 2 en 200 liggen.',
   pin_onjuist: 'Pincode onjuist.',
   pin_te_kort: 'Pincode moet minimaal 4 tekens zijn.',
   org_wachtwoord_onjuist: 'Organisatie-wachtwoord onjuist.',
@@ -351,6 +353,7 @@ function initHome() {
         p_start: new Date(startVeld.value).toISOString(),
         p_eind: new Date(eindVeld.value).toISOString(),
         p_org_wachtwoord: sessie.orgWw() || '',
+        p_max_teams: $('#nw-max').value ? parseInt($('#nw-max').value, 10) : null,
       });
       sessie.zetPin(res.code, res.pin);
       sessie.zetRecent(res.code, $('#nw-naam').value.trim());
@@ -454,9 +457,11 @@ async function laadOrg(eerste) {
 function orgWedstrijdKaart(w, nuMs) {
   const actief = new Date(w.eind_ts).getTime() >= nuMs;
   const live = actief && new Date(w.start_ts).getTime() <= nuMs;
+  const vol = w.max_teams && w.teams >= w.max_teams;
+  const teller = w.max_teams ? `${w.teams}/${w.max_teams}` : `${w.teams}`;
   const statusTekst = live ? '● LIVE'
     : !actief ? 'afgelopen'
-    : w.status === 'aanmelden' ? `aanmelden open · ${w.teams} aanmelding${w.teams === 1 ? '' : 'en'}`
+    : w.status === 'aanmelden' ? (vol ? `✅ compleet (${teller}) · klaar voor loting` : `aanmelden open · ${teller} aangemeld`)
     : w.status === 'stekkeuze' ? 'loting/stekkeuze bezig'
     : 'wacht op start';
   return `<div class="org-w">
@@ -466,7 +471,7 @@ function orgWedstrijdKaart(w, nuMs) {
     </div>
     <div class="muted klein">${fmtDatumTijd(w.start_ts)} tot ${fmtDatumTijd(w.eind_ts)} ·
       ${w.mode === 'koppel' ? 'koppels' : 'individueel'}${w.heeft_zones ? ' · zones' : ''} ·
-      ${w.teams} team${w.teams === 1 ? '' : 's'} · ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'}</div>
+      ${w.max_teams ? `${w.teams}/${w.max_teams}` : w.teams} team${w.teams === 1 && !w.max_teams ? '' : 's'} · ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'}</div>
     <div class="org-codes muted klein">deelnemerscode <b class="codegroot klein-code">${esc(w.code)}</b>
       · kijkcode <b class="codegroot klein-code">${esc(w.kijk_code)}</b></div>
     <div class="row org-acties">
@@ -672,7 +677,13 @@ function renderLoting() {
     return;
   }
   const geloot = STATE.teams.some((t) => t.lot_nummer);
-  el.innerHTML = (geloot ? '' : '<p class="muted klein">De loting is nog niet gestart. Volgorde hieronder is de aanmeldvolgorde.</p>') +
+  const w2 = STATE.wedstrijd;
+  const voortgang = (!geloot && w2.status === 'aanmelden' && w2.max_teams)
+    ? (STATE.teams.length >= w2.max_teams
+        ? `<p class="ok">✅ Compleet: ${STATE.teams.length} van ${w2.max_teams} aangemeld. De loting kan beginnen.</p>`
+        : `<p class="muted klein"><b>${STATE.teams.length} van ${w2.max_teams}</b> deelnemers aangemeld.</p>`)
+    : '';
+  el.innerHTML = voortgang + (geloot ? '' : '<p class="muted klein">De loting is nog niet gestart. Volgorde hieronder is de aanmeldvolgorde.</p>') +
     STATE.teams.map((t) => {
       const isBeurt = beurt && beurt.id === t.id;
       const keuze = t.zone ? zoneLabel(t.zone)

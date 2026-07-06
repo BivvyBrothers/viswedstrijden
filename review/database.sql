@@ -19,6 +19,7 @@ create table wedstrijd.wedstrijden (
   status text not null default 'aanmelden' check (status in ('aanmelden','stekkeuze','klaar')),
   admin_pin text not null,            -- per-wedstrijd beheersleutel, automatisch gegenereerd
   zones jsonb,                        -- [{"naam":"Zone A","stekken":[20,22,...]}] of null
+  max_teams int check (max_teams between 2 and 200),  -- null = onbeperkt
   created_at timestamptz not null default now(),
   check (eind_ts > start_ts)
 );
@@ -614,3 +615,13 @@ begin
   delete from wedstrijd.push_subs where id = any(p_ids);
   return json_build_object('ok', true);
 end $function$;
+
+
+-- =====================================================================
+-- UPDATE 6 jul (na het samenstellen van deze bundel): max_teams
+-- w_maak_wedstrijd kreeg p_max_teams int default null (validatie 2-200);
+-- w_join doet nu 'select ... for update' op de wedstrijd-rij en weigert met
+-- 'wedstrijd_vol' zodra het maximum is bereikt; w_get_state, w_get_state_kijker
+-- en w_org_wedstrijden geven max_teams mee. Frontend toont "X/Y aangemeld" en
+-- een compleet-signaal richting de loting.
+-- =====================================================================
