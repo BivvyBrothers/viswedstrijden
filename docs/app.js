@@ -141,6 +141,8 @@ let SELECTIE = [];        // geselecteerde stekken (stekkeuze zonder zones)
 let SELECTIE_ZONE = null; // geselecteerde zone (stekkeuze met zones)
 let KLASSEMENT_MODE = 'totaal';
 let ADMIN_OPEN = false;
+let KIJKER = false;          // true = kijkersweergave (alleen klassement)
+let ORG_POLL = null;
 let BEKENDE_VANGSTEN = null; // Set van vangst-ids voor in-app meldingen
 
 const sessie = {
@@ -186,12 +188,21 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function route() {
-  const m = location.hash.match(/^#\/w\/([A-Za-z0-9]{4,8})/);
-  clearInterval(POLL); clearInterval(KLOKTIK);
-  if (m) {
-    CODE = m[1].toUpperCase();
+  const mW = location.hash.match(/^#\/w\/([A-Za-z0-9]{4,8})/);
+  const mK = location.hash.match(/^#\/k\/([A-Za-z0-9]{4,8})/);
+  clearInterval(POLL); clearInterval(KLOKTIK); clearInterval(ORG_POLL);
+  if (mW || mK) {
+    KIJKER = !!mK;
+    CODE = (mW || mK)[1].toUpperCase();
     $('#topcode').textContent = CODE;
     toonView('wedstrijd');
+    $('#tabs').hidden = KIJKER;
+    if (KIJKER) {
+      document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-klassement'; });
+    } else {
+      document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-kaart'; });
+      document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('actief', x.dataset.tab === 'kaart'));
+    }
     SELECTIE = []; SELECTIE_ZONE = null;
     ADMIN_OPEN = false;
     STATE = null;
@@ -199,8 +210,15 @@ function route() {
     laadState(true);
     POLL = setInterval(() => laadState(false), 6000);
     KLOKTIK = setInterval(tikKlok, 1000);
+  } else if (location.hash === '#/org') {
+    if (!sessie.orgWw()) { location.hash = ''; return; }
+    CODE = null; KIJKER = false;
+    $('#topcode').textContent = 'organisatie';
+    toonView('org');
+    laadOrg(true);
+    ORG_POLL = setInterval(() => laadOrg(false), 10000);
   } else {
-    CODE = null;
+    CODE = null; KIJKER = false;
     $('#topcode').textContent = '';
     toonView('home');
     renderRecente();
@@ -209,6 +227,7 @@ function route() {
 function toonView(naam) {
   $('#view-home').hidden = naam !== 'home';
   $('#view-wedstrijd').hidden = naam !== 'wedstrijd';
+  $('#view-org').hidden = naam !== 'org';
 }
 function activateTab(naam) {
   const b = document.querySelector(`#tabs button[data-tab=${naam}]`);
@@ -224,34 +243,46 @@ function initHome() {
   const eind = new Date(morgen); eind.setHours(17, 0, 0, 0);
   eindVeld.value = naarLocalInput(eind.toISOString());
 
-  $('#form-open').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const code = $('#open-code').value.trim().toUpperCase();
-    if (code) location.hash = '#/w/' + code;
+  // rolknoppen: klap het bijbehorende invoerveld uit
+  document.querySelectorAll('.rolknop').forEach((k) => {
+    k.addEventListener('click', () => {
+      document.querySelectorAll('.rolknop').forEach((x) => x.classList.toggle('actief', x === k));
+      $('#form-deelnemer').hidden = k.dataset.rol !== 'deelnemer';
+      $('#form-kijker').hidden = k.dataset.rol !== 'kijker';
+      $('#form-orglogin').hidden = k.dataset.rol !== 'org';
+      const veld = { deelnemer: '#deelnemer-code', kijker: '#kijker-code', org: '#org-ww' }[k.dataset.rol];
+      $(veld)?.focus();
+    });
   });
 
-  // organisatie-gate: nieuwe wedstrijden alleen met het organisatie-wachtwoord
-  const toonNieuwForm = (check) => {
-    $('#org-gate').hidden = true;
-    $('#form-nieuw').hidden = false;
-    $('#org-zones-card').hidden = false;
-    if (check && $('#org-zones').value.trim() === '') {
-      $('#org-zones').value = zonesNaarTekst(check.standaard_zones);
-    }
-  };
-  $('#form-org').addEventListener('submit', async (e) => {
+  $('#form-deelnemer').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const code = $('#deelnemer-code').value.trim().toUpperCase();
+    if (code) location.hash = '#/w/' + code;
+  });
+  $('#form-kijker').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const code = $('#kijker-code').value.trim().toUpperCase();
+    if (code) location.hash = '#/k/' + code;
+  });
+  $('#form-orglogin').addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#org-fout'); foutEl.hidden = true;
     const ww = $('#org-ww').value.trim();
     try {
       const check = await rpc('w_org_check', { p_wachtwoord: ww });
       sessie.zetOrgWw(ww);
-      toonNieuwForm(check);
+      if ($('#org-zones').value.trim() === '') {
+        $('#org-zones').value = zonesNaarTekst(check.standaard_zones);
+      }
+      location.hash = '#/org';
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
-  if (sessie.orgWw()) {
-    rpc('w_org_check', { p_wachtwoord: sessie.orgWw() }).then(toonNieuwForm).catch(() => {});
-  }
+
+  $('#org-uitloggen').addEventListener('click', () => {
+    sessionStorage.removeItem('orgww');
+    location.hash = '';
+  });
 
   $('#org-zones-opslaan').addEventListener('click', async () => {
     const foutEl = $('#org-zones-fout'), okEl = $('#org-zones-ok');
@@ -298,14 +329,16 @@ function renderRecente() {
 async function laadState(eerste) {
   if (!CODE) return;
   try {
-    const s = await rpc('w_get_state', { p_code: CODE });
+    const s = KIJKER
+      ? await rpc('w_get_state_kijker', { p_kijk_code: CODE })
+      : await rpc('w_get_state', { p_code: CODE });
     if (!s?.wedstrijd) { toonNietGevonden(); return; }
     STATE = s;
     TIJD_OFFSET = new Date(s.server_now).getTime() - Date.now();
-    if (eerste) sessie.zetRecent(CODE, s.wedstrijd.naam);
+    if (eerste && !KIJKER) sessie.zetRecent(CODE, s.wedstrijd.naam);
     meldNieuweVangsten();
     renderAlles(eerste);
-    if (eerste && !sessie.team(CODE) && s.wedstrijd.status === 'aanmelden') {
+    if (eerste && !KIJKER && !sessie.team(CODE) && s.wedstrijd.status === 'aanmelden') {
       // deelnemer met een gedeelde link start bij het invoeren van eigen gegevens
       activateTab('team');
     }
@@ -337,13 +370,82 @@ function meldNieuweVangsten() {
 function renderAlles(eerste) {
   renderKop();
   tikKlok();
+  renderKlassement();
+  renderPushKnop();
+  if (KIJKER) return; // kijkers zien alleen klok + klassement + meldingen
   renderKaart();
   renderLoting();
-  renderKlassement();
   renderVangsten();
   renderTeamTab();
-  renderPushKnop();
   renderBeheer(eerste);
+}
+
+/* ---------- organisatie-omgeving ---------- */
+let ORG_DATA = null;
+
+async function laadOrg(eerste) {
+  try {
+    const res = await rpc('w_org_wedstrijden', { p_wachtwoord: sessie.orgWw() || '' });
+    if (!res) { sessionStorage.removeItem('orgww'); location.hash = ''; return; }
+    ORG_DATA = res;
+    renderOrg();
+  } catch { if (eerste) location.hash = ''; }
+}
+
+function orgWedstrijdKaart(w, nuMs) {
+  const actief = new Date(w.eind_ts).getTime() >= nuMs;
+  const live = actief && new Date(w.start_ts).getTime() <= nuMs;
+  const statusTekst = live ? '● LIVE'
+    : !actief ? 'afgelopen'
+    : w.status === 'aanmelden' ? `aanmelden open · ${w.teams} aanmelding${w.teams === 1 ? '' : 'en'}`
+    : w.status === 'stekkeuze' ? 'loting/stekkeuze bezig'
+    : 'wacht op start';
+  return `<div class="org-w">
+    <div class="org-w-kop">
+      <b>${esc(w.naam)}</b>
+      <span class="chip${live ? ' live' : ''}${!actief ? ' voorbij' : ''}">${esc(statusTekst)}</span>
+    </div>
+    <div class="muted klein">${fmtDatumTijd(w.start_ts)} tot ${fmtDatumTijd(w.eind_ts)} ·
+      ${w.mode === 'koppel' ? 'koppels' : 'individueel'}${w.heeft_zones ? ' · zones' : ''} ·
+      ${w.teams} team${w.teams === 1 ? '' : 's'} · ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'}</div>
+    <div class="org-codes muted klein">deelnemerscode <b class="codegroot klein-code">${esc(w.code)}</b>
+      · kijkcode <b class="codegroot klein-code">${esc(w.kijk_code)}</b></div>
+    <div class="row org-acties">
+      <button class="btn primary" data-org-open="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">Openen &amp; beheren</button>
+      ${w.status === 'aanmelden' && actief ? `<button class="btn" data-org-loting="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">🎲 Start loting</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderOrg() {
+  if (!ORG_DATA) return;
+  const nuMs = new Date(ORG_DATA.server_now).getTime();
+  const alle = ORG_DATA.wedstrijden || [];
+  const actief = alle.filter((w) => new Date(w.eind_ts).getTime() >= nuMs);
+  const voorbij = alle.filter((w) => new Date(w.eind_ts).getTime() < nuMs);
+  $('#org-actief').innerHTML = actief.length
+    ? actief.map((w) => orgWedstrijdKaart(w, nuMs)).join('')
+    : '<p class="muted">Geen actieve wedstrijden. Maak er hieronder een aan.</p>';
+  $('#org-verleden').innerHTML = voorbij.length
+    ? voorbij.map((w) => orgWedstrijdKaart(w, nuMs)).join('')
+    : '<p class="muted">Nog geen afgeronde wedstrijden.</p>';
+
+  document.querySelectorAll('[data-org-open]').forEach((b) => {
+    b.onclick = () => {
+      sessie.zetPin(b.dataset.orgOpen, b.dataset.pin);
+      location.hash = '#/w/' + b.dataset.orgOpen;
+    };
+  });
+  document.querySelectorAll('[data-org-loting]').forEach((b) => {
+    b.onclick = async () => {
+      if (!confirm('Loting starten? Daarna kunnen er geen deelnemers meer bij.')) return;
+      try {
+        await rpc('w_start_stekkeuze', { p_code: b.dataset.orgLoting, p_pin: b.dataset.pin });
+        sessie.zetPin(b.dataset.orgLoting, b.dataset.pin);
+        location.hash = '#/w/' + b.dataset.orgLoting;
+      } catch (err) { alert(foutTekst(err)); }
+    };
+  });
 }
 
 /* ---------- kop + klok ---------- */
@@ -549,11 +651,16 @@ function renderKlassement() {
   const rangKlas = (i) => 'rank' + (i === 0 ? ' goud' : i === 1 ? ' zilver' : i === 2 ? ' brons' : '');
   if (KLASSEMENT_MODE === 'totaal') {
     rijen.sort((a, b) => b.totaal - a.totaal || b.aantal - a.aantal);
+    const vissenVan = (teamId) => STATE.vangsten
+      .filter((v) => v.team_id === teamId)
+      .slice().reverse()
+      .map((v) => (v.gewicht_gram / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     el.innerHTML = `<table class="klassement">
       <tr><th>#</th><th>Team</th><th class="r">Vissen</th><th class="r">Totaal</th></tr>
       ${rijen.map((r, i) => `<tr>
         <td class="${rangKlas(i)}">${i + 1}</td>
-        <td>${teamNaamHtml(r.team)} <span class="muted klein">${esc(plek(r.team))}</span></td>
+        <td>${teamNaamHtml(r.team)} <span class="muted klein">${esc(plek(r.team))}</span>
+          <div class="opbouw">${vissenVan(r.team.id).join(' + ')} kg</div></td>
         <td class="r">${r.aantal}</td>
         <td class="r"><b>${fmtKg(r.totaal)}</b></td>
       </tr>`).join('')}
@@ -587,7 +694,7 @@ function renderVangsten() {
       <div class="info">
         <div class="gewicht">${fmtKg(v.gewicht_gram)}</div>
         <div class="wie">${t ? teamNaamHtml(t) : 'onbekend'}</div>
-        <div class="tijd">${fmtTijd(v.created_at)}</div>
+        <div class="tijd">${fmtDatumTijd(v.created_at)}</div>
       </div>
     </div>`;
   }).join('');
@@ -801,7 +908,7 @@ function renderTeamTab() {
       <img src="${esc(fotoUrl(v.foto_path))}" alt="vangst" data-groot="${esc(fotoUrl(v.foto_path))}" loading="lazy">
       <div class="info">
         <div class="gewicht">${fmtKg(v.gewicht_gram)}</div>
-        <div class="tijd">${fmtTijd(v.created_at)}</div>
+        <div class="tijd">${fmtDatumTijd(v.created_at)}</div>
       </div>
     </div>`).join('') +
     '<p class="muted klein">Fout gemaakt? Alleen de organisator kan een vangst aanpassen of verwijderen.</p>';
@@ -950,7 +1057,7 @@ async function renderBeheer(magPrefill) {
   $('#b-vangsten').innerHTML = STATE.vangsten.length ? STATE.vangsten.map((v) => `
     <div class="b-rij">
       <img class="thumb" src="${esc(fotoUrl(v.foto_path))}" data-groot="${esc(fotoUrl(v.foto_path))}" alt="">
-      <span class="naam">${teamsBijId.get(v.team_id) ? teamNaamHtml(teamsBijId.get(v.team_id)) : '?'} · ${fmtTijd(v.created_at)}</span>
+      <span class="naam">${teamsBijId.get(v.team_id) ? teamNaamHtml(teamsBijId.get(v.team_id)) : '?'} · ${fmtDatumTijd(v.created_at)}</span>
       <input class="gewicht-edit" value="${(v.gewicht_gram / 1000).toFixed(2).replace('.', ',')}" data-vangst="${v.id}">
       <button class="btn klein-btn" data-vangst-opslaan="${v.id}">opslaan</button>
       <button class="btn gevaar klein-btn" data-vangst-weg="${v.id}">verwijder</button>

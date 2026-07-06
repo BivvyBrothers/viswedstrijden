@@ -223,3 +223,26 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 }
 .toast[hidden] { display: none; }
 .leden { color: var(--grijs); font-weight: 400; font-size: 13px; }
+
+/* rolkeuze op de homepagina */
+.rolknoppen { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.rolknop {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 16px 18px; border: 2px solid var(--zand-donker); border-radius: 14px;
+  background: #fff; cursor: pointer; font-size: 17px; text-align: left;
+}
+.rolknop b { color: var(--blauw-donker); }
+.rolknop span { margin-left: auto; color: var(--grijs); font-size: 13px; text-align: right; }
+.rolknop.actief { border-color: var(--blauw); background: var(--blauw-licht); }
+.rolform { margin-top: 4px; }
+
+/* organisatie-omgeving */
+.org-w { border: 1.5px solid var(--zand-donker); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.org-w-kop { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.org-codes { margin: 6px 0; }
+.klein-code { font-size: 14px; letter-spacing: 2px; }
+.org-acties { margin-top: 8px; flex-wrap: wrap; }
+.org-acties .btn { flex: 0 1 auto; }
+
+/* opbouw totaalgewicht per vis */
+.opbouw { color: var(--grijs); font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }

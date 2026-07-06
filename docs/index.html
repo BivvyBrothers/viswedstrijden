@@ -30,27 +30,60 @@
   </section>
 
   <section class="card">
-    <h2>Meedoen of meekijken</h2>
-    <p class="muted">Vul de wedstrijdcode in die je van de organisator hebt gekregen.</p>
-    <form id="form-open" class="row">
-      <input id="open-code" type="text" placeholder="bijv. K7X2M4" maxlength="6" autocapitalize="characters" autocomplete="off" required>
-      <button type="submit" class="btn primary">Openen</button>
+    <h2>Inloggen</h2>
+    <div class="rolknoppen">
+      <button class="rolknop" data-rol="deelnemer">🎣 <b>Deelnemer</b><span>meedoen met een wedstrijd</span></button>
+      <button class="rolknop" data-rol="kijker">📺 <b>Kijker</b><span>klassement live volgen</span></button>
+      <button class="rolknop" data-rol="org">🛠️ <b>Organisator</b><span>wedstrijden beheren</span></button>
+    </div>
+
+    <form id="form-deelnemer" class="rolform" hidden>
+      <p class="muted klein">Vul de deelnemerscode in die je van de organisator hebt gekregen.</p>
+      <div class="row">
+        <input id="deelnemer-code" type="text" placeholder="bijv. K7X2M4" maxlength="6" autocapitalize="characters" autocomplete="off" required>
+        <button type="submit" class="btn primary">Meedoen</button>
+      </div>
     </form>
-    <p id="open-fout" class="fout" hidden></p>
+
+    <form id="form-kijker" class="rolform" hidden>
+      <p class="muted klein">Vul de kijkcode in om het klassement live te volgen (met meldingen bij nieuwe vangsten).</p>
+      <div class="row">
+        <input id="kijker-code" type="text" placeholder="kijkcode" maxlength="6" autocapitalize="characters" autocomplete="off" required>
+        <button type="submit" class="btn primary">Volgen</button>
+      </div>
+    </form>
+
+    <form id="form-orglogin" class="rolform" hidden>
+      <p class="muted klein">Alleen voor de organisatie.</p>
+      <div class="row">
+        <input id="org-ww" type="password" placeholder="organisatie-wachtwoord" autocomplete="off" required>
+        <button type="submit" class="btn primary">Inloggen</button>
+      </div>
+      <p id="org-fout" class="fout" hidden></p>
+    </form>
+
     <div id="recente" class="recente"></div>
+  </section>
+</main>
+
+<!-- ============ ORGANISATIE ============ -->
+<main id="view-org" class="container" hidden>
+  <section class="card">
+    <div class="w-kop" style="justify-content:space-between">
+      <h1>🛠️ Organisatie</h1>
+      <button id="org-uitloggen" class="btn klein-btn">uitloggen</button>
+    </div>
+    <p class="muted klein">Deel per wedstrijd de <b>deelnemerscode</b> met de vissers en de <b>kijkcode</b> met iedereen die mag meekijken.</p>
   </section>
 
   <section class="card">
-    <h2>Nieuwe wedstrijd <span class="muted">(alleen organisatie)</span></h2>
-    <div id="org-gate">
-      <p class="muted">Dit onderdeel is alleen voor organisatoren. Voer het organisatie-wachtwoord in.</p>
-      <form id="form-org" class="row">
-        <input id="org-ww" type="password" placeholder="organisatie-wachtwoord" autocomplete="off" required>
-        <button type="submit" class="btn">Ontgrendel</button>
-      </form>
-      <p id="org-fout" class="fout" hidden></p>
-    </div>
-    <form id="form-nieuw" class="stack" hidden>
+    <h2>Actieve wedstrijden</h2>
+    <div id="org-actief"></div>
+  </section>
+
+  <section class="card">
+    <h2>Nieuwe wedstrijd</h2>
+    <form id="form-nieuw" class="stack">
       <label>Naam van de wedstrijd
         <input id="nw-naam" type="text" maxlength="60" placeholder="bijv. Voorjaarswedstrijd 2027" required>
       </label>
@@ -68,7 +101,7 @@
           <input id="nw-eind" type="datetime-local" required>
         </label>
       </div>
-      <label>Pincode organisator <span class="muted">(min. 4 tekens, onthoud deze goed)</span>
+      <label>Pincode wedstrijdleider <span class="muted">(min. 4 tekens, voor het beheer van deze wedstrijd)</span>
         <input id="nw-pin" type="text" minlength="4" maxlength="20" autocomplete="off" required>
       </label>
       <button type="submit" class="btn primary">Wedstrijd aanmaken</button>
@@ -76,7 +109,7 @@
     </form>
   </section>
 
-  <section class="card" id="org-zones-card" hidden>
+  <section class="card" id="org-zones-card">
     <h2>Vaste zone-indeling van de plas</h2>
     <p class="muted klein">Deze indeling geldt automatisch voor elke nieuwe wedstrijd.
     Eén regel per zone, formaat <b>Naam: steknummers</b>, bijv. <b>Zone A: 20-30</b> of <b>B: 55</b>
@@ -85,6 +118,11 @@
     <button id="org-zones-opslaan" class="btn primary">Vaste indeling opslaan</button>
     <p id="org-zones-fout" class="fout" hidden></p>
     <p id="org-zones-ok" class="ok" hidden></p>
+  </section>
+
+  <section class="card">
+    <h2>Eerdere wedstrijden</h2>
+    <div id="org-verleden"></div>
   </section>
 </main>
 
