@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 12; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 13; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -226,6 +226,11 @@ const zoneLabel = (naam) => /^zone/i.test(String(naam).trim()) ? String(naam).tr
 window.addEventListener('hashchange', route);
 window.addEventListener('DOMContentLoaded', () => {
   localStorage.removeItem('recente'); // opruiming: Recent-sectie is vervallen
+  $('#btn-terug').addEventListener('click', () => {
+    // organisator in een wedstrijd -> terug naar het organisatie-overzicht; anders naar het inlogscherm
+    if (CODE && ROL === 'organisator' && sessie.orgWw()) location.hash = '#/org';
+    else location.hash = '';
+  });
   initHome(); initWedstrijd(); route();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   checkVersie();
@@ -281,6 +286,7 @@ function toonView(naam) {
   $('#view-home').hidden = naam !== 'home';
   $('#view-wedstrijd').hidden = naam !== 'wedstrijd';
   $('#view-org').hidden = naam !== 'org';
+  $('#btn-terug').hidden = naam === 'home';
 }
 function activateTab(naam) {
   const b = document.querySelector(`#tabs button[data-tab=${naam}]`);

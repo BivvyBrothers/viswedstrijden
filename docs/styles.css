@@ -256,3 +256,12 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
   list-style-position: inside;
 }
 .regels-tekst { white-space: pre-wrap; margin-top: 10px; line-height: 1.55; }
+
+.terug-knop {
+  background: rgba(255,255,255,.14); border: none; color: #fff;
+  width: 36px; height: 36px; min-height: 36px; border-radius: 10px;
+  font-size: 26px; line-height: 1; padding: 0 0 3px 0; cursor: pointer;
+  margin-right: 10px; flex: 0 0 auto;
+}
+.terug-knop[hidden] { display: none; }
+.topbar .brand { margin-right: auto; }
