@@ -121,6 +121,26 @@ async function compressFoto(file, maxDim = 1400, kwaliteit = 0.8) {
   return new Promise((res, rej) => c.toBlob((b) => b ? res(b) : rej(new Error('ongeldige_foto')), 'image/jpeg', kwaliteit));
 }
 
+// confirm()/alert() worden in iOS-beginscherm-apps stilletjes geblokkeerd;
+// daarom: eerste tik zet de knop op scherp, tweede tik binnen 5s voert uit.
+function tikNogmaals(knop, waarschuwing, actie) {
+  if (knop.dataset.scherp) {
+    delete knop.dataset.scherp;
+    knop.textContent = knop.dataset.orig;
+    actie();
+    return;
+  }
+  knop.dataset.scherp = '1';
+  knop.dataset.orig = knop.textContent;
+  knop.textContent = waarschuwing;
+  setTimeout(() => {
+    if (knop.dataset.scherp) {
+      delete knop.dataset.scherp;
+      knop.textContent = knop.dataset.orig;
+    }
+  }, 5000);
+}
+
 let toastTimer = null;
 function toast(tekst) {
   const el = $('#toast');
@@ -476,14 +496,13 @@ function renderOrg() {
     };
   });
   document.querySelectorAll('[data-org-loting]').forEach((b) => {
-    b.onclick = async () => {
-      if (!confirm('Loting starten? Daarna kunnen er geen deelnemers meer bij.')) return;
+    b.onclick = () => tikNogmaals(b, '⚠️ Tik nogmaals: loting starten', async () => {
       try {
         await rpc('w_start_stekkeuze', { p_code: b.dataset.orgLoting, p_pin: b.dataset.pin });
         sessie.zetPin(b.dataset.orgLoting, b.dataset.pin);
         location.hash = '#/w/' + b.dataset.orgLoting;
-      } catch (err) { alert(foutTekst(err)); }
-    };
+      } catch (err) { toast(foutTekst(err)); }
+    });
   });
 }
 
@@ -833,7 +852,7 @@ function initWedstrijd() {
       SELECTIE = []; SELECTIE_ZONE = null;
       await laadState(false);
     } catch (err) {
-      alert(foutTekst(err));
+      toast(foutTekst(err));
       await laadState(false);
     }
   });
@@ -957,14 +976,10 @@ function renderTeamTab() {
 
 /* ---------- beheer ---------- */
 function initBeheerKnoppen() {
-  $('#b-loting').addEventListener('click', async () => {
-    if (!confirm('Loting starten? Daarna kunnen er geen deelnemers meer bij en staan de zones vast.')) return;
-    await beheerActie('w_start_stekkeuze', {});
-  });
-  $('#b-reset').addEventListener('click', async () => {
-    if (!confirm('Loting en alle keuzes wissen? Alle deelnemers moeten dan opnieuw loten.')) return;
-    await beheerActie('w_admin_reset_loting', {});
-  });
+  $('#b-loting').addEventListener('click', () =>
+    tikNogmaals($('#b-loting'), '⚠️ Tik nogmaals: loting starten', () => beheerActie('w_start_stekkeuze', {})));
+  $('#b-reset').addEventListener('click', () =>
+    tikNogmaals($('#b-reset'), '⚠️ Tik nogmaals: alles wissen', () => beheerActie('w_admin_reset_loting', {})));
   $('#b-tijden').addEventListener('click', async () => {
     await beheerActie('w_admin_tijden', {
       p_start: new Date($('#b-start').value).toISOString(),
@@ -1072,10 +1087,7 @@ async function renderBeheer(magPrefill) {
       ${w.status === 'aanmelden' ? `<button class="btn gevaar klein-btn" data-team-weg="${t.id}">verwijder</button>` : ''}
     </div>`).join('') : '<p class="muted">Nog geen deelnemers.</p>';
   $('#b-teams').querySelectorAll('[data-team-weg]').forEach((b) => {
-    b.onclick = async () => {
-      if (!confirm('Deelnemer verwijderen?')) return;
-      await beheerActie('w_admin_verwijder_team', { p_team_id: b.dataset.teamWeg });
-    };
+    b.onclick = () => tikNogmaals(b, 'zeker?', () => beheerActie('w_admin_verwijder_team', { p_team_id: b.dataset.teamWeg }));
   });
 
   const teamsBijId = new Map(STATE.teams.map((t) => [t.id, t]));
@@ -1091,14 +1103,11 @@ async function renderBeheer(magPrefill) {
     b.onclick = async () => {
       const veld = $('#b-vangsten').querySelector(`input[data-vangst="${b.dataset.vangstOpslaan}"]`);
       const gram = parseGewicht(veld.value);
-      if (!gram) { alert('Ongeldig gewicht.'); return; }
+      if (!gram) { toast('Ongeldig gewicht.'); return; }
       await beheerActie('w_admin_vangst', { p_vangst_id: b.dataset.vangstOpslaan, p_gewicht_gram: gram });
     };
   });
   $('#b-vangsten').querySelectorAll('[data-vangst-weg]').forEach((b) => {
-    b.onclick = async () => {
-      if (!confirm('Vangst verwijderen van het klassement?')) return;
-      await beheerActie('w_admin_vangst', { p_vangst_id: b.dataset.vangstWeg, p_verwijder: true });
-    };
+    b.onclick = () => tikNogmaals(b, 'zeker?', () => beheerActie('w_admin_vangst', { p_vangst_id: b.dataset.vangstWeg, p_verwijder: true }));
   });
 }
