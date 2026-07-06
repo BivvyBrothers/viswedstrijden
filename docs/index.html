@@ -38,9 +38,10 @@
     </div>
 
     <form id="form-deelnemer" class="rolform" hidden>
-      <p class="muted klein">Vul de deelnemerscode in die je van de organisator hebt gekregen.</p>
+      <p class="muted klein">Nieuw? Vul de wedstrijdcode van de organisator in.
+      Al aangemeld? Vul je persoonlijke code in en je gaat verder onder je eigen naam.</p>
       <div class="row">
-        <input id="deelnemer-code" type="text" placeholder="bijv. K7X2M4" maxlength="6" autocapitalize="characters" autocomplete="off" required>
+        <input id="deelnemer-code" type="text" placeholder="wedstrijd- of persoonlijke code" maxlength="6" autocapitalize="characters" autocomplete="off" required>
         <button type="submit" class="btn primary">Meedoen</button>
       </div>
     </form>
@@ -206,9 +207,10 @@
     <div class="card" id="team-card" hidden>
       <h2 id="team-titel"></h2>
       <p id="team-info" class="muted"></p>
-      <p class="muted klein">💾 Raak je je deelname kwijt (uitgelogd, ander toestel)? Met je persoonlijke
-      herstel-link log je overal weer in onder je eigen naam. Bewaar hem op een veilige plek.</p>
-      <button id="btn-herstel" class="btn klein-btn">🔑 Kopieer mijn herstel-link</button>
+      <p class="muted klein">🔑 Jouw persoonlijke inlogcode (bewaar hem goed; hiermee log je op
+      elk toestel weer in onder je eigen naam, ook in de beginscherm-app):</p>
+      <p><b id="team-code" class="codegroot"></b>
+      <button id="btn-herstel" class="btn klein-btn">kopieer</button></p>
     </div>
 
     <div class="card" id="registreer-card" hidden>

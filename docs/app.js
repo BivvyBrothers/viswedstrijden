@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 7; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 8; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -330,10 +330,21 @@ function initHome() {
     });
   });
 
-  $('#form-deelnemer').addEventListener('submit', (e) => {
+  $('#form-deelnemer').addEventListener('submit', async (e) => {
     e.preventDefault();
     const code = $('#deelnemer-code').value.trim().toUpperCase();
-    if (code) location.hash = '#/w/' + code;
+    if (!code) return;
+    try {
+      const login = await rpc('w_login_deelnemer', { p_code: code });
+      if (login) {
+        sessie.zetTeam(login.wedstrijd_code, {
+          id: login.team_id, token: login.token, naam: login.naam, code: login.deelnemer_code,
+        });
+        location.hash = '#/w/' + login.wedstrijd_code;
+        return;
+      }
+    } catch { /* geen persoonlijke code: probeer als wedstrijdcode */ }
+    location.hash = '#/w/' + code;
   });
   $('#form-kijker').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -907,7 +918,8 @@ function initWedstrijd() {
         p_naam2: $('#join-naam2').value.trim() || null,
         p_team_naam: $('#join-teamnaam').value.trim() || null,
       });
-      sessie.zetTeam(CODE, { id: res.team_id, token: res.token, naam: $('#join-naam').value.trim() });
+      sessie.zetTeam(CODE, { id: res.team_id, token: res.token, naam: $('#join-naam').value.trim(), code: res.deelnemer_code });
+      if (res.deelnemer_code) toast(`🔑 Bewaar je persoonlijke inlogcode: ${res.deelnemer_code}`);
       await laadState(false);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
@@ -962,12 +974,11 @@ function initWedstrijd() {
   });
 
   $('#btn-herstel').addEventListener('click', async () => {
-    const t = sessie.team(CODE);
-    if (!t) return;
-    const link = location.origin + location.pathname + '#/w/' + CODE + '?t=' + t.token;
-    const ok = await kopieerTekst(link);
-    $('#btn-herstel').textContent = ok ? '✅ Gekopieerd! Bewaar hem goed' : 'Kopiëren mislukt';
-    setTimeout(() => { $('#btn-herstel').textContent = '🔑 Kopieer mijn herstel-link'; }, 3000);
+    const code = $('#team-code').textContent;
+    if (!code || code === '…') return;
+    const ok = await kopieerTekst(code);
+    $('#btn-herstel').textContent = ok ? '✅ gekopieerd' : 'kopiëren mislukt';
+    setTimeout(() => { $('#btn-herstel').textContent = 'kopieer'; }, 2500);
   });
 
   initBeheerKnoppen();
@@ -1010,6 +1021,17 @@ function renderTeamTab() {
   joinCard.hidden = true;
   teamCard.hidden = false;
   $('#team-titel').textContent = teamNaam(mijn);
+  if (t.code) {
+    $('#team-code').textContent = t.code;
+  } else {
+    $('#team-code').textContent = '…';
+    rpc('w_mijn_team', { p_code: CODE, p_token: t.token }).then((mt) => {
+      if (mt && mt.deelnemer_code) {
+        sessie.zetTeam(CODE, { ...t, code: mt.deelnemer_code });
+        $('#team-code').textContent = mt.deelnemer_code;
+      }
+    }).catch(() => {});
+  }
   const plek = mijn.zone ? `Jullie plek: ${zoneLabel(mijn.zone)} (stek ${(mijn.stekken || []).join(', ')})`
     : (mijn.stekken || []).length ? `Jouw stek: ${mijn.stekken.join(' + ')}` :
     (w.status === 'stekkeuze' ? `Lotnummer ${mijn.lot_nummer}. Kies op de kaart zodra je aan de beurt bent.` :
@@ -1170,19 +1192,15 @@ async function renderBeheer(magPrefill) {
     <div class="b-rij">
       <span class="naam">${teamNaamHtml(t)}</span>
       <span class="muted klein">${t.lot_nummer ? 'lot ' + t.lot_nummer : ''} ${t.zone ? '· ' + esc(zoneLabel(t.zone)) : (t.stekken || []).length ? '· stek ' + t.stekken.join('+') : ''}</span>
-      <button class="btn klein-btn" data-team-link="${t.id}">🔑 herstel-link</button>
+      <span class="muted klein">🔑 <b class="codegroot klein-code" data-team-code="${t.id}">·····</b></span>
       ${w.status === 'aanmelden' ? `<button class="btn gevaar klein-btn" data-team-weg="${t.id}">verwijder</button>` : ''}
     </div>`).join('') : '<p class="muted">Nog geen deelnemers.</p>';
-  $('#b-teams').querySelectorAll('[data-team-link]').forEach((b) => {
-    b.onclick = async () => {
-      try {
-        const r = await rpc('w_admin_teamlink', { p_code: CODE, p_pin: sessie.pin(CODE), p_team_id: b.dataset.teamLink });
-        const link = location.origin + location.pathname + '#/w/' + CODE + '?t=' + r.token;
-        const ok = await kopieerTekst(link);
-        toast(ok ? 'Herstel-link gekopieerd: stuur hem naar de deelnemer.' : 'Kopiëren mislukt.');
-      } catch (err) { toast(foutTekst(err)); }
-    };
-  });
+  rpc('w_admin_teamcodes', { p_code: CODE, p_pin: sessie.pin(CODE) }).then((codes) => {
+    for (const c of codes || []) {
+      const el = $('#b-teams').querySelector(`[data-team-code="${c.team_id}"]`);
+      if (el) el.textContent = c.deelnemer_code;
+    }
+  }).catch(() => {});
   $('#b-teams').querySelectorAll('[data-team-weg]').forEach((b) => {
     b.onclick = () => tikNogmaals(b, 'zeker?', () => beheerActie('w_admin_verwijder_team', { p_team_id: b.dataset.teamWeg }));
   });
