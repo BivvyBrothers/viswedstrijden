@@ -96,6 +96,9 @@
       <label>Maximaal aantal deelnemers <span class="muted">(optioneel; bij koppels telt een koppel als 1)</span>
         <input id="nw-max" type="number" inputmode="numeric" min="2" max="200" placeholder="onbeperkt">
       </label>
+      <label>Wedstrijdregels <span class="muted">(optioneel; deelnemers zien dit na het inloggen)</span>
+        <textarea id="nw-regels" rows="5" maxlength="3000" placeholder="bijv.&#10;- Maximaal 2 hengels per visser&#10;- Onthaakmat en schepnet verplicht&#10;- Alleen karper telt mee&#10;- Vis direct terugzetten na weging en foto"></textarea>
+      </label>
       <div class="row2">
         <label>Start
           <input id="nw-start" type="datetime-local" required>
@@ -141,6 +144,11 @@
       <span id="push-tip" class="muted klein" hidden></span>
     </div>
   </section>
+
+  <details class="card regels-card" id="regels-card" hidden>
+    <summary>📋 Wedstrijdregels</summary>
+    <div id="regels-tekst" class="regels-tekst"></div>
+  </details>
 
   <nav class="tabs" id="tabs">
     <button data-tab="kaart" class="actief">Kaart</button>
@@ -263,6 +271,13 @@
         <button id="b-zones-opslaan" class="btn">Zones opslaan</button>
         <p id="b-zones-fout" class="fout" hidden></p>
         <p id="b-zones-ok" class="ok" hidden></p>
+      </div>
+      <div class="card">
+        <h2>Wedstrijdregels</h2>
+        <p class="muted klein">Deelnemers en kijkers zien dit als uitklapbaar blok onder de klok. Leeg = geen regels-blok.</p>
+        <textarea id="b-regels" rows="5" maxlength="3000" placeholder="bijv. Maximaal 2 hengels per visser"></textarea>
+        <button id="b-regels-opslaan" class="btn">Regels opslaan</button>
+        <p id="b-regels-ok" class="ok" hidden></p>
       </div>
       <div class="card">
         <h2>Loting</h2>

@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 10; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 11; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -17,6 +17,7 @@ const FOUTEN = {
   naam_bestaat_al: 'Deze naam is al aangemeld. Ben jij dat en wil je verder onder deze naam? Gebruik dan je herstel-link, of vraag de organisator die voor je op te zoeken in Beheer.',
   wedstrijd_vol: 'De wedstrijd zit vol: het maximale aantal deelnemers is bereikt.',
   ongeldig_maximum: 'Het maximum moet tussen 2 en 200 liggen.',
+  regels_te_lang: 'De wedstrijdregels zijn te lang (max. 3000 tekens).',
   pin_onjuist: 'Pincode onjuist.',
   pin_te_kort: 'Pincode moet minimaal 4 tekens zijn.',
   org_wachtwoord_onjuist: 'Organisatie-wachtwoord onjuist.',
@@ -402,6 +403,7 @@ function initHome() {
         p_eind: new Date(eindVeld.value).toISOString(),
         p_org_wachtwoord: sessie.orgWw() || '',
         p_max_teams: $('#nw-max').value ? parseInt($('#nw-max').value, 10) : null,
+        p_regels: $('#nw-regels').value.trim() || null,
       });
       sessie.zetPin(res.code, res.pin);
       location.hash = '#/w/' + res.code;
@@ -554,6 +556,9 @@ function renderOrg() {
 function renderKop() {
   const w = STATE.wedstrijd;
   $('#w-naam').textContent = w.naam;
+  const regelsCard = $('#regels-card');
+  regelsCard.hidden = !w.regels;
+  if (w.regels) $('#regels-tekst').textContent = w.regels;
   $('#w-tijden').textContent =
     `${fmtDatumTijd(w.start_ts)} tot ${fmtDatumTijd(w.eind_ts)}` +
     (w.mode === 'koppel' ? ' · koppelwedstrijd' : ' · individueel') +
@@ -1080,6 +1085,16 @@ function initBeheerKnoppen() {
     setTimeout(() => { $('#b-kopieer').textContent = 'kopieer'; }, 2000);
   });
 
+  $('#b-regels-opslaan').addEventListener('click', async () => {
+    const okEl = $('#b-regels-ok'); okEl.hidden = true;
+    try {
+      await rpc('w_admin_regels', { p_code: CODE, p_pin: sessie.pin(CODE), p_regels: $('#b-regels').value });
+      okEl.textContent = $('#b-regels').value.trim() ? 'Regels opgeslagen.' : 'Regels verwijderd.';
+      okEl.hidden = false;
+      await laadState(false);
+    } catch (err) { toast(foutTekst(err)); }
+  });
+
   $('#b-zones-opslaan').addEventListener('click', async () => {
     const foutEl = $('#b-zones-fout'), okEl = $('#b-zones-ok');
     foutEl.hidden = true; okEl.hidden = true;
@@ -1181,6 +1196,11 @@ async function renderBeheer(magPrefill) {
     zonesEl.value = zonesNaarTekst(w.zones);
   }
   zonesEl.onfocus = () => { zonesEl.dataset.geraakt = '1'; };
+  const regelsEl = $('#b-regels');
+  if ((magPrefill || !regelsEl.dataset.geraakt) && document.activeElement !== regelsEl) {
+    regelsEl.value = w.regels || '';
+  }
+  regelsEl.onfocus = () => { regelsEl.dataset.geraakt = '1'; };
   const zonesDicht = w.status !== 'aanmelden';
   zonesEl.disabled = zonesDicht;
   $('#b-zones-opslaan').disabled = zonesDicht;
