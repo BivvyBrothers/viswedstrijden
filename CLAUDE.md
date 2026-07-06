@@ -46,6 +46,19 @@ vangstregistratie met foto, live klassement met aftelklok.
 - **Camo-thema:** kleurvariabelen in styles.css heten nog `--blauw-*` maar bevatten
   legergroen; kaartmarkers gebruiken bewust `--kaart-blauw` (leesbaar op het water).
 
+## v3: rollen (6 jul 2026)
+
+- **3 ingangen op de homepagina:** Deelnemer (deelnemerscode, `#/w/CODE`),
+  Kijker (kijkcode, `#/k/KIJKCODE`, ziet alleen klok + klassement + push),
+  Organisator (org-wachtwoord, `#/org`).
+- Elke wedstrijd heeft een **deelnemerscode** (`code`) en **kijkcode** (`kijk_code`),
+  uniek over beide kolommen (generator `wedstrijd.nieuwe_code()`).
+  `w_get_state_kijker` geeft de deelnemerscode bewust NIET terug.
+- **Organisatie-omgeving:** `w_org_wedstrijden(p_wachtwoord)` levert alles incl.
+  admin_pin per wedstrijd; "Openen & beheren" zet de pin in sessionStorage en
+  navigeert naar de wedstrijd (beheer-tab direct ontgrendeld).
+- Klassement (totaal) toont de opbouw per vis; vangsten tonen datum + tijd.
+
 ## Domeinbegrippen
 
 - **Stekken:** 96 stuks, nummers 1-100 waarbij **12-18 niet bestaan** (stuk oever
