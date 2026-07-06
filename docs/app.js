@@ -142,6 +142,7 @@ let SELECTIE_ZONE = null; // geselecteerde zone (stekkeuze met zones)
 let KLASSEMENT_MODE = 'totaal';
 let ADMIN_OPEN = false;
 let KIJKER = false;          // true = kijkersweergave (alleen klassement)
+let ROL = 'deelnemer';       // 'deelnemer' | 'kijker' | 'organisator' 
 let ORG_POLL = null;
 let BEKENDE_VANGSTEN = null; // Set van vangst-ids voor in-app meldingen
 
@@ -196,13 +197,8 @@ function route() {
     CODE = (mW || mK)[1].toUpperCase();
     $('#topcode').textContent = CODE;
     toonView('wedstrijd');
-    $('#tabs').hidden = KIJKER;
-    if (KIJKER) {
-      document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-klassement'; });
-    } else {
-      document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-kaart'; });
-      document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('actief', x.dataset.tab === 'kaart'));
-    }
+    ROL = KIJKER ? 'kijker' : 'deelnemer';
+    renderTabs();
     SELECTIE = []; SELECTIE_ZONE = null;
     ADMIN_OPEN = false;
     STATE = null;
@@ -232,6 +228,29 @@ function toonView(naam) {
 function activateTab(naam) {
   const b = document.querySelector(`#tabs button[data-tab=${naam}]`);
   if (b) b.click();
+}
+
+// welke tabs elke rol ziet
+const TABS_PER_ROL = {
+  kijker: ['klassement'],
+  deelnemer: ['kaart', 'klassement', 'vangsten', 'team'],
+  organisator: ['kaart', 'klassement', 'vangsten', 'beheer'],
+};
+function renderTabs() {
+  const zichtbaar = TABS_PER_ROL[ROL] || TABS_PER_ROL.deelnemer;
+  $('#tabs').hidden = ROL === 'kijker';
+  document.querySelectorAll('#tabs button').forEach((b) => {
+    b.hidden = !zichtbaar.includes(b.dataset.tab);
+  });
+  if (ROL === 'kijker') {
+    document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-klassement'; });
+    return;
+  }
+  const actief = document.querySelector('#tabs button.actief');
+  if (!actief || actief.hidden || !zichtbaar.includes(actief.dataset.tab)) {
+    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('actief', x.dataset.tab === zichtbaar[0]));
+    document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-' + zichtbaar[0]; });
+  }
 }
 
 /* ---------- home ---------- */
@@ -308,10 +327,9 @@ function initHome() {
         p_mode: $('#nw-mode').value,
         p_start: new Date(startVeld.value).toISOString(),
         p_eind: new Date(eindVeld.value).toISOString(),
-        p_pin: $('#nw-pin').value.trim(),
         p_org_wachtwoord: sessie.orgWw() || '',
       });
-      sessie.zetPin(res.code, $('#nw-pin').value.trim());
+      sessie.zetPin(res.code, res.pin);
       sessie.zetRecent(res.code, $('#nw-naam').value.trim());
       location.hash = '#/w/' + res.code;
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
@@ -336,9 +354,19 @@ async function laadState(eerste) {
     STATE = s;
     TIJD_OFFSET = new Date(s.server_now).getTime() - Date.now();
     if (eerste && !KIJKER) sessie.zetRecent(CODE, s.wedstrijd.naam);
+    if (eerste && !KIJKER) {
+      const pin = sessie.pin(CODE);
+      if (pin) {
+        try {
+          await rpc('w_admin_check', { p_code: CODE, p_pin: pin });
+          ROL = 'organisator'; ADMIN_OPEN = true;
+        } catch { sessionStorage.removeItem('pin:' + CODE); ROL = 'deelnemer'; }
+      } else { ROL = 'deelnemer'; }
+      renderTabs();
+    }
     meldNieuweVangsten();
     renderAlles(eerste);
-    if (eerste && !KIJKER && !sessie.team(CODE) && s.wedstrijd.status === 'aanmelden') {
+    if (eerste && ROL === 'deelnemer' && !sessie.team(CODE) && s.wedstrijd.status === 'aanmelden') {
       // deelnemer met een gedeelde link start bij het invoeren van eigen gegevens
       activateTab('team');
     }
@@ -372,12 +400,12 @@ function renderAlles(eerste) {
   tikKlok();
   renderKlassement();
   renderPushKnop();
-  if (KIJKER) return; // kijkers zien alleen klok + klassement + meldingen
+  if (ROL === 'kijker') return; // kijkers zien alleen klok + klassement + meldingen
   renderKaart();
   renderLoting();
   renderVangsten();
-  renderTeamTab();
-  renderBeheer(eerste);
+  if (ROL === 'deelnemer') renderTeamTab();
+  if (ROL === 'organisator') renderBeheer(eerste);
 }
 
 /* ---------- organisatie-omgeving ---------- */
@@ -916,18 +944,6 @@ function renderTeamTab() {
 
 /* ---------- beheer ---------- */
 function initBeheerKnoppen() {
-  $('#form-pin').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const pin = $('#pin-input').value.trim();
-    const foutEl = $('#pin-fout'); foutEl.hidden = true;
-    try {
-      await rpc('w_admin_check', { p_code: CODE, p_pin: pin });
-      sessie.zetPin(CODE, pin);
-      ADMIN_OPEN = true;
-      renderBeheer(true);
-    } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
-  });
-
   $('#b-loting').addEventListener('click', async () => {
     if (!confirm('Loting starten? Daarna kunnen er geen deelnemers meer bij en staan de zones vast.')) return;
     await beheerActie('w_start_stekkeuze', {});
@@ -1010,13 +1026,9 @@ async function beheerActie(fn, extra) {
 }
 
 async function renderBeheer(magPrefill) {
-  const pin = sessie.pin(CODE);
-  if (!ADMIN_OPEN && pin) {
-    try { await rpc('w_admin_check', { p_code: CODE, p_pin: pin }); ADMIN_OPEN = true; } catch { ADMIN_OPEN = false; }
-  }
-  $('#pin-card').hidden = ADMIN_OPEN;
-  $('#beheer-inhoud').hidden = !ADMIN_OPEN;
-  if (!ADMIN_OPEN) return;
+  if (ROL !== 'organisator' || !ADMIN_OPEN) { $('#beheer-inhoud').hidden = true; $('#pin-card').hidden = false; return; }
+  $('#pin-card').hidden = true;
+  $('#beheer-inhoud').hidden = false;
 
   const w = STATE.wedstrijd;
   $('#b-code').textContent = w.code;

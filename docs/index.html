@@ -101,9 +101,6 @@
           <input id="nw-eind" type="datetime-local" required>
         </label>
       </div>
-      <label>Pincode wedstrijdleider <span class="muted">(min. 4 tekens, voor het beheer van deze wedstrijd)</span>
-        <input id="nw-pin" type="text" minlength="4" maxlength="20" autocomplete="off" required>
-      </label>
       <button type="submit" class="btn primary">Wedstrijd aanmaken</button>
       <p id="nieuw-fout" class="fout" hidden></p>
     </form>
@@ -234,13 +231,8 @@
 
   <!-- Beheer -->
   <section id="tab-beheer" class="tab" hidden>
-    <div class="card" id="pin-card">
-      <h2>Beheer (organisator)</h2>
-      <form id="form-pin" class="row">
-        <input id="pin-input" type="password" placeholder="pincode" autocomplete="off">
-        <button type="submit" class="btn">Ontgrendel</button>
-      </form>
-      <p id="pin-fout" class="fout" hidden></p>
+    <div class="card" id="pin-card" hidden>
+      <p class="muted">Beheer is alleen toegankelijk voor de organisatie, via de organisatie-omgeving op de startpagina.</p>
     </div>
     <div id="beheer-inhoud" hidden>
       <div class="card">
