@@ -749,7 +749,9 @@ function renderPushKnop() {
   const knop = $('#btn-push'), tip = $('#push-tip');
   if (pushKanHier()) {
     knop.hidden = false; tip.hidden = true;
-    knop.textContent = pushAan(CODE) ? '🔕 Meldingen uit' : '🔔 Meldingen aan';
+    knop.textContent = pushAan(CODE)
+      ? '🔕 Zet meldingen over nieuwe vangsten uit'
+      : '🔔 Zet meldingen over nieuwe vangsten aan';
   } else if (isIos() && !window.navigator.standalone) {
     knop.hidden = true;
     tip.hidden = false;
@@ -771,7 +773,7 @@ async function pushToggle() {
         await sub.unsubscribe();
       }
       localStorage.removeItem('push:' + CODE);
-      toast('Meldingen uitgezet');
+      toast('Meldingen over nieuwe vangsten staan uit.');
     } else {
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') {
