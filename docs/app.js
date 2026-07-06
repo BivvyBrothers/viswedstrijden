@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 2; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 3; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -1007,8 +1007,10 @@ function renderTeamTab() {
   $('#team-titel').textContent = teamNaam(mijn);
   const plek = mijn.zone ? `Jullie plek: ${zoneLabel(mijn.zone)} (stek ${(mijn.stekken || []).join(', ')})`
     : (mijn.stekken || []).length ? `Jouw stek: ${mijn.stekken.join(' + ')}` :
-    (w.status === 'aanmelden' ? 'De loting moet nog beginnen.' :
-     w.status === 'stekkeuze' ? `Lotnummer ${mijn.lot_nummer}. Kies op de kaart zodra je aan de beurt bent.` : 'Nog geen stek.');
+    (w.status === 'stekkeuze' ? `Lotnummer ${mijn.lot_nummer}. Kies op de kaart zodra je aan de beurt bent.` :
+     w.status === 'aanmelden' && f === 'voor' ? 'De loting moet nog beginnen.' :
+     w.status === 'aanmelden' ? 'Er is (nog) niet geloot; vrije stekkeuze. Registreren werkt gewoon.' :
+     'Nog geen stek.');
   $('#team-info').textContent = (mijn.team_naam ? `${ledenNaam(mijn)} · ` : '') + plek;
 
   if (f === 'live') {
