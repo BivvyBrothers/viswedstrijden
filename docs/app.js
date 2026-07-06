@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 3; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 4; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -43,7 +43,7 @@ const FOUTEN = {
   alleen_tijdens_aanmelden: 'Kan alleen tijdens de aanmeldfase (vóór de loting).',
   wedstrijd_niet_begonnen: 'De wedstrijd is nog niet begonnen.',
   wedstrijd_afgelopen: 'De wedstrijd is afgelopen: registreren kan niet meer.',
-  ongeldige_foto: 'De foto kon niet worden verwerkt. Kies een andere foto of maak een nieuwe.',
+  ongeldige_foto: 'De foto kon niet worden verwerkt (RAW-bestanden worden niet ondersteund). Kies een andere foto of maak een nieuwe.',
   ongeldige_subscription: 'Meldingen aanzetten is niet gelukt.',
   eind_voor_start: 'De eindtijd moet na de starttijd liggen.',
   vangst_niet_gevonden: 'Vangst niet gevonden.',
@@ -828,7 +828,7 @@ function renderPushKnop() {
   } else if (isIos() && !window.navigator.standalone) {
     knop.hidden = true;
     tip.hidden = false;
-    tip.textContent = 'Meldingen bij nieuwe vangsten? Zet de site eerst op je beginscherm (deel-knop → Zet op beginscherm).';
+    tip.textContent = 'Meldingen bij nieuwe vangsten kunnen op iPhone alleen via de beginscherm-app: deel-knop → Zet op beginscherm. Open de app daarna vanaf je beginscherm en de meldingen-knop verschijnt hier.';
   } else {
     knop.hidden = true; tip.hidden = true;
   }
@@ -927,9 +927,20 @@ function initWedstrijd() {
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
 
+  const RAW_EXTENSIES = /\.(cr2|cr3|nef|nrw|arw|raf|dng|orf|rw2|pef|srw|raw)$/i;
   $('#v-foto').addEventListener('change', () => {
     const f = $('#v-foto').files[0];
     const img = $('#v-preview');
+    const foutEl = $('#v-fout');
+    foutEl.hidden = true;
+    if (f && RAW_EXTENSIES.test(f.name)) {
+      $('#form-vangst').reset();
+      img.hidden = true;
+      $('#v-foto-label').textContent = '📷 Foto maken of kiezen';
+      foutEl.textContent = `RAW-bestanden (zoals ${f.name.split('.').pop().toUpperCase()}) kan de browser niet lezen. Kies de JPEG-versie uit je bibliotheek of maak een gewone foto.`;
+      foutEl.hidden = false;
+      return;
+    }
     if (f) {
       img.src = URL.createObjectURL(f);
       img.hidden = false;
