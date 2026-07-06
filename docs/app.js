@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 9; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 10; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -514,7 +514,7 @@ function orgWedstrijdKaart(w, nuMs) {
       · kijkcode <b class="codegroot klein-code">${esc(w.kijk_code)}</b></div>
     <div class="row org-acties">
       <button class="btn primary" data-org-open="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">Openen &amp; beheren</button>
-      ${w.status === 'aanmelden' && actief ? `<button class="btn" data-org-loting="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">🎲 Start loting</button>` : ''}
+      ${w.status === 'aanmelden' && actief && !live ? `<button class="btn" data-org-loting="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">🎲 Start loting</button>` : ''}
     </div>
   </div>`;
 }
