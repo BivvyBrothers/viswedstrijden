@@ -61,9 +61,10 @@ vangstregistratie met foto, live klassement met aftelklok.
 
 ## Domeinbegrippen
 
-- **Stekken:** 96 stuks, nummers 1-100 waarbij **12-18 niet bestaan** (stuk oever
-  zonder stekken, conform de originele NPHV-kaart). Oneven = noord/west-oevers,
-  even = ingang-bank (2-10) en zuidoever (20-100).
+- **Stekken:** 96 stuks, nummers 1-100 waarbij **12, 14, 16 en 18 niet bestaan**
+  (stuk zuidwest-oever zonder stekken, conform de originele NPHV-kaart; oneven
+  13/15/17 bestaan gewoon). Oneven = noord/west-oevers, even = ingang-bank (2-10)
+  en zuidoever (20-100).
 - **`stek_ring`** (tabel + `STEK_POSITIE` in kaart.js): fysieke volgorde rond de
   plas voor "naast elkaar"-checks bij koppels. Bewuste keuzes: 52-54 (over de
   duiker) telt als aangrenzend; gaten tussen 10-20 en tussen 2-1.

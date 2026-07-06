@@ -1,6 +1,8 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
+const APP_VERSION = 2; // gelijk houden met docs/version.json; verhogen bij elke release
+
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
@@ -21,6 +23,8 @@ const FOUTEN = {
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
   al_geloot: 'De loting is al gestart.',
   geen_deelnemers: 'Er zijn nog geen deelnemers aangemeld.',
+  te_veel_teams_voor_zones: 'Meer teams dan zones: pas de zones of het aantal deelnemers aan voor je loot.',
+  te_veel_teams_voor_stekken: 'Meer teams dan beschikbare stekken: verklein het aantal deelnemers voor je loot.',
   geen_stekkeuze_fase: 'De stekkeuze is nu niet actief.',
   team_niet_gevonden: 'Je deelname is niet gevonden. Meld je opnieuw aan.',
   al_gekozen: 'Je hebt al gekozen.',
@@ -39,7 +43,7 @@ const FOUTEN = {
   alleen_tijdens_aanmelden: 'Kan alleen tijdens de aanmeldfase (vóór de loting).',
   wedstrijd_niet_begonnen: 'De wedstrijd is nog niet begonnen.',
   wedstrijd_afgelopen: 'De wedstrijd is afgelopen: registreren kan niet meer.',
-  ongeldige_foto: 'De foto kon niet worden verwerkt.',
+  ongeldige_foto: 'De foto kon niet worden verwerkt. Kies een andere foto of maak een nieuwe.',
   ongeldige_subscription: 'Meldingen aanzetten is niet gelukt.',
   eind_voor_start: 'De eindtijd moet na de starttijd liggen.',
   vangst_niet_gevonden: 'Vangst niet gevonden.',
@@ -113,14 +117,33 @@ async function kopieerTekst(tekst) {
   }
 }
 
+function laadViaImage(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('ongeldige_foto')); };
+    img.src = url;
+  });
+}
+
 async function compressFoto(file, maxDim = 1400, kwaliteit = 0.8) {
-  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => createImageBitmap(file));
-  const schaal = Math.min(1, maxDim / Math.max(bmp.width, bmp.height));
+  let bron;
+  try { bron = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  catch {
+    try { bron = await createImageBitmap(file); }
+    catch { bron = await laadViaImage(file); } // fallback voor oudere telefoons/formaten
+  }
+  const bw = bron.width || bron.naturalWidth, bh = bron.height || bron.naturalHeight;
+  if (!bw || !bh) throw new Error('ongeldige_foto');
+  const schaal = Math.min(1, maxDim / Math.max(bw, bh));
   const c = document.createElement('canvas');
-  c.width = Math.round(bmp.width * schaal);
-  c.height = Math.round(bmp.height * schaal);
-  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-  return new Promise((res, rej) => c.toBlob((b) => b ? res(b) : rej(new Error('ongeldige_foto')), 'image/jpeg', kwaliteit));
+  c.width = Math.round(bw * schaal);
+  c.height = Math.round(bh * schaal);
+  c.getContext('2d').drawImage(bron, 0, 0, c.width, c.height);
+  const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', kwaliteit));
+  if (!blob || blob.size < 100 || blob.size > 4.5 * 1024 * 1024) throw new Error('ongeldige_foto');
+  return blob;
 }
 
 // confirm()/alert() worden in iOS-beginscherm-apps stilletjes geblokkeerd;
@@ -209,13 +232,27 @@ window.addEventListener('hashchange', route);
 window.addEventListener('DOMContentLoaded', () => {
   initHome(); initWedstrijd(); route();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  checkVersie();
+  setInterval(checkVersie, 10 * 60 * 1000);
 });
+
+async function checkVersie() {
+  try {
+    const r = await fetch('version.json?_=' + APP_VERSION + '-' + Math.floor(nu() / 600000), { cache: 'no-store' });
+    const j = await r.json();
+    if (j.v > APP_VERSION) $('#update-banner').hidden = false;
+  } catch { /* offline of tijdelijk onbereikbaar: stil houden */ }
+}
 
 function route() {
   const mW = location.hash.match(/^#\/w\/([A-Za-z0-9]{4,8})/);
   const mK = location.hash.match(/^#\/k\/([A-Za-z0-9]{4,8})/);
   const mT = location.hash.match(/[?&]t=([0-9a-f-]{36})/i);
   PENDING_TOKEN = mT ? mT[1] : null;
+  if (mT && mW) {
+    // token meteen uit adresbalk en geschiedenis halen; hij leeft verder in geheugen
+    history.replaceState(null, '', location.pathname + '#/w/' + mW[1].toUpperCase());
+  }
   clearInterval(POLL); clearInterval(KLOKTIK); clearInterval(ORG_POLL);
   if (mW || mK) {
     KIJKER = !!mK;
@@ -325,20 +362,26 @@ function initHome() {
 
   $('#org-uitloggen').addEventListener('click', () => {
     sessionStorage.removeItem('orgww');
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const sleutel = sessionStorage.key(i);
+      if (sleutel && sleutel.startsWith('pin:')) sessionStorage.removeItem(sleutel);
+    }
+    ADMIN_OPEN = false;
+    ROL = 'deelnemer';
     location.hash = '';
   });
 
   $('#org-zones-opslaan').addEventListener('click', async () => {
     const foutEl = $('#org-zones-fout'), okEl = $('#org-zones-ok');
     foutEl.hidden = true; okEl.hidden = true;
-    let zones;
-    try { zones = parseZones($('#org-zones').value); }
+    let geparsed;
+    try { geparsed = parseZones($('#org-zones').value); }
     catch (err) { foutEl.textContent = err.message; foutEl.hidden = false; return; }
     try {
-      const res = await rpc('w_org_standaard_zones', { p_wachtwoord: sessie.orgWw() || '', p_zones: zones });
+      const res = await rpc('w_org_standaard_zones', { p_wachtwoord: sessie.orgWw() || '', p_zones: geparsed.zones });
       okEl.textContent = res.zones === 0
         ? 'Vaste indeling gewist: nieuwe wedstrijden loten per losse stek.'
-        : `Vaste indeling met ${res.zones} zones opgeslagen. Elke nieuwe wedstrijd gebruikt deze automatisch.`;
+        : `Vaste indeling opgeslagen: ${zonesPreview(geparsed)}. Elke nieuwe wedstrijd gebruikt deze automatisch.`;
       okEl.hidden = false;
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
@@ -386,7 +429,6 @@ async function laadState(eerste) {
         if (team) sessie.zetTeam(CODE, { id: team.id, token: PENDING_TOKEN, naam: team.naam });
       } catch { /* ongeldige teamlink: negeren */ }
       PENDING_TOKEN = null;
-      history.replaceState(null, '', location.pathname + '#/w/' + CODE);
     }
     if (eerste && !KIJKER) {
       const pin = sessie.pin(CODE);
@@ -483,6 +525,7 @@ function orgWedstrijdKaart(w, nuMs) {
 
 function renderOrg() {
   if (!ORG_DATA) return;
+  if (document.querySelector('#org-actief [data-scherp], #org-verleden [data-scherp]')) return;
   const nuMs = new Date(ORG_DATA.server_now).getTime();
   const alle = ORG_DATA.wedstrijden || [];
   const actief = alle.filter((w) => new Date(w.eind_ts).getTime() >= nuMs);
@@ -817,8 +860,9 @@ async function pushToggle() {
       const j = sub.toJSON();
       const t = sessie.team(CODE);
       await rpc('w_push_subscribe', {
-        p_code: CODE, p_token: t ? t.token : null,
+        p_code: CODE, p_token: (!KIJKER && t) ? t.token : null,
         p_endpoint: sub.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth,
+        p_route: (KIJKER ? '#/k/' : '#/w/') + CODE,
       });
       localStorage.setItem('push:' + CODE, '1');
       toast('Je krijgt nu een melding bij elke nieuwe vangst 🐟');
@@ -902,6 +946,10 @@ function initWedstrijd() {
     const bestand = $('#v-foto').files[0];
     if (!gram) { foutEl.textContent = 'Vul een geldig gewicht in tussen 0,05 en 50 kg, bijv. 12,45.'; foutEl.hidden = false; return; }
     if (!bestand) { foutEl.textContent = 'Een foto is verplicht als bewijs van de vangst.'; foutEl.hidden = false; return; }
+    if (new Date(STATE.wedstrijd.eind_ts).getTime() - nu() < 15000) {
+      foutEl.textContent = 'De wedstrijd is (bijna) afgelopen: registreren kan niet meer op tijd verwerkt worden.';
+      foutEl.hidden = false; return;
+    }
     knop.disabled = true; knop.textContent = 'Bezig met uploaden…';
     try {
       const blob = await compressFoto(bestand);
@@ -1006,22 +1054,26 @@ function initBeheerKnoppen() {
   $('#b-zones-opslaan').addEventListener('click', async () => {
     const foutEl = $('#b-zones-fout'), okEl = $('#b-zones-ok');
     foutEl.hidden = true; okEl.hidden = true;
-    let zones;
-    try { zones = parseZones($('#b-zones').value); }
+    let geparsed;
+    try { geparsed = parseZones($('#b-zones').value); }
     catch (err) { foutEl.textContent = err.message; foutEl.hidden = false; return; }
     try {
-      const res = await rpc('w_admin_zones', { p_code: CODE, p_pin: sessie.pin(CODE), p_zones: zones });
-      okEl.textContent = res.zones === 0 ? 'Zones gewist: gewone loting per stek.' : `${res.zones} zones opgeslagen.`;
+      const res = await rpc('w_admin_zones', { p_code: CODE, p_pin: sessie.pin(CODE), p_zones: geparsed.zones });
+      okEl.textContent = res.zones === 0 ? 'Zones gewist: gewone loting per stek.'
+        : `${res.zones} zones opgeslagen: ${zonesPreview(geparsed)}`;
       okEl.hidden = false;
       await laadState(false);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
 }
 
-// "Zone A: 20-30" of "B: 1,3,5" -> [{naam, stekken}]; reeks met gelijke pariteit springt per 2
+// "Zone A: 20-30" of "B: 1,3,5" -> {zones: [{naam, stekken}], overgeslagen: [...]};
+// reeks met gelijke pariteit springt per 2; niet-bestaande nummers in een reeks
+// worden overgeslagen en apart gemeld
 function parseZones(tekst) {
   const regels = tekst.split('\n').map((r) => r.trim()).filter(Boolean);
-  if (!regels.length) return [];
+  const overgeslagen = new Set();
+  if (!regels.length) return { zones: [], overgeslagen: [] };
   const zones = [];
   for (const regel of regels) {
     const m = regel.match(/^(.{1,20}?)\s*[:=]\s*(.+)$/);
@@ -1034,7 +1086,10 @@ function parseZones(tekst) {
         const van = parseInt(reeks[1], 10), tot = parseInt(reeks[2], 10);
         if (tot < van || tot - van > 100) throw new Error(`Ongeldige reeks: "${deel}"`);
         const stap = (van % 2 === tot % 2) ? 2 : 1;
-        for (let s = van; s <= tot; s += stap) if (STEK_POSITIE[String(s)]) stekken.add(s);
+        for (let s = van; s <= tot; s += stap) {
+          if (STEK_POSITIE[String(s)]) stekken.add(s);
+          else overgeslagen.add(s);
+        }
       } else if (/^\d+$/.test(deel)) {
         const s = parseInt(deel, 10);
         if (!STEK_POSITIE[String(s)]) throw new Error(`Stek ${s} bestaat niet op de kaart.`);
@@ -1046,7 +1101,14 @@ function parseZones(tekst) {
     if (!stekken.size) throw new Error(`Zone "${naam}" heeft geen geldige stekken.`);
     zones.push({ naam, stekken: [...stekken].sort((a, b) => a - b) });
   }
-  return zones;
+  return { zones, overgeslagen: [...overgeslagen].sort((a, b) => a - b) };
+}
+
+function zonesPreview(res) {
+  const delen = res.zones.map((z) => `${z.naam} (${z.stekken.length})`).join(', ');
+  const weg = res.overgeslagen.length
+    ? ` · overgeslagen want bestaan niet: ${res.overgeslagen.join(', ')}` : '';
+  return delen + weg;
 }
 
 function zonesNaarTekst(zones) {
@@ -1068,6 +1130,12 @@ async function renderBeheer(magPrefill) {
   if (ROL !== 'organisator' || !ADMIN_OPEN) { $('#beheer-inhoud').hidden = true; $('#pin-card').hidden = false; return; }
   $('#pin-card').hidden = true;
   $('#beheer-inhoud').hidden = false;
+  if (!magPrefill) {
+    const actiefEl = document.activeElement;
+    if (actiefEl && actiefEl.closest && actiefEl.closest('#beheer-inhoud')
+        && (actiefEl.tagName === 'INPUT' || actiefEl.tagName === 'TEXTAREA')) return;
+    if (document.querySelector('#beheer-inhoud [data-scherp]')) return;
+  }
 
   const w = STATE.wedstrijd;
   $('#b-code').textContent = w.code;

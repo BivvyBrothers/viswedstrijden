@@ -8,7 +8,7 @@ de functie of regel, het probleem en de voorgestelde oplossing.
 ## Wat de app doet
 
 Live op https://viswedstrijd.kemblinck.nl (GitHub Pages). Wedstrijdvissen op een
-plas met 96 genummerde stekken (nummers 1-100, 12-18 bestaan niet). Drie rollen:
+plas met 96 genummerde stekken (nummers 1-100; de even nummers 12, 14, 16 en 18 bestaan niet). Drie rollen:
 
 1. **Deelnemer** (deelnemerscode): aanmelden (individueel of koppel, optionele
    teamnaam), digitale loting (site loot de volgorde), om de beurt een stek of

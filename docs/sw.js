@@ -11,13 +11,15 @@ self.addEventListener('push', (e) => {
     badge: 'icon-192.png',
     vibrate: [100, 50, 100],
     tag: 'vangst',
+    data: { url: d.url || null },
   }));
 });
 
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
+  const route = e.notification.data && e.notification.data.url;
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((lijst) => {
     for (const c of lijst) { if ('focus' in c) return c.focus(); }
-    return self.clients.openWindow('.');
+    return self.clients.openWindow(route ? './' + route : '.');
   }));
 });

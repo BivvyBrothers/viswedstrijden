@@ -36,25 +36,25 @@ Deno.serve(async (req: Request) => {
   if (!payload) return new Response('unauthorized', { status: 401 });
 
   webpush.setVapidDetails(payload.contact, payload.vapid_public, payload.vapid_private);
-  const bericht = JSON.stringify({
-    title: body.titel ?? 'Viswedstrijd',
-    body: body.body ?? 'Nieuwe vangst!',
-  });
-
+  // UPDATE 6 jul (review P1-8 + P2-13): batches van 30 via Promise.allSettled,
+  // en per subscription een route in de payload (voor notificationclick).
+  const subs = payload.subs ?? [];
+  const BATCH = 30;
   let ok = 0;
   const dood: string[] = [];
-  for (const s of payload.subs ?? []) {
-    try {
-      await webpush.sendNotification(
+  for (let i = 0; i < subs.length; i += BATCH) {
+    const deel = subs.slice(i, i + BATCH);
+    const res = await Promise.allSettled(deel.map((s: {endpoint: string; p256dh: string; auth: string; route?: string|null}) =>
+      webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        bericht,
+        JSON.stringify({ title: body.titel ?? 'Viswedstrijd', body: body.body ?? 'Nieuwe vangst!', url: s.route ?? null }),
         { TTL: 3600 },
-      );
-      ok++;
-    } catch (e) {
-      const status = (e as { statusCode?: number }).statusCode;
-      if (status === 404 || status === 410) dood.push(s.id);
-    }
+      )));
+    res.forEach((r, j) => {
+      if (r.status === 'fulfilled') { ok++; return; }
+      const status = (r.reason as { statusCode?: number })?.statusCode;
+      if (status === 404 || status === 410) dood.push(deel[j].id);
+    });
   }
   if (dood.length) await rpc('w_push_cleanup', { p_secret: secret, p_ids: dood });
   return Response.json({ verstuurd: ok, opgeruimd: dood.length });

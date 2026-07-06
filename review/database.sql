@@ -50,12 +50,110 @@ create table wedstrijd.vangsten (
 );
 create index vangsten_wedstrijd_idx on wedstrijd.vangsten(wedstrijd_id, status);
 
--- fysieke volgorde van de 96 stekken rond de plas (nummers 1-100, 12-18 bestaan niet);
+-- fysieke volgorde van de 96 stekken rond de plas (nummers 1-100; even 12/14/16/18 bestaan niet);
 -- aangrenzend = opeenvolgende posities; bewuste gaten in posities bij oever zonder stekken
 create table wedstrijd.stek_ring (
   positie int primary key,
   stek int not null unique
 );
+insert into wedstrijd.stek_ring (positie, stek) values
+  (1, 1),
+  (2, 3),
+  (3, 5),
+  (4, 7),
+  (5, 9),
+  (6, 11),
+  (7, 13),
+  (8, 15),
+  (9, 17),
+  (10, 19),
+  (11, 21),
+  (12, 23),
+  (13, 25),
+  (14, 27),
+  (15, 29),
+  (16, 31),
+  (17, 33),
+  (18, 35),
+  (19, 37),
+  (20, 39),
+  (21, 41),
+  (22, 43),
+  (23, 45),
+  (24, 47),
+  (25, 49),
+  (26, 51),
+  (27, 53),
+  (28, 55),
+  (29, 57),
+  (30, 59),
+  (31, 61),
+  (32, 63),
+  (33, 65),
+  (34, 67),
+  (35, 69),
+  (36, 71),
+  (37, 73),
+  (38, 75),
+  (39, 77),
+  (40, 79),
+  (41, 81),
+  (42, 83),
+  (43, 85),
+  (44, 87),
+  (45, 89),
+  (46, 91),
+  (47, 93),
+  (48, 95),
+  (49, 97),
+  (50, 99),
+  (51, 100),
+  (52, 98),
+  (53, 96),
+  (54, 94),
+  (55, 92),
+  (56, 90),
+  (57, 88),
+  (58, 86),
+  (59, 84),
+  (60, 82),
+  (61, 80),
+  (62, 78),
+  (63, 76),
+  (64, 74),
+  (65, 72),
+  (66, 70),
+  (67, 68),
+  (68, 66),
+  (69, 64),
+  (70, 62),
+  (71, 60),
+  (72, 58),
+  (73, 56),
+  (74, 54),
+  (75, 52),
+  (76, 50),
+  (77, 48),
+  (78, 46),
+  (79, 44),
+  (80, 42),
+  (81, 40),
+  (82, 38),
+  (83, 36),
+  (84, 34),
+  (85, 32),
+  (86, 30),
+  (87, 28),
+  (88, 26),
+  (89, 24),
+  (90, 22),
+  (91, 20),
+  (93, 10),
+  (94, 8),
+  (95, 6),
+  (96, 4),
+  (97, 2);
+-- let op: positie 92 is bewust overgeslagen (stuk zuidwest-oever zonder stekken)
 
 create table wedstrijd.instellingen (
   id int primary key check (id = 1),
@@ -624,4 +722,16 @@ end $function$;
 -- 'wedstrijd_vol' zodra het maximum is bereikt; w_get_state, w_get_state_kijker
 -- en w_org_wedstrijden geven max_teams mee. Frontend toont "X/Y aangemeld" en
 -- een compleet-signaal richting de loting.
+-- =====================================================================
+
+
+-- =====================================================================
+-- UPDATE 6 jul, review-fixes doorgevoerd (P0-1, P1-2, P1-3, P1-5, P1-6, P2-13):
+-- w_admin_reset_loting wist nu ook teams.zone; alle muterende RPC's locken de
+-- wedstrijd-rij met FOR UPDATE; w_start_stekkeuze doet een capaciteitscheck
+-- (teams <= zones, of teams * stekken-per-team <= 96); trigger codes_uniek +
+-- check code<>kijk_code maken codes hard uniek over beide kolommen;
+-- w_push_subscribe valideert p256dh/auth met base64url-regexes, weigert een
+-- onbekend token, en slaat een route (#/w/... of #/k/...) per subscription op
+-- die de service worker gebruikt bij een klik op de melding.
 -- =====================================================================
