@@ -160,7 +160,7 @@ table.klassement th.r { text-align: right; }
 .rank.goud { color: #b8860b; }
 .rank.zilver { color: #7d7d7d; }
 .rank.brons { color: #a0522d; }
-td .thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; cursor: pointer; display: block; }
+.thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; cursor: pointer; display: block; flex: 0 0 auto; }
 
 /* vangstenfeed */
 .vangst-kaart {
