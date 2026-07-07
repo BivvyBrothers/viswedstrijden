@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 15; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 16; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -518,7 +518,7 @@ function orgWedstrijdKaart(w, nuMs) {
   const live = actief && new Date(w.start_ts).getTime() <= nuMs;
   const vol = w.max_teams && w.teams >= w.max_teams;
   const teller = w.max_teams ? `${w.teams}/${w.max_teams}` : `${w.teams}`;
-  const statusTekst = live ? '● LIVE'
+  const statusTekst = live ? (w.status === 'aanmelden' ? '● LIVE · nog niet geloot' : '● LIVE')
     : !actief ? 'afgelopen'
     : w.status === 'aanmelden' ? (vol ? `✅ compleet (${teller}) · klaar voor loting` : `aanmelden open · ${teller} aangemeld`)
     : w.status === 'stekkeuze' ? 'loting/stekkeuze bezig'
@@ -535,7 +535,7 @@ function orgWedstrijdKaart(w, nuMs) {
       · kijkcode <b class="codegroot klein-code">${esc(w.kijk_code)}</b></div>
     <div class="row org-acties">
       <button class="btn primary" data-org-open="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">Openen &amp; beheren</button>
-      ${w.status === 'aanmelden' && actief && !live ? `<button class="btn" data-org-loting="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">🎲 Start loting</button>` : ''}
+      ${w.status === 'aanmelden' && actief ? `<button class="btn" data-org-loting="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">🎲 Start loting</button>` : ''}
     </div>
   </div>`;
 }
