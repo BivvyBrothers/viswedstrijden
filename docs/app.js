@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 16; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 17; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -620,6 +620,8 @@ function initKaart() {
   houder.innerHTML = KAART_SVG;
   houder.dataset.klaar = '1';
   houder.addEventListener('click', (e) => {
+    const z = e.target.closest('g.zoneletter');
+    if (z) { klikZone(z.dataset.zone); return; }
     const g = e.target.closest('g.stek');
     if (g) klikStek(parseInt(g.dataset.stek, 10));
   });
@@ -663,6 +665,20 @@ function klikStek(nr) {
   renderKaart();
 }
 
+// tik op een zoneletter: selecteert de hele zone (zelfde regels als tik op een stek)
+function klikZone(naam) {
+  const w = STATE?.wedstrijd;
+  if (!w || w.status !== 'stekkeuze' || !heeftZones()) return;
+  const mijn = mijnTeam();
+  const beurt = teamAanBeurt();
+  if (!mijn || !beurt || beurt.id !== mijn.id) return;
+  const zone = STATE.wedstrijd.zones.find((z) => String(z.naam).toLowerCase() === String(naam).toLowerCase());
+  if (!zone || zoneBezet(zone.naam)) return;
+  SELECTIE_ZONE = (SELECTIE_ZONE === zone.naam) ? null : zone.naam;
+  SELECTIE = SELECTIE_ZONE ? zone.stekken.map(Number) : [];
+  renderKaart();
+}
+
 function renderKaart() {
   initKaart();
   const zonelaag = document.querySelector('#kaart-houder #zonelaag');
@@ -697,6 +713,18 @@ function renderKaart() {
     }
   });
 
+  // zoneletters kleuren mee: groen = mijn zone of mijn selectie, donker = bezet
+  const zonesVanTeams = {};
+  for (const t of STATE.teams) if (t.zone) zonesVanTeams[String(t.zone).toLowerCase()] = t;
+  document.querySelectorAll('#kaart-houder g.zoneletter').forEach((g) => {
+    g.classList.remove('bezet', 'mijn', 'keuze', 'kiesbaar');
+    const naam = String(g.dataset.zone || '');
+    const eigenaar = zonesVanTeams[naam.toLowerCase()];
+    if (eigenaar) g.classList.add(mijn && eigenaar.id === mijn.id ? 'mijn' : 'bezet');
+    else if (SELECTIE_ZONE && String(SELECTIE_ZONE).toLowerCase() === naam.toLowerCase()) g.classList.add('keuze');
+    else if (mijnBeurt) g.classList.add('kiesbaar');
+  });
+
   const melding = $('#kaart-melding');
   const actie = $('#stek-actie');
   const knop = $('#btn-kies');
@@ -710,7 +738,7 @@ function renderKaart() {
           ? (/^\d+$/.test(SELECTIE_ZONE)
               ? `Stek ${SELECTIE_ZONE} geselecteerd.`
               : `${zoneLabel(SELECTIE_ZONE)} geselecteerd (stek ${SELECTIE.slice().sort((a, b) => a - b).join(', ')}).`)
-          : 'Jij bent aan de beurt! Tik op een gekleurde stek om te kiezen.';
+          : 'Jij bent aan de beurt! Tik op een zoneletter (of een stek) om je zone te kiezen.';
         knop.disabled = !SELECTIE_ZONE;
         knop.textContent = SELECTIE_ZONE ? `Bevestig ${zoneLabel(SELECTIE_ZONE)}` : 'Selecteer een zone';
       } else {

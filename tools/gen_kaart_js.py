@@ -164,10 +164,12 @@ for lijn in ZONELAAG['lijnen']:
     d = 'M ' + ' L '.join(f"{fmt(x)} {fmt(y)}" for x, y in lijn)
     parts.append(f'<path d="{d}"/>')
 parts.append('</g>')
-parts.append('<g text-anchor="middle" font-weight="800" pointer-events="none">')
+parts.append('<g text-anchor="middle" font-weight="800">')
 for let in ZONELAAG['letters']:
-    parts.append(f'<circle cx="{fmt(let["x"])}" cy="{fmt(let["y"])}" r="9.5" fill="#ffffff" fill-opacity="0.88" stroke="#c2451e" stroke-width="1.6"/>')
-    parts.append(f'<text x="{fmt(let["x"])}" y="{fmt(let["y"] + 4.2)}" font-size="12" fill="#9a3413">{let["letter"]}</text>')
+    parts.append(f'<g class="zoneletter" data-zone="{let["letter"]}" style="cursor:pointer">'
+                 f'<circle cx="{fmt(let["x"])}" cy="{fmt(let["y"])}" r="14" fill="transparent" stroke="none"/>'
+                 f'<circle class="zoneletter-dot" cx="{fmt(let["x"])}" cy="{fmt(let["y"])}" r="9.5" fill="#ffffff" fill-opacity="0.88" stroke="#c2451e" stroke-width="1.6"/>'
+                 f'<text x="{fmt(let["x"])}" y="{fmt(let["y"] + 4.2)}" font-size="12" fill="#9a3413" pointer-events="none">{let["letter"]}</text></g>')
 parts.append('</g>')
 parts.append('</g>')
 
