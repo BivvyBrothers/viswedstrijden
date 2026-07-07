@@ -115,7 +115,7 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 .kaart-legenda { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--grijs); }
 .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--kaart-blauw); vertical-align: -1px; }
 .dot.vrij { background: #fff; }
-.dot.bezet { background: var(--kaart-blauw); }
+.dot.bezet { background: var(--rood); border-color: var(--rood); }
 .dot.mijn { background: var(--groen); border-color: var(--groen); }
 .dot.keuze { background: var(--oranje); border-color: var(--oranje); }
 .melding {
@@ -126,7 +126,7 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 #stek-actie { margin-top: 10px; }
 
 /* stek-status via klassen op de svg-groepen (alleen de zichtbare stip) */
-.stek.bezet .stek-dot { fill: var(--kaart-blauw); }
+.stek.bezet .stek-dot { fill: var(--rood); stroke: var(--rood); }
 .stek.bezet text { fill: #fff; }
 .stek.mijn .stek-dot { fill: var(--groen); stroke: var(--groen); }
 .stek.mijn text { fill: #fff; }
@@ -139,7 +139,7 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 .zoneletter.keuze text { fill: #fff; }
 .zoneletter.mijn .zoneletter-dot { fill: var(--groen); fill-opacity: 1; stroke: var(--groen); }
 .zoneletter.mijn text { fill: #fff; }
-.zoneletter.bezet .zoneletter-dot { fill: var(--kaart-blauw); fill-opacity: 1; stroke: var(--kaart-blauw); }
+.zoneletter.bezet .zoneletter-dot { fill: var(--rood); fill-opacity: 1; stroke: var(--rood); }
 .zoneletter.bezet text { fill: #fff; }
 .zoneletter.kiesbaar .zoneletter-dot { stroke-width: 2.6; }
 
