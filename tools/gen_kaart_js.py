@@ -153,6 +153,24 @@ parts.append(f'<path d="{smooth_closed(C18_E)}" fill="#1f639c"/>')
 for poly in (C10, C15_W, C15_E, C18_W, C18_E):
     parts.append(f'<path d="{smooth_closed(poly)}" fill="none" stroke="#ffffff" stroke-opacity=".75" stroke-width="1.2" stroke-dasharray="5 4"/>')
 parts.append('</g>')
+
+# vaste zone-indeling (getekend door de organisatie, getraceerd via tools/zonelaag.json);
+# app.js toont deze laag alleen als de wedstrijd-zones overeenkomen met de standaard
+with open(os.path.join(os.path.dirname(__file__), 'zonelaag.json')) as zf:
+    ZONELAAG = json.load(zf)
+parts.append('<g id="zonelaag" style="display:none">')
+parts.append('<g clip-path="url(#lake)" stroke="#c2451e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.85">')
+for lijn in ZONELAAG['lijnen']:
+    d = 'M ' + ' L '.join(f"{fmt(x)} {fmt(y)}" for x, y in lijn)
+    parts.append(f'<path d="{d}"/>')
+parts.append('</g>')
+parts.append('<g text-anchor="middle" font-weight="800" pointer-events="none">')
+for let in ZONELAAG['letters']:
+    parts.append(f'<circle cx="{fmt(let["x"])}" cy="{fmt(let["y"])}" r="9.5" fill="#ffffff" fill-opacity="0.88" stroke="#c2451e" stroke-width="1.6"/>')
+    parts.append(f'<text x="{fmt(let["x"])}" y="{fmt(let["y"] + 4.2)}" font-size="12" fill="#9a3413">{let["letter"]}</text>')
+parts.append('</g>')
+parts.append('</g>')
+
 parts.append(f'<path d="{lake_d}" fill="none" stroke="#2b6a99" stroke-width="2.2"/>')
 
 for txt, pt, licht in [("10m", (1180, 990), True), ("15m", (1600, 1750), True), ("18m", (1330, 1430), True),
@@ -162,17 +180,51 @@ for txt, pt, licht in [("10m", (1180, 990), True), ("15m", (1600, 1750), True), 
     fill = '#ffffff' if licht else '#2b6a99'
     parts.append(f'<text x="{fmt(x)}" y="{fmt(y)}" fill="{fill}" font-size="11" font-weight="600" opacity=".95" text-anchor="middle">{txt}</text>')
 
-ix, iy = T((640, 1470))
+# herkenningspunten (aangewezen door Patrick op satellietfoto's, 6-7 jul 2026)
 parts.append('<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#8a3d2f"/></marker></defs>')
-parts.append(f'<text x="{fmt(ix - 24)}" y="{fmt(iy + 22)}" fill="#8a3d2f" font-size="12" font-weight="700">ingang</text>')
-parts.append(f'<path d="M {fmt(ix - 4)} {fmt(iy + 12)} L {fmt(ix + 26)} {fmt(iy - 6)}" stroke="#8a3d2f" stroke-width="1.6" fill="none" marker-end="url(#arr)"/>')
-sx, sy = T((820, 1230))
-parts.append(f'<rect x="{fmt(sx - 26)}" y="{fmt(sy - 5)}" width="11" height="8" fill="#8a7f63" stroke="#5b5442" stroke-width="1"/>')
-parts.append(f'<text x="{fmt(sx - 30)}" y="{fmt(sy + 3)}" fill="#5b5442" font-size="10" font-style="italic" text-anchor="end">schuilhut</text>')
-dx, dy = T((2245, 2320))
-parts.append(f'<text x="{fmt(dx)}" y="{fmt(dy + 12)}" fill="#5b5442" font-size="10" font-style="italic" text-anchor="middle">duiker</text>')
-bx, by = T((3900, 1505))
-parts.append(f'<text x="{fmt(bx + 26)}" y="{fmt(by - 6)}" fill="#5b5442" font-size="10" font-style="italic">brug</text>')
+
+
+def geb(x, y, w=13, h=9, fill='#8a7f63'):
+    X, Y = T((x, y))
+    parts.append(f'<rect x="{fmt(X - w / 2)}" y="{fmt(Y - h / 2)}" width="{w}" height="{h}" fill="{fill}" stroke="#5b5442" stroke-width="1" rx="1"/>')
+
+
+def lab(x, y, tekst, anchor='start', kleur='#5b5442', size=10, vet=False):
+    X, Y = T((x, y))
+    stijl = ' font-weight="700"' if vet else ' font-style="italic"'
+    parts.append(f'<text x="{fmt(X)}" y="{fmt(Y)}" font-size="{size}"{stijl} fill="{kleur}" text-anchor="{anchor}">{tekst}</text>')
+
+
+def pijl(x1, y1, x2, y2):
+    X1, Y1 = T((x1, y1))
+    X2, Y2 = T((x2, y2))
+    parts.append(f'<path d="M {fmt(X1)} {fmt(Y1)} L {fmt(X2)} {fmt(Y2)}" stroke="#8a3d2f" stroke-width="1.6" fill="none" marker-end="url(#arr)"/>')
+
+
+geb(628, 1590, 18, 12)                       # manege (west, links van stek 6)
+lab(640, 1660, 'manege', 'middle')
+geb(820, 1230, 11, 8)                        # schuilhut
+lab(802, 1236, 'schuilhut', 'end')
+geb(806, 1012, 10, 6, '#9a9a8c')             # container + ingang noord (bij stek 1)
+lab(842, 1000, 'container')
+pijl(706, 942, 792, 988)
+lab(696, 936, 'ingang', 'end', '#8a3d2f', 10, True)
+geb(2330, 1902, 14, 10, '#c9c2ad')           # De Dobber, drijvend clubhuis (bij stek 53)
+lab(2308, 1958, 'De Dobber (clubhuis)', 'end', '#123c5e')
+tx1, ty1 = T((3706, 1450))                   # TNO-meetstation op het water (bij stek 81)
+tx2, ty2 = T((3612, 1524))
+parts.append(f'<line x1="{fmt(tx1)}" y1="{fmt(ty1)}" x2="{fmt(tx2)}" y2="{fmt(ty2)}" stroke="#5b5442" stroke-width="2"/>')
+geb(3604, 1530, 13, 10, '#c9c2ad')
+lab(3585, 1588, 'TNO-meetstation', 'end', '#123c5e')
+geb(4424, 2112, 13, 10)                      # woning zuidoosthoek (bij stek 99)
+lab(4400, 2178, 'woning', 'end')
+geb(2268, 2256, 12, 5, '#b0a789')            # bruggetje + ingang bij de duiker (stek 54)
+lab(2244, 2262, 'brug', 'end')
+lab(2196, 2330, 'duiker', 'end')
+pijl(2298, 2332, 2324, 2250)
+lab(2320, 2352, 'ingang', 'start', '#8a3d2f', 10, True)
+pijl(958, 2332, 1000, 2258)                  # ingang zuidwest (bij stek 22)
+lab(948, 2348, 'ingang', 'end', '#8a3d2f', 10, True)
 
 nx, ny = 585, 56
 parts.append(f'<g stroke="#4a4536" fill="#4a4536"><line x1="{nx}" y1="{ny + 26}" x2="{nx}" y2="{ny - 14}" stroke-width="1.6"/>'
@@ -216,6 +268,7 @@ out = (
     "// Gegenereerd door tools/gen_kaart_js.py, niet met de hand bewerken\n"
     f"const KAART_SVG = {json.dumps(svg)};\n"
     f"const STEK_POSITIE = {json.dumps({str(s): p for s, p in ring})};\n"
+    f"const ZONE_STANDAARD = {json.dumps(ZONELAAG['zones'])};\n"
 )
 dest = os.path.join(os.path.dirname(__file__), '..', 'docs', 'kaart.js')
 with open(dest, 'w') as f:

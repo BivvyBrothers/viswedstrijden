@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 14; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 15; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -218,6 +218,15 @@ function zoneVanStek(nr) {
 }
 function zoneBezet(naam) {
   return STATE.teams.some((t) => (t.zone || '').toLowerCase() === String(naam).toLowerCase());
+}
+// de vaste zonelijnen + letters op de kaart horen bij de standaard-indeling;
+// alleen tonen als de zones van deze wedstrijd daar exact mee overeenkomen
+function zonesZijnStandaard() {
+  if (!heeftZones() || typeof ZONE_STANDAARD === 'undefined') return false;
+  const norm = (zs) => zs
+    .map((z) => `${String(z.naam).trim().toLowerCase()}:${(z.stekken || []).map(Number).sort((a, b) => a - b).join(',')}`)
+    .sort().join('|');
+  return norm(STATE.wedstrijd.zones) === norm(ZONE_STANDAARD);
 }
 // voorkomt "zone Zone A"; een puur numerieke zonenaam is een losse stek en heet "stek N"
 const zoneLabel = (naam) => {
@@ -656,6 +665,8 @@ function klikStek(nr) {
 
 function renderKaart() {
   initKaart();
+  const zonelaag = document.querySelector('#kaart-houder #zonelaag');
+  if (zonelaag) zonelaag.style.display = zonesZijnStandaard() ? '' : 'none';
   const w = STATE.wedstrijd;
   const mijn = mijnTeam();
   const beurt = teamAanBeurt();

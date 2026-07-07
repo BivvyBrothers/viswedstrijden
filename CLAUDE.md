@@ -81,6 +81,15 @@ De dieptekaart is nagetekend van de originele NPHV-scan (`Dieptekaart plas.pdf`)
 - `tools/shape.py` = oevercontour in 4800px-scanruimte (bron van waarheid)
 - `tools/gen_svg.py` = standalone kaart (`plas-van-der-ende-dieptekaart.svg`)
 - `tools/gen_kaart_js.py` = interactieve app-kaart, schrijft `docs/kaart.js`
+- `tools/zonelaag.json` = vaste zone-indeling (19 zones A-S): grenslijnen + letters
+  in viewBox-coordinaten + de zonedefinities. Gegenereerd uit Patricks handgetekende
+  lijnen door `tools/gen_zonekaart_def.py` (traceert de foto in `review/zone-lijnen-definitief.jpeg`).
+  Dezelfde indeling staat in `wedstrijd.instellingen.standaard_zones` (7 jul 2026).
+- kaart.js bevat een laag `#zonelaag` (lijnen + letters) en `ZONE_STANDAARD`;
+  app.js toont de laag alleen als de wedstrijd-zones exact overeenkomen met de
+  standaard (functie `zonesZijnStandaard`), anders blijft hij verborgen.
+- Herkenningspunten op de kaart: manege, schuilhut, container + 3 ingangen,
+  De Dobber (clubhuis), TNO-meetstation, woning, brug/duiker.
 
 Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tools/`.
 `docs/kaart.js` nooit met de hand bewerken (gegenereerd bestand).
