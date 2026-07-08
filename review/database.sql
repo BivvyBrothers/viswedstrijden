@@ -894,3 +894,33 @@ begin
     'teams', v_teams, 'vangsten', v_vangsten, 'fotos', jsonb_array_length(v_paths));
 end $function$;
 grant execute on function public.w_org_verwijder_wedstrijd(text, text) to anon, authenticated;
+
+-- ============================================================
+-- UPDATE 8 jul 2026: verbeterronde na kritische analyse
+-- (migratie wedstrijd_analyse_ronde_1) Samenvatting:
+--
+-- Tabel vangsten:
+--   * foto_path mag null (vangsten die de organisator handmatig invoert)
+--   * check-constraint gewicht_gram between 50 and 50000
+--   * unieke index op foto_path (idempotente registratie bij retry)
+--
+-- RPC-wijzigingen:
+--   * w_registreer_vangst: gewicht-check ('ongeldig_gewicht'); bij
+--     unique_violation op foto_path wordt de bestaande vangst teruggegeven
+--     ({id, dubbel:true}) zodat een netwerk-retry geen dubbele vangst maakt
+--   * w_admin_vangst: zelfde gewicht-check bij correcties
+--   * w_admin_kies(p_code,p_pin,p_team_id,p_zone,p_stekken): organisator kiest
+--     een plek namens een keuzeloos team, ZONDER beurt-check (vangnet voor
+--     afwezige deelnemers); zelfde vrij/aangrenzend-checks als w_kies_*
+--   * w_admin_verwijder_team: werkt nu in elke fase; zone/stek komt vrij,
+--     vangsten cascaden; zet status op 'klaar' als het laatste keuzeloze team
+--     wegvalt tijdens de stekkeuze
+--   * w_admin_voeg_vangst(p_code,p_pin,p_team_id,p_gewicht_gram,p_foto_path):
+--     handmatige invoer door organisator, foto optioneel, geen eindtijd-check
+--     (bewust: vangnet voor te late uploads), stuurt gewoon een push
+--   * w_admin_wedstrijd(p_code,p_pin,p_naam,p_max_teams,p_wis_max): naam en
+--     maximum aanpassen; maximum nooit lager dan het huidige aantal teams
+--   * w_org_check / w_org_wedstrijden / w_org_standaard_zones /
+--     w_org_verwijder_wedstrijd: pg_sleep(0.5) bij fout wachtwoord
+--     (brute-force-demping)
+-- ============================================================

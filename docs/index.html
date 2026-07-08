@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Viswedstrijden · Plas van der Ende</title>
 <meta name="description" content="Karperwedstrijden op de Plas van der Ende: loting, stekkeuze, vangstregistratie en live leaderboard.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://xyfvkmhkwcjqskxrcfrj.supabase.co; connect-src 'self' https://xyfvkmhkwcjqskxrcfrj.supabase.co; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="theme-color" content="#353d2a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -172,6 +173,7 @@
       </div>
       <div id="stek-actie" hidden>
         <button id="btn-kies" class="btn primary breed" disabled></button>
+        <button id="btn-kies-annuleer" class="btn breed" hidden>Annuleer (terug naar Beheer)</button>
       </div>
     </div>
     <div class="card" id="loting-card">
@@ -220,6 +222,7 @@
       elk toestel weer in onder je eigen naam, ook in de beginscherm-app):</p>
       <p><b id="team-code" class="codegroot"></b>
       <button id="btn-herstel" class="btn klein-btn">kopieer</button></p>
+      <p><button id="btn-team-uitloggen" class="btn gevaar klein-btn">uitloggen bij dit team</button></p>
     </div>
 
     <div class="card" id="registreer-card" hidden>
@@ -255,6 +258,11 @@
         <h2>Wedstrijd</h2>
         <p class="muted">Deel deze code met de deelnemers: <b id="b-code" class="codegroot"></b></p>
         <p class="muted">Directe link: <span id="b-link" class="klein"></span> <button id="b-kopieer" class="btn klein-btn">kopieer</button></p>
+        <label>Naam van de wedstrijd
+          <input id="b-naam" type="text" maxlength="60"></label>
+        <label>Maximaal aantal deelnemers <span class="muted">(leeg = onbeperkt)</span>
+          <input id="b-max" type="number" inputmode="numeric" min="2" max="200" placeholder="onbeperkt"></label>
+        <button id="b-wedstrijd-opslaan" class="btn">Naam &amp; maximum opslaan</button>
         <div class="row2">
           <label>Start <input id="b-start" type="datetime-local"></label>
           <label>Einde <input id="b-eind" type="datetime-local"></label>
@@ -295,6 +303,22 @@
       <div class="card">
         <h2>Vangsten corrigeren</h2>
         <div id="b-vangsten"></div>
+        <details id="b-toevoegen">
+          <summary>➕ Vangst handmatig toevoegen</summary>
+          <p class="muted klein">Vangnet voor als registreren bij een deelnemer niet lukte
+          (geen bereik, lege batterij, upload net te laat). Werkt ook na de eindtijd.</p>
+          <form id="form-b-vangst" class="stack">
+            <label>Team <select id="bv-team"></select></label>
+            <label>Gewicht (kg) <input id="bv-gewicht" type="text" inputmode="decimal" placeholder="bijv. 12,45" required></label>
+            <label class="fotoknop">
+              <input id="bv-foto" type="file" accept="image/*">
+              <span id="bv-foto-label">📷 Foto (optioneel)</span>
+            </label>
+            <button type="submit" class="btn primary" id="bv-submit">Vangst toevoegen</button>
+            <p id="bv-fout" class="fout" hidden></p>
+            <p id="bv-ok" class="ok" hidden></p>
+          </form>
+        </details>
       </div>
     </div>
   </section>
@@ -302,7 +326,7 @@
 
 <div id="foto-groot" class="lightbox" hidden><img alt="vangstfoto"><span class="sluit">✕</span></div>
 <div id="toast" class="toast" hidden></div>
-<button id="update-banner" class="update-banner" hidden onclick="location.reload()">🔄 Nieuwe versie beschikbaar: tik om te vernieuwen</button>
+<button id="update-banner" class="update-banner" hidden>🔄 Nieuwe versie beschikbaar: tik om te vernieuwen</button>
 
 <script src="config.js"></script>
 <script src="kaart.js"></script>

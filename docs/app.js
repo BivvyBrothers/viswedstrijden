@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 20; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 21; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -48,6 +48,7 @@ const FOUTEN = {
   ongeldige_subscription: 'Meldingen aanzetten is niet gelukt.',
   eind_voor_start: 'De eindtijd moet na de starttijd liggen.',
   vangst_niet_gevonden: 'Vangst niet gevonden.',
+  ongeldig_gewicht: 'Ongeldig gewicht: vul tussen 0,05 en 50 kg in.',
 };
 const foutTekst = (e) => FOUTEN[e.message] || ('Er ging iets mis: ' + e.message);
 
@@ -192,6 +193,10 @@ let ROL = 'deelnemer';       // 'deelnemer' | 'kijker' | 'organisator'
 let ORG_POLL = null;
 let BEKENDE_VANGSTEN = null; // Set van vangst-ids voor in-app meldingen
 let PENDING_TOKEN = null;    // token uit een teamlink (#/w/CODE?t=...)
+let INIT_KLAAR = false;      // eerste state-load gelukt (anders blijft de poll 'eerste' proberen)
+let POLL_TELLER = 0;         // voor tragere polling met het scherm op de achtergrond
+let ADMIN_KIES = null;       // {teamId, naam}: organisator kiest een plek namens dit team
+let TEAMCODES_CACHE = { sleutel: null, codes: [] };
 
 const sessie = {
   team(code) { try { return JSON.parse(localStorage.getItem('team:' + code)); } catch { return null; } },
@@ -248,6 +253,11 @@ window.addEventListener('DOMContentLoaded', () => {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   checkVersie();
   setInterval(checkVersie, 10 * 60 * 1000);
+  $('#update-banner').addEventListener('click', () => location.reload());
+  // terug in beeld: direct verversen (de poll loopt op de achtergrond op 1/10 tempo)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && CODE) laadState(!INIT_KLAAR);
+  });
 });
 
 async function checkVersie() {
@@ -279,8 +289,15 @@ function route() {
     ADMIN_OPEN = false;
     STATE = null;
     BEKENDE_VANGSTEN = null;
+    INIT_KLAAR = false;
+    ADMIN_KIES = null;
+    POLL_TELLER = 0;
     laadState(true);
-    POLL = setInterval(() => laadState(false), 6000);
+    POLL = setInterval(() => {
+      POLL_TELLER += 1;
+      if (document.hidden && POLL_TELLER % 10 !== 0) return; // op de achtergrond: 1x per minuut (accu)
+      laadState(!INIT_KLAAR);
+    }, 6000);
     KLOKTIK = setInterval(tikKlok, 1000);
   } else if (location.hash === '#/org') {
     if (!sessie.orgWw()) { location.hash = ''; return; }
@@ -459,12 +476,18 @@ async function laadState(eerste) {
     }
     meldNieuweVangsten();
     renderAlles(eerste);
+    INIT_KLAAR = true;
     if (eerste && ROL === 'deelnemer' && !sessie.team(CODE) && s.wedstrijd.status === 'aanmelden') {
       // deelnemer met een gedeelde link start bij het invoeren van eigen gegevens
       activateTab('team');
     }
   } catch (err) {
-    if (eerste) toonNietGevonden();
+    // hier komen we alleen bij netwerk-/serverfouten; "bestaat niet" loopt via toonNietGevonden
+    if (eerste && !STATE) {
+      $('#w-naam').textContent = 'Geen verbinding';
+      $('#klok').textContent = '--:--:--';
+      $('#klok-sub').textContent = 'Controleer je internet. De app probeert het vanzelf opnieuw.';
+    }
   }
 }
 function toonNietGevonden() {
@@ -653,12 +676,25 @@ function teamAanBeurt() {
 }
 const aantalNodig = () => (STATE?.wedstrijd.mode === 'koppel' ? 2 : 1);
 
+// organisator in "geef plek"-modus, met een geldig doel-team (nog zonder keuze)
+function adminKiesActief() {
+  if (!ADMIN_KIES || ROL !== 'organisator' || !ADMIN_OPEN) return null;
+  if (STATE?.wedstrijd?.status !== 'stekkeuze') { ADMIN_KIES = null; return null; }
+  const doel = STATE.teams.find((t) => t.id === ADMIN_KIES.teamId);
+  if (!doel || (doel.stekken || []).length) { ADMIN_KIES = null; return null; }
+  return ADMIN_KIES;
+}
+function magSelecteren() {
+  if (adminKiesActief()) return true;
+  const mijn = mijnTeam();
+  const beurt = teamAanBeurt();
+  return !!(mijn && beurt && beurt.id === mijn.id);
+}
+
 function klikStek(nr) {
   const w = STATE?.wedstrijd;
   if (!w || w.status !== 'stekkeuze') return;
-  const mijn = mijnTeam();
-  const beurt = teamAanBeurt();
-  if (!mijn || !beurt || beurt.id !== mijn.id) return;
+  if (!magSelecteren()) return;
   const bezet = STATE.teams.some((t) => (t.stekken || []).includes(nr));
 
   if (heeftZones()) {
@@ -682,9 +718,7 @@ function klikStek(nr) {
 function klikZone(naam) {
   const w = STATE?.wedstrijd;
   if (!w || w.status !== 'stekkeuze' || !heeftZones()) return;
-  const mijn = mijnTeam();
-  const beurt = teamAanBeurt();
-  if (!mijn || !beurt || beurt.id !== mijn.id) return;
+  if (!magSelecteren()) return;
   const zone = STATE.wedstrijd.zones.find((z) => String(z.naam).toLowerCase() === String(naam).toLowerCase());
   if (!zone || zoneBezet(zone.naam)) return;
   SELECTIE_ZONE = (SELECTIE_ZONE === zone.naam) ? null : zone.naam;
@@ -699,8 +733,9 @@ function renderKaart() {
   const w = STATE.wedstrijd;
   const mijn = mijnTeam();
   const beurt = teamAanBeurt();
+  const namens = adminKiesActief();
   const mijnBeurt = !!(mijn && beurt && mijn.id === beurt.id);
-  if (!mijnBeurt) { SELECTIE = []; SELECTIE_ZONE = null; }
+  if (!mijnBeurt && !namens) { SELECTIE = []; SELECTIE_ZONE = null; }
 
   const bezetDoor = {};
   for (const t of STATE.teams) for (const s of (t.stekken || [])) bezetDoor[s] = t;
@@ -722,7 +757,7 @@ function renderKaart() {
     } else {
       if (titel) titel.textContent = `Stek ${nr}: ${zLabel}vrij`;
       if (SELECTIE.includes(nr)) g.classList.add('keuze');
-      else if (mijnBeurt && (!heeftZones() || (zone && !zoneBezet(zone.naam)))) g.classList.add('kiesbaar');
+      else if ((mijnBeurt || namens) && (!heeftZones() || (zone && !zoneBezet(zone.naam)))) g.classList.add('kiesbaar');
     }
   });
 
@@ -735,15 +770,26 @@ function renderKaart() {
     const eigenaar = zonesVanTeams[naam.toLowerCase()];
     if (eigenaar) g.classList.add(mijn && eigenaar.id === mijn.id ? 'mijn' : 'bezet');
     else if (SELECTIE_ZONE && String(SELECTIE_ZONE).toLowerCase() === naam.toLowerCase()) g.classList.add('keuze');
-    else if (mijnBeurt) g.classList.add('kiesbaar');
+    else if (mijnBeurt || namens) g.classList.add('kiesbaar');
   });
 
   const melding = $('#kaart-melding');
   const actie = $('#stek-actie');
   const knop = $('#btn-kies');
-  if (w.status === 'stekkeuze' && beurt) {
+  const annuleer = $('#btn-kies-annuleer');
+  annuleer.hidden = !namens;
+  if (w.status === 'stekkeuze' && (beurt || namens)) {
     melding.hidden = false;
-    if (mijnBeurt) {
+    if (namens) {
+      actie.hidden = false;
+      melding.className = 'melding groen';
+      const wat = heeftZones() ? SELECTIE_ZONE && zoneLabel(SELECTIE_ZONE) : SELECTIE.length === aantalNodig() && 'stek ' + [...SELECTIE].sort((a, b) => a - b).join(' + ');
+      melding.textContent = wat
+        ? `${wat} geselecteerd voor ${namens.naam}.`
+        : `Kies op de kaart een plek voor ${namens.naam} (beheer-modus).`;
+      knop.disabled = !wat;
+      knop.textContent = wat ? `Bevestig ${wat} voor ${namens.naam}` : 'Selecteer een plek';
+    } else if (mijnBeurt) {
       actie.hidden = false;
       if (heeftZones()) {
         melding.className = 'melding groen';
@@ -829,32 +875,51 @@ function renderKlassement() {
     return;
   }
   const plek = (t) => t.zone ? zoneLabel(t.zone) : (t.stekken?.length ? `stek ${t.stekken.join('+')}` : '');
-  const rangKlas = (i) => 'rank' + (i === 0 ? ' goud' : i === 1 ? ' zilver' : i === 2 ? ' brons' : '');
+  const rangKlas = (rang) => 'rank' + (rang === 1 ? ' goud' : rang === 2 ? ' zilver' : rang === 3 ? ' brons' : '');
+  // tiebreaks: gelijk totaal -> grootste vis wint; gelijk grootste -> vroegst gevangen wint
+  const grootsteVan = (r) => r.grootste ? r.grootste.gewicht_gram : 0;
+  const tijdGrootste = (r) => r.grootste ? new Date(r.grootste.created_at).getTime() : Infinity;
+  // volledig gelijke stand krijgt hetzelfde rangnummer
+  const metRang = (sleutelVan) => {
+    let rang = 0, vorige = null;
+    return rijen.map((r, i) => {
+      const sleutel = sleutelVan(r);
+      if (sleutel !== vorige) { rang = i + 1; vorige = sleutel; }
+      return { r, rang };
+    });
+  };
   if (KLASSEMENT_MODE === 'totaal') {
-    rijen.sort((a, b) => b.totaal - a.totaal || b.aantal - a.aantal);
-    const vissenVan = (teamId) => STATE.vangsten
-      .filter((v) => v.team_id === teamId)
-      .slice().reverse()
-      .map((v) => (v.gewicht_gram / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    rijen.sort((a, b) => b.totaal - a.totaal || grootsteVan(b) - grootsteVan(a) || tijdGrootste(a) - tijdGrootste(b));
+    const vissenVan = (teamId) => {
+      const alle = STATE.vangsten
+        .filter((v) => v.team_id === teamId)
+        .slice().reverse()
+        .map((v) => (v.gewicht_gram / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      return alle.length > 10
+        ? `${alle.slice(0, 10).join(' + ')} + nog ${alle.length - 10} kg`
+        : `${alle.join(' + ')} kg`;
+    };
     el.innerHTML = `<table class="klassement">
       <tr><th>#</th><th>Team</th><th class="r">Vissen</th><th class="r">Totaal</th></tr>
-      ${rijen.map((r, i) => `<tr>
-        <td class="${rangKlas(i)}">${i + 1}</td>
+      ${metRang((r) => `${r.totaal}|${grootsteVan(r)}|${tijdGrootste(r)}`).map(({ r, rang }) => `<tr>
+        <td class="${rangKlas(rang)}">${rang}</td>
         <td>${teamNaamHtml(r.team)} <span class="muted klein">${esc(plek(r.team))}</span>
-          <div class="opbouw">${vissenVan(r.team.id).join(' + ')} kg</div></td>
+          <div class="opbouw">${vissenVan(r.team.id)}</div></td>
         <td class="r">${r.aantal}</td>
         <td class="r"><b>${fmtKg(r.totaal)}</b></td>
       </tr>`).join('')}
     </table>`;
   } else {
-    rijen.sort((a, b) => b.grootste.gewicht_gram - a.grootste.gewicht_gram);
+    rijen.sort((a, b) => grootsteVan(b) - grootsteVan(a) || tijdGrootste(a) - tijdGrootste(b));
     el.innerHTML = `<table class="klassement">
       <tr><th>#</th><th>Team</th><th class="r">Grootste vis</th><th></th></tr>
-      ${rijen.map((r, i) => `<tr>
-        <td class="${rangKlas(i)}">${i + 1}</td>
+      ${metRang((r) => `${grootsteVan(r)}|${tijdGrootste(r)}`).map(({ r, rang }) => `<tr>
+        <td class="${rangKlas(rang)}">${rang}</td>
         <td>${teamNaamHtml(r.team)}</td>
         <td class="r"><b>${fmtKg(r.grootste.gewicht_gram)}</b></td>
-        <td><img class="thumb" src="${esc(fotoUrl(r.grootste.foto_path))}" alt="grootste vis" data-groot="${esc(fotoUrl(r.grootste.foto_path))}"></td>
+        <td>${r.grootste.foto_path
+          ? `<img class="thumb" src="${esc(fotoUrl(r.grootste.foto_path))}" alt="grootste vis" data-groot="${esc(fotoUrl(r.grootste.foto_path))}">`
+          : '<span class="foto-leeg thumb-maat">🎣</span>'}</td>
       </tr>`).join('')}
     </table>`;
   }
@@ -871,7 +936,7 @@ function renderVangsten() {
   el.innerHTML = STATE.vangsten.map((v) => {
     const t = teamsBijId.get(v.team_id);
     return `<div class="vangst-kaart">
-      <img src="${esc(fotoUrl(v.foto_path))}" alt="vangst" data-groot="${esc(fotoUrl(v.foto_path))}" loading="lazy">
+      ${vangstFotoHtml(v, 'groot')}
       <div class="info">
         <div class="gewicht">${fmtKg(v.gewicht_gram)}</div>
         <div class="wie">${t ? teamNaamHtml(t) : 'onbekend'}</div>
@@ -879,6 +944,17 @@ function renderVangsten() {
       </div>
     </div>`;
   }).join('');
+}
+
+// foto of nette placeholder (vangsten die de organisator zonder foto invoerde)
+function vangstFotoHtml(v, maat) {
+  if (!v.foto_path) {
+    return `<span class="foto-leeg ${maat === 'groot' ? 'foto-maat' : 'thumb-maat'}" title="ingevoerd door de organisator">🎣</span>`;
+  }
+  const url = esc(fotoUrl(v.foto_path));
+  return maat === 'groot'
+    ? `<img src="${url}" alt="vangst" data-groot="${url}" loading="lazy">`
+    : `<img class="thumb" src="${url}" data-groot="${url}" alt="">`;
 }
 
 /* ---------- push-meldingen ---------- */
@@ -963,12 +1039,21 @@ function initWedstrijd() {
   $('#btn-push').addEventListener('click', pushToggle);
 
   $('#btn-kies').addEventListener('click', async () => {
+    const namens = adminKiesActief();
     const t = sessie.team(CODE);
-    if (!t) return;
+    if (!namens && !t) return;
     const knop = $('#btn-kies');
     knop.disabled = true;
     try {
-      if (heeftZones()) {
+      if (namens) {
+        await rpc('w_admin_kies', {
+          p_code: CODE, p_pin: sessie.pin(CODE), p_team_id: namens.teamId,
+          p_zone: heeftZones() ? SELECTIE_ZONE : null,
+          p_stekken: heeftZones() ? null : [...SELECTIE].sort((a, b) => a - b),
+        });
+        toast(`Plek toegewezen aan ${namens.naam}.`);
+        ADMIN_KIES = null;
+      } else if (heeftZones()) {
         await rpc('w_kies_zone', { p_code: CODE, p_token: t.token, p_zone: SELECTIE_ZONE });
       } else {
         await rpc('w_kies_stek', { p_code: CODE, p_token: t.token, p_stekken: [...SELECTIE].sort((a, b) => a - b) });
@@ -979,6 +1064,11 @@ function initWedstrijd() {
       toast(foutTekst(err));
       await laadState(false);
     }
+  });
+  $('#btn-kies-annuleer').addEventListener('click', () => {
+    ADMIN_KIES = null;
+    SELECTIE = []; SELECTIE_ZONE = null;
+    renderKaart();
   });
 
   $('#form-join').addEventListener('submit', async (e) => {
@@ -1054,6 +1144,13 @@ function initWedstrijd() {
     setTimeout(() => { $('#btn-herstel').textContent = 'kopieer'; }, 2500);
   });
 
+  $('#btn-team-uitloggen').addEventListener('click', () =>
+    tikNogmaals($('#btn-team-uitloggen'), '⚠️ Zeker? Bewaar eerst je inlogcode', () => {
+      localStorage.removeItem('team:' + CODE);
+      toast('Uitgelogd bij dit team. Met je persoonlijke code log je weer in.');
+      laadState(false);
+    }));
+
   initBeheerKnoppen();
 
   document.body.addEventListener('click', (e) => {
@@ -1126,7 +1223,7 @@ function renderTeamTab() {
   mvCard.hidden = eigen.length === 0;
   $('#mijn-vangsten').innerHTML = eigen.map((v) => `
     <div class="vangst-kaart">
-      <img src="${esc(fotoUrl(v.foto_path))}" alt="vangst" data-groot="${esc(fotoUrl(v.foto_path))}" loading="lazy">
+      ${vangstFotoHtml(v, 'groot')}
       <div class="info">
         <div class="gewicht">${fmtKg(v.gewicht_gram)}</div>
         <div class="tijd">${fmtDatumTijd(v.created_at)}</div>
@@ -1151,6 +1248,49 @@ function initBeheerKnoppen() {
     const ok = await kopieerTekst(location.origin + location.pathname + '#/w/' + CODE);
     $('#b-kopieer').textContent = ok ? 'gekopieerd!' : 'kopiëren mislukt';
     setTimeout(() => { $('#b-kopieer').textContent = 'kopieer'; }, 2000);
+  });
+
+  $('#b-wedstrijd-opslaan').addEventListener('click', async () => {
+    const maxTekst = $('#b-max').value.trim();
+    const gelukt = await beheerActie('w_admin_wedstrijd', {
+      p_naam: $('#b-naam').value.trim() || null,
+      p_max_teams: maxTekst ? parseInt(maxTekst, 10) : null,
+      p_wis_max: !maxTekst,
+    });
+    if (gelukt) toast('Wedstrijd bijgewerkt.');
+  });
+
+  const bvFoto = $('#bv-foto');
+  bvFoto.addEventListener('change', () => {
+    const f = bvFoto.files[0];
+    $('#bv-foto-label').textContent = f ? '📷 ' + (f.name.length > 30 ? f.name.slice(0, 30) + '…' : f.name) : '📷 Foto (optioneel)';
+  });
+  $('#form-b-vangst').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const foutEl = $('#bv-fout'), okEl = $('#bv-ok'), knop = $('#bv-submit');
+    foutEl.hidden = true; okEl.hidden = true;
+    const gram = parseGewicht($('#bv-gewicht').value);
+    if (!gram) { foutEl.textContent = 'Vul een geldig gewicht in tussen 0,05 en 50 kg.'; foutEl.hidden = false; return; }
+    if (!$('#bv-team').value) { foutEl.textContent = 'Kies een team.'; foutEl.hidden = false; return; }
+    knop.disabled = true; knop.textContent = 'Bezig…';
+    try {
+      let pad = null;
+      const f = bvFoto.files[0];
+      if (f) {
+        const blob = await compressFoto(f);
+        pad = await uploadFoto(CODE, blob);
+      }
+      await rpc('w_admin_voeg_vangst', {
+        p_code: CODE, p_pin: sessie.pin(CODE),
+        p_team_id: $('#bv-team').value, p_gewicht_gram: gram, p_foto_path: pad,
+      });
+      okEl.textContent = `Vangst van ${fmtKg(gram)} toegevoegd.`;
+      okEl.hidden = false;
+      $('#form-b-vangst').reset();
+      $('#bv-foto-label').textContent = '📷 Foto (optioneel)';
+      await laadState(false);
+    } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+    knop.disabled = false; knop.textContent = 'Vangst toevoegen';
   });
 
   $('#b-regels-opslaan').addEventListener('click', async () => {
@@ -1233,8 +1373,10 @@ async function beheerActie(fn, extra) {
   try {
     await rpc(fn, { p_code: CODE, p_pin: sessie.pin(CODE), ...extra });
     await laadState(false);
+    return true;
   } catch (err) {
     foutEl.textContent = foutTekst(err); foutEl.hidden = false;
+    return false;
   }
 }
 
@@ -1252,6 +1394,13 @@ async function renderBeheer(magPrefill) {
   const w = STATE.wedstrijd;
   $('#b-code').textContent = w.code;
   $('#b-link').textContent = location.origin + location.pathname + '#/w/' + w.code;
+  const naamEl = $('#b-naam'), maxEl = $('#b-max');
+  if ((magPrefill || !naamEl.dataset.geraakt)
+      && document.activeElement !== naamEl && document.activeElement !== maxEl) {
+    naamEl.value = w.naam;
+    maxEl.value = w.max_teams ?? '';
+  }
+  naamEl.onfocus = maxEl.onfocus = () => { naamEl.dataset.geraakt = '1'; };
   const startEl = $('#b-start'), eindEl = $('#b-eind');
   if (magPrefill || (document.activeElement !== startEl && document.activeElement !== eindEl && !startEl.dataset.geraakt)) {
     startEl.value = naarLocalInput(w.start_ts);
@@ -1281,22 +1430,53 @@ async function renderBeheer(magPrefill) {
       <span class="naam">${teamNaamHtml(t)}</span>
       <span class="muted klein">${t.lot_nummer ? 'lot ' + t.lot_nummer : ''} ${t.zone ? '· ' + esc(zoneLabel(t.zone)) : (t.stekken || []).length ? '· stek ' + t.stekken.join('+') : ''}</span>
       <span class="muted klein">🔑 <b class="codegroot klein-code" data-team-code="${t.id}">·····</b></span>
-      ${w.status === 'aanmelden' ? `<button class="btn gevaar klein-btn" data-team-weg="${t.id}">verwijder</button>` : ''}
+      ${w.status === 'stekkeuze' && !(t.stekken || []).length ? `<button class="btn klein-btn" data-team-kies="${t.id}">📍 geef plek</button>` : ''}
+      <button class="btn gevaar klein-btn" data-team-weg="${t.id}">verwijder</button>
     </div>`).join('') : '<p class="muted">Nog geen deelnemers.</p>';
-  rpc('w_admin_teamcodes', { p_code: CODE, p_pin: sessie.pin(CODE) }).then((codes) => {
+  const codesSleutel = CODE + ':' + STATE.teams.length;
+  const vulCodes = (codes) => {
     for (const c of codes || []) {
       const el = $('#b-teams').querySelector(`[data-team-code="${c.team_id}"]`);
       if (el) el.textContent = c.deelnemer_code;
     }
-  }).catch(() => {});
+  };
+  if (TEAMCODES_CACHE.sleutel === codesSleutel) {
+    vulCodes(TEAMCODES_CACHE.codes);
+  } else {
+    rpc('w_admin_teamcodes', { p_code: CODE, p_pin: sessie.pin(CODE) }).then((codes) => {
+      TEAMCODES_CACHE = { sleutel: codesSleutel, codes: codes || [] };
+      vulCodes(codes);
+    }).catch(() => {});
+  }
   $('#b-teams').querySelectorAll('[data-team-weg]').forEach((b) => {
-    b.onclick = () => tikNogmaals(b, 'zeker?', () => beheerActie('w_admin_verwijder_team', { p_team_id: b.dataset.teamWeg }));
+    const geloot = w.status !== 'aanmelden';
+    b.onclick = () => tikNogmaals(b, geloot ? '⚠️ incl. vangsten, zeker?' : 'zeker?', () =>
+      beheerActie('w_admin_verwijder_team', { p_team_id: b.dataset.teamWeg }));
   });
+  $('#b-teams').querySelectorAll('[data-team-kies]').forEach((b) => {
+    b.onclick = () => {
+      const t = STATE.teams.find((x) => x.id === b.dataset.teamKies);
+      if (!t) return;
+      ADMIN_KIES = { teamId: t.id, naam: teamNaam(t) };
+      SELECTIE = []; SELECTIE_ZONE = null;
+      activateTab('kaart');
+      renderKaart();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  });
+
+  // vangst handmatig toevoegen: teamlijst bijhouden (niet verversen terwijl hij openstaat)
+  const teamSelect = $('#bv-team');
+  if (document.activeElement !== teamSelect) {
+    const huidig = teamSelect.value;
+    teamSelect.innerHTML = STATE.teams.map((t) => `<option value="${t.id}">${esc(teamNaam(t))}</option>`).join('');
+    if ([...teamSelect.options].some((o) => o.value === huidig)) teamSelect.value = huidig;
+  }
 
   const teamsBijId = new Map(STATE.teams.map((t) => [t.id, t]));
   $('#b-vangsten').innerHTML = STATE.vangsten.length ? STATE.vangsten.map((v) => `
     <div class="b-rij">
-      <img class="thumb" src="${esc(fotoUrl(v.foto_path))}" data-groot="${esc(fotoUrl(v.foto_path))}" alt="">
+      ${vangstFotoHtml(v, 'thumb')}
       <span class="naam">${teamsBijId.get(v.team_id) ? teamNaamHtml(teamsBijId.get(v.team_id)) : '?'} · ${fmtDatumTijd(v.created_at)}</span>
       <input class="gewicht-edit" value="${(v.gewicht_gram / 1000).toFixed(2).replace('.', ',')}" data-vangst="${v.id}">
       <button class="btn klein-btn" data-vangst-opslaan="${v.id}">opslaan</button>

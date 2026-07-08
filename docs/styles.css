@@ -173,6 +173,13 @@ table.klassement th.r { text-align: right; }
 .rank.zilver { color: #7d7d7d; }
 .rank.brons { color: #a0522d; }
 .thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; cursor: pointer; display: block; flex: 0 0 auto; }
+/* placeholder voor vangsten zonder foto (handmatig ingevoerd door de organisator) */
+.foto-leeg { display: flex; align-items: center; justify-content: center; background: var(--zand); border-radius: 8px; flex: 0 0 auto; }
+.foto-leeg.thumb-maat { width: 44px; height: 44px; font-size: 20px; }
+.foto-leeg.foto-maat { width: 72px; height: 72px; font-size: 28px; border-radius: 10px; }
+#b-toevoegen { margin-top: 10px; }
+#b-toevoegen summary { cursor: pointer; font-weight: 700; color: var(--blauw-donker); padding: 4px 0; }
+#stek-actie .breed + .breed { margin-top: 8px; }
 
 /* vangstenfeed */
 .vangst-kaart {
