@@ -32,9 +32,12 @@ self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data.json(); } catch { d = { body: e.data && e.data.text() }; }
   e.waitUntil((async () => {
-    // app zichtbaar in beeld: de in-app toast volstaat, geen dubbele melding
-    const vensters = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    if (vensters.some((c) => c.visibilityState === 'visible')) return;
+    // alleen onderdrukken als DEZE wedstrijd zichtbaar in beeld staat
+    // (dan volstaat de in-app toast); zonder route-info altijd tonen
+    if (d.url) {
+      const vensters = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      if (vensters.some((c) => c.visibilityState === 'visible' && c.url.includes(d.url))) return;
+    }
     await self.registration.showNotification(d.title || 'Viswedstrijd', {
       body: d.body || 'Nieuwe vangst!',
       icon: 'icon-192.png',
@@ -49,8 +52,15 @@ self.addEventListener('push', (e) => {
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const route = e.notification.data && e.notification.data.url;
-  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((lijst) => {
-    for (const c of lijst) { if ('focus' in c) return c.focus(); }
+  e.waitUntil((async () => {
+    const lijst = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of lijst) {
+      // bestaand venster: eerst naar de juiste wedstrijd navigeren, dan focussen
+      if (route && !c.url.includes(route) && 'navigate' in c) {
+        try { await c.navigate('./' + route); } catch { /* navigatie geweigerd: alleen focus */ }
+      }
+      if ('focus' in c) return c.focus();
+    }
     return self.clients.openWindow(route ? './' + route : '.');
-  }));
+  })());
 });

@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 21; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 23; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -49,6 +49,8 @@ const FOUTEN = {
   eind_voor_start: 'De eindtijd moet na de starttijd liggen.',
   vangst_niet_gevonden: 'Vangst niet gevonden.',
   ongeldig_gewicht: 'Ongeldig gewicht: vul tussen 0,05 en 50 kg in.',
+  team_heeft_vangsten: 'Dit team heeft vangsten. Verwijder eerst de vangsten (hieronder bij Vangsten corrigeren), of laat het team staan.',
+  foto_al_gebruikt: 'Deze foto hoort al bij een andere vangst. Maak een nieuwe foto.',
 };
 const foutTekst = (e) => FOUTEN[e.message] || ('Er ging iets mis: ' + e.message);
 
@@ -896,7 +898,7 @@ function renderKlassement() {
         .slice().reverse()
         .map((v) => (v.gewicht_gram / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       return alle.length > 10
-        ? `${alle.slice(0, 10).join(' + ')} + nog ${alle.length - 10} kg`
+        ? `${alle.slice(0, 10).join(' + ')} kg + nog ${alle.length - 10} vissen`
         : `${alle.join(' + ')} kg`;
     };
     el.innerHTML = `<table class="klassement">
