@@ -924,3 +924,199 @@ grant execute on function public.w_org_verwijder_wedstrijd(text, text) to anon, 
 --     w_org_verwijder_wedstrijd: pg_sleep(0.5) bij fout wachtwoord
 --     (brute-force-demping)
 -- ============================================================
+
+-- Volledige definities van de gewijzigde/nieuwe functies (identiek aan live):
+
+alter table wedstrijd.vangsten alter column foto_path drop not null;
+alter table wedstrijd.vangsten add constraint vangsten_gewicht_check check (gewicht_gram between 50 and 50000);
+create unique index if not exists vangsten_foto_uniek on wedstrijd.vangsten (foto_path) where foto_path is not null;
+
+create or replace function public.w_registreer_vangst(p_code text, p_token uuid, p_gewicht_gram integer, p_foto_path text)
+returns json language plpgsql security definer set search_path to ''
+as $function$
+declare
+  v_w wedstrijd.wedstrijden;
+  v_team wedstrijd.teams;
+  v_id uuid;
+  v_wie text;
+begin
+  select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code));
+  if not found then raise exception 'wedstrijd_niet_gevonden'; end if;
+  select * into v_team from wedstrijd.teams where wedstrijd_id = v_w.id and token = p_token;
+  if not found then raise exception 'team_niet_gevonden'; end if;
+  if now() < v_w.start_ts then raise exception 'wedstrijd_niet_begonnen'; end if;
+  if now() > v_w.eind_ts then raise exception 'wedstrijd_afgelopen'; end if;
+  if p_gewicht_gram is null or p_gewicht_gram < 50 or p_gewicht_gram > 50000 then
+    raise exception 'ongeldig_gewicht';
+  end if;
+  if p_foto_path is null or p_foto_path not like (v_w.code || '/%') or length(p_foto_path) > 200 then
+    raise exception 'ongeldige_foto';
+  end if;
+  begin
+    insert into wedstrijd.vangsten (wedstrijd_id, team_id, gewicht_gram, foto_path)
+    values (v_w.id, v_team.id, p_gewicht_gram, p_foto_path)
+    returning id into v_id;
+  exception when unique_violation then
+    -- retry na netwerk-timeout: zelfde foto = zelfde vangst, geen dubbele registratie
+    select id into v_id from wedstrijd.vangsten where foto_path = p_foto_path;
+    return json_build_object('id', v_id, 'dubbel', true);
+  end;
+  begin
+    v_wie := coalesce(v_team.team_naam, v_team.naam || coalesce(' & ' || v_team.naam2, ''));
+    perform extensions.http_post_ignore(v_w.id, v_team.id, v_w.naam,
+      'Nieuwe vangst: ' || round(p_gewicht_gram / 1000.0, 2) || ' kg door ' || v_wie);
+  exception when others then null;
+  end;
+  return json_build_object('id', v_id);
+end $function$;
+
+create or replace function public.w_admin_vangst(p_code text, p_pin text, p_vangst_id uuid, p_gewicht_gram integer default null, p_verwijder boolean default false)
+returns json language plpgsql security definer set search_path to ''
+as $function$
+declare v_w wedstrijd.wedstrijden;
+begin
+  select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code)) and admin_pin = trim(p_pin);
+  if not found then raise exception 'pin_onjuist'; end if;
+  if p_gewicht_gram is not null and (p_gewicht_gram < 50 or p_gewicht_gram > 50000) then
+    raise exception 'ongeldig_gewicht';
+  end if;
+  update wedstrijd.vangsten set
+    gewicht_gram = coalesce(p_gewicht_gram, gewicht_gram),
+    status = case when p_verwijder then 'verwijderd' else status end
+  where id = p_vangst_id and wedstrijd_id = v_w.id;
+  if not found then raise exception 'vangst_niet_gevonden'; end if;
+  return json_build_object('ok', true);
+end $function$;
+
+create or replace function public.w_admin_kies(p_code text, p_pin text, p_team_id uuid, p_zone text default null, p_stekken integer[] default null)
+returns json language plpgsql security definer set search_path to ''
+as $function$
+declare
+  v_w wedstrijd.wedstrijden;
+  v_team wedstrijd.teams;
+  v_stekken int[];
+  v_nodig int;
+  v_posities int[];
+begin
+  select w.* into v_w from wedstrijd.wedstrijden w
+  where w.code = upper(trim(p_code)) and w.admin_pin = trim(p_pin) for update;
+  if not found then raise exception 'pin_onjuist'; end if;
+  if v_w.status <> 'stekkeuze' then raise exception 'geen_stekkeuze_fase'; end if;
+  select t.* into v_team from wedstrijd.teams t
+  where t.id = p_team_id and t.wedstrijd_id = v_w.id for update;
+  if not found then raise exception 'team_niet_gevonden'; end if;
+  if cardinality(v_team.stekken) > 0 then raise exception 'al_gekozen'; end if;
+  if v_w.zones is not null then
+    if p_zone is null then raise exception 'wedstrijd_gebruikt_zones'; end if;
+    select coalesce(array_agg(s::int), '{}') into v_stekken
+    from jsonb_array_elements(v_w.zones) z, jsonb_array_elements_text(z->'stekken') s
+    where lower(trim(z->>'naam')) = lower(trim(p_zone));
+    if cardinality(v_stekken) = 0 then raise exception 'onbekende_zone'; end if;
+    if exists (select 1 from wedstrijd.teams
+               where wedstrijd_id = v_w.id and lower(coalesce(zone,'')) = lower(trim(p_zone))) then
+      raise exception 'zone_bezet';
+    end if;
+    update wedstrijd.teams set stekken = v_stekken, zone = trim(p_zone) where id = v_team.id;
+  else
+    if p_stekken is null then raise exception 'wedstrijd_zonder_zones'; end if;
+    v_nodig := case when v_w.mode = 'koppel' then 2 else 1 end;
+    if cardinality(p_stekken) <> v_nodig or (select count(distinct s) from unnest(p_stekken) s) <> v_nodig then
+      raise exception 'verkeerd_aantal_stekken';
+    end if;
+    select array_agg(positie order by positie) into v_posities
+    from wedstrijd.stek_ring where stek = any(p_stekken);
+    if coalesce(cardinality(v_posities),0) <> v_nodig then raise exception 'onbekende_stek'; end if;
+    if v_nodig = 2 and v_posities[2] - v_posities[1] <> 1 then raise exception 'stekken_niet_naast_elkaar'; end if;
+    if exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and stekken && p_stekken) then
+      raise exception 'stek_bezet';
+    end if;
+    update wedstrijd.teams set stekken = p_stekken where id = v_team.id;
+  end if;
+  if not exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and cardinality(stekken) = 0) then
+    update wedstrijd.wedstrijden set status = 'klaar' where id = v_w.id;
+  end if;
+  return json_build_object('ok', true);
+end $function$;
+grant execute on function public.w_admin_kies(text, text, uuid, text, integer[]) to anon, authenticated;
+
+create or replace function public.w_admin_verwijder_team(p_code text, p_pin text, p_team_id uuid)
+returns json language plpgsql security definer set search_path to ''
+as $function$
+declare v_w wedstrijd.wedstrijden;
+begin
+  select * into v_w from wedstrijd.wedstrijden
+  where code = upper(trim(p_code)) and admin_pin = trim(p_pin) for update;
+  if not found then raise exception 'pin_onjuist'; end if;
+  delete from wedstrijd.teams where id = p_team_id and wedstrijd_id = v_w.id;
+  if not found then raise exception 'team_niet_gevonden'; end if;
+  -- als het laatste keuzeloze team wegvalt tijdens de stekkeuze is de loting compleet
+  if v_w.status = 'stekkeuze' and not exists (
+    select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and cardinality(stekken) = 0
+  ) and exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id) then
+    update wedstrijd.wedstrijden set status = 'klaar' where id = v_w.id;
+  end if;
+  return json_build_object('ok', true);
+end $function$;
+
+create or replace function public.w_admin_voeg_vangst(p_code text, p_pin text, p_team_id uuid, p_gewicht_gram integer, p_foto_path text default null)
+returns json language plpgsql security definer set search_path to ''
+as $function$
+declare
+  v_w wedstrijd.wedstrijden;
+  v_team wedstrijd.teams;
+  v_id uuid;
+  v_wie text;
+begin
+  select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code)) and admin_pin = trim(p_pin);
+  if not found then raise exception 'pin_onjuist'; end if;
+  select * into v_team from wedstrijd.teams where id = p_team_id and wedstrijd_id = v_w.id;
+  if not found then raise exception 'team_niet_gevonden'; end if;
+  if p_gewicht_gram is null or p_gewicht_gram < 50 or p_gewicht_gram > 50000 then
+    raise exception 'ongeldig_gewicht';
+  end if;
+  if p_foto_path is not null and (p_foto_path not like (v_w.code || '/%') or length(p_foto_path) > 200) then
+    raise exception 'ongeldige_foto';
+  end if;
+  insert into wedstrijd.vangsten (wedstrijd_id, team_id, gewicht_gram, foto_path)
+  values (v_w.id, v_team.id, p_gewicht_gram, p_foto_path)
+  returning id into v_id;
+  begin
+    v_wie := coalesce(v_team.team_naam, v_team.naam || coalesce(' & ' || v_team.naam2, ''));
+    perform extensions.http_post_ignore(v_w.id, v_team.id, v_w.naam,
+      'Nieuwe vangst: ' || round(p_gewicht_gram / 1000.0, 2) || ' kg door ' || v_wie);
+  exception when others then null;
+  end;
+  return json_build_object('id', v_id);
+end $function$;
+grant execute on function public.w_admin_voeg_vangst(text, text, uuid, integer, text) to anon, authenticated;
+
+create or replace function public.w_admin_wedstrijd(p_code text, p_pin text, p_naam text default null, p_max_teams integer default null, p_wis_max boolean default false)
+returns json language plpgsql security definer set search_path to ''
+as $function$
+declare
+  v_w wedstrijd.wedstrijden;
+  v_teams int;
+begin
+  select * into v_w from wedstrijd.wedstrijden
+  where code = upper(trim(p_code)) and admin_pin = trim(p_pin) for update;
+  if not found then raise exception 'pin_onjuist'; end if;
+  if p_naam is not null then
+    if coalesce(trim(p_naam),'') = '' or length(p_naam) > 60 then raise exception 'ongeldige_naam'; end if;
+    update wedstrijd.wedstrijden set naam = trim(p_naam) where id = v_w.id;
+  end if;
+  if p_wis_max then
+    update wedstrijd.wedstrijden set max_teams = null where id = v_w.id;
+  elsif p_max_teams is not null then
+    select count(*) into v_teams from wedstrijd.teams where wedstrijd_id = v_w.id;
+    if p_max_teams < 2 or p_max_teams > 200 or p_max_teams < v_teams then
+      raise exception 'ongeldig_maximum';
+    end if;
+    update wedstrijd.wedstrijden set max_teams = p_max_teams where id = v_w.id;
+  end if;
+  return json_build_object('ok', true);
+end $function$;
+grant execute on function public.w_admin_wedstrijd(text, text, text, integer, boolean) to anon, authenticated;
+
+-- w_org_check / w_org_wedstrijden / w_org_standaard_zones / w_org_verwijder_wedstrijd:
+-- ongewijzigd behalve: perform pg_catalog.pg_sleep(0.5) direct vóór de fout/null
+-- bij een onjuist organisatie-wachtwoord.
