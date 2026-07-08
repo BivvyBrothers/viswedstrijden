@@ -110,7 +110,11 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
 (w_org_verwijder_wedstrijd: organisator verwijdert een wedstrijd definitief;
 teams/vangsten/push_subs cascaden, foto's via edge function `wis-fotos` met de
 Storage API omdat directe deletes op storage.objects geblokkeerd zijn; zelfde
-x-push-secret-patroon als push-vangst, best effort via pg_net).
+x-push-secret-patroon als push-vangst, best effort via pg_net),
+`wedstrijd_analyse_ronde_1` (gewicht 50-50000g server-side, idempotente
+vangst-registratie via unieke foto_path, w_admin_kies/w_admin_voeg_vangst/
+w_admin_wedstrijd, team verwijderen in elke fase, pg_sleep bij fout org-ww;
+vangsten.foto_path is sindsdien nullable: placeholder in de UI).
 Nieuwe migraties benoemen als `wedstrijd_<omschrijving>`.
 Advisor-warnings "security definer callable by anon" op de `w_*`-functies zijn
 by design (de RPC's zijn de publieke API, validatie zit erin).
