@@ -114,8 +114,14 @@ x-push-secret-patroon als push-vangst, best effort via pg_net),
 `wedstrijd_analyse_ronde_1` (gewicht 50-50000g server-side, idempotente
 vangst-registratie via unieke foto_path, w_admin_kies/w_admin_voeg_vangst/
 w_admin_wedstrijd, team verwijderen in elke fase, pg_sleep bij fout org-ww;
-vangsten.foto_path is sindsdien nullable: placeholder in de UI).
+vangsten.foto_path is sindsdien nullable: placeholder in de UI),
+`wedstrijd_codex_v2_fixes` (team verwijderen geblokkeerd bij vangsten
+'team_heeft_vangsten'; idempotentie eist zelfde wedstrijd+team+gewicht+actief
+anders 'foto_al_gebruikt'; foto_path-regex gelijk aan wis-fotos.ts).
 Nieuwe migraties benoemen als `wedstrijd_<omschrijving>`.
+**Werkafspraak:** `review/database.sql` na elke migratie-reeks VERS exporteren
+uit de live database (pg_get_functiondef); nooit changelog-blokken aanplakken,
+dat gaf in de Codex-v2-review schijn-bevindingen over verouderde definities.
 Advisor-warnings "security definer callable by anon" op de `w_*`-functies zijn
 by design (de RPC's zijn de publieke API, validatie zit erin).
 
