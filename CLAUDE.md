@@ -105,7 +105,12 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
 ## Migraties (Supabase, schema wedstrijd)
 
 `wedstrijd_schema_v1`, `wedstrijd_rpcs_v1`, `wedstrijd_fotos_bucket`,
-`wedstrijd_admin_check`, `wedstrijd_fotos_geen_listing`.
+`wedstrijd_admin_check`, `wedstrijd_fotos_geen_listing`, ...,
+`wedstrijd_verwijder_wedstrijd` + `wedstrijd_verwijder_via_storage_api`
+(w_org_verwijder_wedstrijd: organisator verwijdert een wedstrijd definitief;
+teams/vangsten/push_subs cascaden, foto's via edge function `wis-fotos` met de
+Storage API omdat directe deletes op storage.objects geblokkeerd zijn; zelfde
+x-push-secret-patroon als push-vangst, best effort via pg_net).
 Nieuwe migraties benoemen als `wedstrijd_<omschrijving>`.
 Advisor-warnings "security definer callable by anon" op de `w_*`-functies zijn
 by design (de RPC's zijn de publieke API, validatie zit erin).

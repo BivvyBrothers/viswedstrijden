@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 19; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 20; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -536,6 +536,7 @@ function orgWedstrijdKaart(w, nuMs) {
     <div class="row org-acties">
       <button class="btn primary" data-org-open="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">Openen &amp; beheren</button>
       ${w.status === 'aanmelden' && actief ? `<button class="btn" data-org-loting="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">🎲 Start loting</button>` : ''}
+      <button class="btn gevaar" data-org-verwijder="${esc(w.code)}" data-naam="${esc(w.naam)}">🗑️</button>
     </div>
   </div>`;
 }
@@ -566,6 +567,18 @@ function renderOrg() {
         await rpc('w_start_stekkeuze', { p_code: b.dataset.orgLoting, p_pin: b.dataset.pin });
         sessie.zetPin(b.dataset.orgLoting, b.dataset.pin);
         location.hash = '#/w/' + b.dataset.orgLoting;
+      } catch (err) { toast(foutTekst(err)); }
+    });
+  });
+  document.querySelectorAll('[data-org-verwijder]').forEach((b) => {
+    b.onclick = () => tikNogmaals(b, '⚠️ Definitief weg', async () => {
+      try {
+        const res = await rpc('w_org_verwijder_wedstrijd', {
+          p_wachtwoord: sessie.orgWw() || '',
+          p_code: b.dataset.orgVerwijder,
+        });
+        toast(`"${res.naam}" verwijderd (${res.teams} team${res.teams === 1 ? '' : 's'}, ${res.vangsten} vangst${res.vangsten === 1 ? '' : 'en'}).`);
+        laadOrg();
       } catch (err) { toast(foutTekst(err)); }
     });
   });

@@ -849,3 +849,48 @@ as $$
   else null end;
 $$;
 grant execute on function public.w_admin_teamcodes(text, text) to anon, authenticated;
+
+-- ============================================================
+-- UPDATE 8 jul 2026: wedstrijd verwijderen door de organisator
+-- (migraties wedstrijd_verwijder_wedstrijd + wedstrijd_verwijder_via_storage_api)
+-- Foto's gaan via edge function wis-fotos (Storage API, service role; directe
+-- deletes op storage.objects zijn door Supabase geblokkeerd). Zelfde
+-- x-push-secret-patroon als push-vangst, aangeroepen via pg_net (best effort).
+-- ============================================================
+
+create or replace function public.w_secret_check(p_secret text) returns boolean
+language sql security definer set search_path = ''
+as $$
+  select exists (select 1 from wedstrijd.instellingen where id = 1 and push_secret = p_secret);
+$$;
+grant execute on function public.w_secret_check(text) to anon, authenticated;
+
+-- extensions.http_wis_fotos(p_paths jsonb): post {paths} met x-push-secret naar
+-- functions/v1/wis-fotos (zie review/wis-fotos.ts), spiegel van http_post_ignore.
+
+create or replace function public.w_org_verwijder_wedstrijd(p_wachtwoord text, p_code text) returns json
+language plpgsql security definer set search_path = ''
+as $function$
+declare
+  v_id uuid; v_naam text; v_teams int; v_vangsten int; v_paths jsonb;
+begin
+  if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_wachtwoord)) then
+    raise exception 'org_wachtwoord_onjuist';
+  end if;
+  select id, naam into v_id, v_naam from wedstrijd.wedstrijden
+  where upper(code) = upper(trim(p_code)) for update;
+  if v_id is null then raise exception 'wedstrijd_niet_gevonden'; end if;
+  select count(*) into v_teams from wedstrijd.teams where wedstrijd_id = v_id;
+  select count(*), coalesce(jsonb_agg(foto_path) filter (where foto_path is not null), '[]'::jsonb)
+    into v_vangsten, v_paths from wedstrijd.vangsten where wedstrijd_id = v_id;
+  if jsonb_array_length(v_paths) > 0 then
+    begin
+      perform extensions.http_wis_fotos(v_paths);
+    exception when others then null;
+    end;
+  end if;
+  delete from wedstrijd.wedstrijden where id = v_id;  -- teams/vangsten/push_subs cascaden
+  return json_build_object('ok', true, 'naam', v_naam,
+    'teams', v_teams, 'vangsten', v_vangsten, 'fotos', jsonb_array_length(v_paths));
+end $function$;
+grant execute on function public.w_org_verwijder_wedstrijd(text, text) to anon, authenticated;
