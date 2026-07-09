@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 32; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 33; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
