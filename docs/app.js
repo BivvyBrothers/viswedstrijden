@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 25; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 26; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -931,7 +931,7 @@ function renderKlassement() {
 function renderVangsten() {
   const el = $('#vangsten-feed');
   if (!STATE.vangsten.length) {
-    el.innerHTML = '<p class="muted">Nog geen vangsten. De eerste karper komt eraan…</p>';
+    el.innerHTML = '<p class="muted">Nog geen vangsten. De eerste vis komt eraan…</p>';
     return;
   }
   const teamsBijId = new Map(STATE.teams.map((t) => [t.id, t]));
