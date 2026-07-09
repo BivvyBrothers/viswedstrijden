@@ -3,7 +3,7 @@
    internet is en een werkende app als het bereik aan het water wegvalt. */
 const CACHE = 'shell';
 const SHELL = ['./', 'index.html', 'instructies.html', 'styles.css', 'app.js', 'kaart.js', 'config.js',
-  'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
+  'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'kemblinck-logo.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {}));

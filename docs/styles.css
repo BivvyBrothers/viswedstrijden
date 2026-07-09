@@ -296,3 +296,7 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .stek.uit { cursor: default; }
 .stek.uit .stek-dot { opacity: .3; }
 .stek.uit text, .stek.uit line { opacity: .3; }
+
+/* KemblincK-logo onderaan elke pagina */
+.site-voet { text-align: center; padding: 0 0 28px; }
+.site-voet img { width: 84px; height: auto; opacity: .75; }
