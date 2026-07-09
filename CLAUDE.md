@@ -1,7 +1,9 @@
 # Viswedstrijden · Plas van der Ende
 
-Webapp voor karperwedstrijden: digitale loting, stekkeuze op de dieptekaart,
-vangstregistratie met foto, live klassement met aftelklok.
+Webapp voor viswedstrijden: digitale loting, stekkeuze op de dieptekaart,
+vangstregistratie met foto, live klassement met aftelklok. Gepositioneerd voor
+viswedstrijden in het algemeen (niet alleen karper); wordt via kemblinck.nl ook
+aangeboden aan andere viswaters/hengelsportverenigingen die een eigen app willen.
 
 ## Werkafspraken
 
