@@ -52,6 +52,15 @@ h2 { font-size: 17px; margin: 0 0 10px; color: var(--blauw-donker); }
 .fout { color: var(--rood); font-weight: 600; }
 .ok { color: var(--groen); font-weight: 600; }
 
+.merk-blok { text-align: center; }
+.merk-titel { margin: 0 0 6px; font-weight: 700; color: var(--blauw-donker); }
+.merk-blok .klein { margin: 0 auto; max-width: 46ch; }
+.merk-links { margin: 12px 0 4px; font-weight: 600; }
+.merk-links a { color: var(--blauw); text-decoration: none; }
+.merk-links a:hover { text-decoration: underline; }
+.merk-links span { color: var(--zand-donker); margin: 0 8px; }
+.merk-voet { margin: 4px 0 0; opacity: .8; }
+
 input, select, button { font: inherit; }
 input, select {
   width: 100%; padding: 10px 12px; border: 1.5px solid var(--zand-donker);
