@@ -61,7 +61,11 @@ h2 { font-size: 17px; margin: 0 0 10px; color: var(--blauw-donker); }
 .merk-blok { text-align: center; }
 .merk-titel { margin: 0 0 8px; font-family: 'Cinzel', Georgia, serif; font-weight: 700;
   font-size: 18px; letter-spacing: .03em; color: #0D360E; }
-.merk-blok .klein { margin: 0 auto; max-width: 46ch; color: #4a5442; }
+.merk-tekst { margin: 0 auto; max-width: 44ch; font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 300; font-size: 13.5px; line-height: 1.55; color: rgba(13, 54, 14, 0.62); }
+.merk-tekst a { color: #EE8303; text-decoration: none; border-bottom: 1px solid transparent;
+  white-space: nowrap; font-weight: 400; }
+.merk-tekst a:hover { border-bottom-color: #EE8303; }
 .merk-voet { margin: 14px 0 6px; }
 .merk-voet img { width: 84px; height: auto; }
 .merk-links { margin: 0; }
