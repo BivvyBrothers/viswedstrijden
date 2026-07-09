@@ -32,7 +32,9 @@ input, select { font-size: 16px; }
   display: flex; align-items: center; justify-content: space-between;
   padding: calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px calc(16px + env(safe-area-inset-left));
 }
-.brand { color: #fff; text-decoration: none; font-weight: 700; font-size: 17px; }
+.brand { color: #fff; text-decoration: none; font-weight: 700; font-size: 17px;
+  display: inline-flex; align-items: center; gap: 8px; }
+.brand-logo { width: 26px; height: 26px; border-radius: 6px; display: block; }
 .topcode { font-family: ui-monospace, Menlo, monospace; letter-spacing: 2px; opacity: .85; }
 
 .container { max-width: 860px; margin: 0 auto; padding: 12px calc(12px + env(safe-area-inset-right)) calc(80px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
@@ -41,7 +43,10 @@ input, select { font-size: 16px; }
   background: #fff; border-radius: 14px; padding: 16px;
   margin: 12px 0; box-shadow: 0 1px 4px rgba(42,39,33,.08);
 }
-.hero { background: linear-gradient(150deg, #2c331f, #4d5839 55%, #6d7355); color: #fff; }
+.hero { background: linear-gradient(150deg, #2c331f, #4d5839 55%, #6d7355); color: #fff;
+  display: flex; align-items: center; gap: 16px; }
+.hero-logo { width: 64px; height: 64px; border-radius: 14px; flex: 0 0 auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25); }
 .hero h1 { margin: 4px 0 8px; font-size: 26px; line-height: 1.2; }
 .hero .sub { margin: 0; opacity: .9; }
 
@@ -52,14 +57,18 @@ h2 { font-size: 17px; margin: 0 0 10px; color: var(--blauw-donker); }
 .fout { color: var(--rood); font-weight: 600; }
 .ok { color: var(--groen); font-weight: 600; }
 
+/* merk-blok in de huisstijl van kemblinck.nl (Cinzel, inkt-groen, oranje accent) */
 .merk-blok { text-align: center; }
-.merk-titel { margin: 0 0 6px; font-weight: 700; color: var(--blauw-donker); }
-.merk-blok .klein { margin: 0 auto; max-width: 46ch; }
-.merk-links { margin: 12px 0 4px; font-weight: 600; }
-.merk-links a { color: var(--blauw); text-decoration: none; }
-.merk-links a:hover { text-decoration: underline; }
+.merk-titel { margin: 0 0 8px; font-family: 'Cinzel', Georgia, serif; font-weight: 700;
+  font-size: 18px; letter-spacing: .03em; color: #0D360E; }
+.merk-blok .klein { margin: 0 auto; max-width: 46ch; color: #4a5442; }
+.merk-voet { margin: 14px 0 6px; }
+.merk-voet img { width: 84px; height: auto; }
+.merk-links { margin: 0; }
+.merk-links a { color: #EE8303; text-decoration: none; font-size: 13.5px;
+  letter-spacing: .08em; border-bottom: 1px solid transparent; }
+.merk-links a:hover { color: #0D360E; border-bottom-color: #EE8303; }
 .merk-links span { color: var(--zand-donker); margin: 0 8px; }
-.merk-voet { margin: 4px 0 0; opacity: .8; }
 
 input, select, button { font: inherit; }
 input, select {

@@ -5,12 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Viswedstrijd app</title>
 <meta name="description" content="Viswedstrijd app: loting, stekkeuze, vangstregistratie en live klassement.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://xyfvkmhkwcjqskxrcfrj.supabase.co; connect-src 'self' https://xyfvkmhkwcjqskxrcfrj.supabase.co; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://xyfvkmhkwcjqskxrcfrj.supabase.co; connect-src 'self' https://xyfvkmhkwcjqskxrcfrj.supabase.co; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
 <meta name="theme-color" content="#353d2a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Viswedstrijd">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="stylesheet" href="styles.css">
@@ -20,15 +23,18 @@
 
 <header class="topbar">
   <button id="btn-terug" class="terug-knop" aria-label="Terug" hidden>‹</button>
-  <a href="#/" class="brand">🎣 Viswedstrijd app</a>
+  <a href="#/" class="brand"><img src="icon-192.png" alt="" class="brand-logo"> Viswedstrijd app</a>
   <span id="topcode" class="topcode"></span>
 </header>
 
 <!-- ============ HOME ============ -->
 <main id="view-home" class="container" hidden>
   <section class="hero card">
-    <h1>Viswedstrijden</h1>
-    <p class="sub">Loting, stekkeuze, vangstregistratie en live klassement, alles op één plek.</p>
+    <img src="icon-192.png" alt="" class="hero-logo">
+    <div>
+      <h1>Viswedstrijden</h1>
+      <p class="sub">Loting, stekkeuze, vangstregistratie en live klassement, alles op één plek.</p>
+    </div>
   </section>
 
   <section class="card">
@@ -73,12 +79,12 @@
     <p class="muted klein">Ook jullie wedstrijden kunnen een eigen app krijgen, met eigen
     kaart, loting en klassement. Neem contact op voor een app op maat voor jullie water
     en wedstrijd(en).</p>
+    <p class="merk-voet"><a href="https://kemblinck.nl" target="_blank" rel="noopener" aria-label="Een product van KemblincK"><img src="kemblinck-logo.png" alt="Een product van KemblincK" width="84" height="84"></a></p>
     <p class="merk-links">
       <a href="https://kemblinck.nl" target="_blank" rel="noopener">kemblinck.nl</a>
       <span aria-hidden="true">·</span>
       <a href="mailto:info@kemblinck.nl">info@kemblinck.nl</a>
     </p>
-    <p class="merk-voet"><a href="https://kemblinck.nl" target="_blank" rel="noopener" aria-label="Een product van KemblincK"><img src="kemblinck-logo.png" alt="Een product van KemblincK" width="84" height="84"></a></p>
   </section>
 </main>
 
