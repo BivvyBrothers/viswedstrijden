@@ -18,7 +18,7 @@ aangeboden aan andere viswaters/hengelsportverenigingen die een eigen app willen
 
 - **Frontend:** statisch, vanilla JS, geen build-stap, geen dependencies.
   Webroot is `docs/` (GitHub Pages, branch main, map /docs).
-  Live: https://viswedstrijd.kemblinck.nl (CNAME in `docs/CNAME`, DNS bij TransIP).
+  Live: https://viswedstrijdapp.nl (CNAME in `docs/CNAME`, DNS bij TransIP).
 - **Backend:** Supabase-project "Samen" (`xyfvkmhkwcjqskxrcfrj`), schema **`wedstrijd`**
   (gedeeld project, LET OP: raak de andere schema's/tabellen daar niet aan).
   Foto's in publieke storage-bucket `wedstrijd-fotos` (max 5 MB, alleen afbeeldingen).

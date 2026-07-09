@@ -1,4 +1,4 @@
-# Draaiboek wedstrijddag | viswedstrijd.kemblinck.nl
+# Draaiboek wedstrijddag | viswedstrijdapp.nl
 
 Praktische checklist voor de organisator, van voorbereiding tot prijsuitreiking.
 Alles werkt vanaf je telefoon; het organisatie-wachtwoord heb je uit je hoofd of
