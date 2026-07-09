@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 23; // gelijk houden met docs/version.json; verhogen bij elke release
+const APP_VERSION = 24; // gelijk houden met docs/version.json; verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -49,7 +49,7 @@ const FOUTEN = {
   eind_voor_start: 'De eindtijd moet na de starttijd liggen.',
   vangst_niet_gevonden: 'Vangst niet gevonden.',
   ongeldig_gewicht: 'Ongeldig gewicht: vul tussen 0,05 en 50 kg in.',
-  team_heeft_vangsten: 'Dit team heeft vangsten. Verwijder eerst de vangsten (hieronder bij Vangsten corrigeren), of laat het team staan.',
+  team_heeft_vangsten: 'Dit team heeft (of had) vangsten en kan daarom niet verwijderd worden. Laat het team staan; vangsten corrigeren kan hieronder.',
   foto_al_gebruikt: 'Deze foto hoort al bij een andere vangst. Maak een nieuwe foto.',
 };
 const foutTekst = (e) => FOUTEN[e.message] || ('Er ging iets mis: ' + e.message);
