@@ -2,7 +2,7 @@
    Strategie: network-first met cache-fallback, dus altijd verse code als er
    internet is en een werkende app als het bereik aan het water wegvalt. */
 const CACHE = 'shell';
-const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'kaart.js', 'config.js',
+const SHELL = ['./', 'index.html', 'instructies.html', 'styles.css', 'app.js', 'kaart.js', 'config.js',
   'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {

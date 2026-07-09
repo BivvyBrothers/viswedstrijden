@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zet de app op je beginscherm · Viswedstrijd app</title>
+<meta name="description" content="Zo zet je de viswedstrijd-app op het beginscherm van je iPhone of Android-telefoon, met meldingen bij nieuwe vangsten.">
+<meta name="theme-color" content="#353d2a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="icon-192.png">
+<style>
+  .instr-kop { display: flex; align-items: center; gap: 14px; }
+  .instr-kop img { width: 64px; height: 64px; border-radius: 14px; }
+  .instr-url {
+    background: var(--blauw-donker); color: #fff; border-radius: 12px;
+    padding: 14px 16px; text-align: center; margin: 12px 0;
+  }
+  .instr-url .adres { font-family: ui-monospace, Menlo, monospace; font-weight: 700; font-size: 19px; color: #E8871E; word-break: break-all; }
+  .stap-rij { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--zand); }
+  .stap-rij:last-child { border-bottom: none; }
+  .stap-nr {
+    flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%;
+    background: #E8871E; color: #fff; font-weight: 800; font-size: 17px;
+    display: flex; align-items: center; justify-content: center; margin-top: 2px;
+  }
+  .stap-rij b { color: var(--blauw-donker); }
+  .stap-rij p { margin: 2px 0 0; color: var(--grijs); font-size: 14.5px; line-height: 1.45; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="./" class="terug-knop" aria-label="Terug" style="text-decoration:none; display:flex; align-items:center; justify-content:center;">‹</a>
+  <a href="./" class="brand">🎣 Viswedstrijd app</a>
+  <span class="topcode"></span>
+</header>
+
+<main class="container">
+  <section class="card hero">
+    <div class="instr-kop">
+      <img src="icon-180.png" alt="app-logo">
+      <div>
+        <h1>Zet de app op je beginscherm</h1>
+        <p class="sub">Klaar in één minuut. Zonder App Store, zonder account.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <p class="muted">Eén keer op je beginscherm zetten en je hebt alles bij de hand:
+    de loting, de kaart met stekken en zones, vangsten doorgeven en het live klassement.</p>
+    <div class="instr-url">
+      <div class="muted klein" style="color:#d9dcc2">Open op je telefoon in <b style="color:#fff">Safari</b> (iPhone) of <b style="color:#fff">Chrome</b> (Android)</div>
+      <div class="adres">viswedstrijd.kemblinck.nl</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>iPhone: in drie stappen</h2>
+    <div class="stap-rij">
+      <span class="stap-nr">1</span>
+      <div><b>Tik op de deel-knop</b>
+        <p>Open deze site in Safari en tik onderaan op het vierkantje met de pijl omhoog.</p></div>
+    </div>
+    <div class="stap-rij">
+      <span class="stap-nr">2</span>
+      <div><b>Zet op beginscherm</b>
+        <p>Scrol in het menu omlaag, kies "Zet op beginscherm" en tik op Toevoegen.</p></div>
+    </div>
+    <div class="stap-rij">
+      <span class="stap-nr">3</span>
+      <div><b>Meldingen aan</b>
+        <p>Open de app voortaan via het visje op je beginscherm en tik op de knop
+        "meldingen over nieuwe vangsten". Meldingen werken op iPhone alleen via de
+        beginscherm-app, niet vanuit Safari zelf.</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Android</h2>
+    <p class="muted">Open de site in Chrome, tik rechtsboven op de drie puntjes en kies
+    <b>App installeren</b> (of <b>Toevoegen aan startscherm</b>). Meldingen werken op
+    Android ook gewoon in de browser.</p>
+  </section>
+
+  <section class="card">
+    <h2>Meedoen met een wedstrijd</h2>
+    <p class="muted">Kies op de startpagina <b>Deelnemer</b> en vul de <b>wedstrijdcode</b>
+    van de organisatie in, plus je naam. Je krijgt dan een <b>persoonlijke code</b>:
+    bewaar die goed, daarmee log je altijd en overal weer in onder je eigen naam.</p>
+    <p><a class="btn primary breed" href="./" style="display:block; text-align:center; text-decoration:none;">Naar de app</a></p>
+    <p class="muted klein">Liever op papier? <a href="instructies-print.pdf">Download de print-versie (PDF, A4)</a>.</p>
+  </section>
+</main>
+
+</body>
+</html>
