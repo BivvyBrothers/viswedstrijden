@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="nl"><head><meta charset="utf-8"><title>Prijzen · Viswedstrijd app</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Avenir Next", "Segoe UI", Arial, sans-serif; width: 210mm; height: 297mm;
+         background: #edeadb; color: #29271e; position: relative; }
+  .kop { background: #353d2a; color: #fff; padding: 10mm 14mm 8mm; display: flex; align-items: center; gap: 8mm; }
+  .kop img { width: 26mm; height: 26mm; border-radius: 5.5mm; }
+  .kop h1 { font-size: 24pt; line-height: 1.15; font-weight: 800; }
+  .kop .sub { color: #E8871E; font-size: 12.5pt; font-weight: 700; margin-top: 1.5mm; }
+  .body { padding: 7mm 14mm 0; }
+  .intro { font-size: 10.5pt; line-height: 1.45; color: #3c392c; }
+  .features { display: flex; flex-wrap: wrap; gap: 2mm 3mm; margin: 4mm 0 6mm; }
+  .features span { background: #dfdcc6; border-radius: 3mm; padding: 1.6mm 3.4mm; font-size: 8.8pt;
+                   color: #45412e; font-weight: 600; }
+  .kolommen { display: flex; gap: 6mm; align-items: stretch; }
+  .kolom { flex: 1; display: flex; flex-direction: column; gap: 4mm; }
+  .kolomkop { font-size: 13pt; font-weight: 800; color: #353d2a; }
+  .kolomkop small { display: block; font-weight: 600; font-size: 8.8pt; color: #7a7660; margin-top: .8mm; }
+  .kaart { background: #fff; border-radius: 5mm; padding: 5mm 6mm; box-shadow: 0 1px 3px rgba(42,39,33,.18); }
+  .kaart .naam { font-size: 10.5pt; font-weight: 800; color: #353d2a; }
+  .kaart .prijs { font-size: 19pt; font-weight: 800; color: #E8871E; margin: 1mm 0 .5mm; }
+  .kaart .prijs small { font-size: 9.5pt; color: #7a7660; font-weight: 600; }
+  .kaart p { font-size: 9pt; line-height: 1.45; color: #57543f; }
+  .setup { background: #dfdcc6; border-radius: 5mm; padding: 4.5mm 6mm; }
+  .setup b.titel { display: block; font-size: 10.5pt; color: #353d2a; margin-bottom: 2mm; }
+  .setup .rij { display: flex; justify-content: space-between; gap: 4mm; font-size: 9pt;
+                color: #45412e; padding: 1.1mm 0; }
+  .setup .rij b { color: #353d2a; white-space: nowrap; }
+  table.staffel { width: 100%; border-collapse: collapse; }
+  table.staffel td, table.staffel th { padding: 2.2mm 2mm; font-size: 9pt; text-align: left; }
+  table.staffel th { color: #7a7660; font-size: 8.2pt; text-transform: uppercase; letter-spacing: .4px;
+                     border-bottom: .5mm solid #dfdcc6; }
+  table.staffel tr + tr td { border-top: .3mm solid #eceada; }
+  table.staffel .p { font-weight: 800; color: #E8871E; font-size: 11pt; white-space: nowrap; }
+  .gratis { margin-top: 6mm; background: #353d2a; color: #fff; border-radius: 5mm; padding: 4.5mm 6mm;
+            display: flex; align-items: center; gap: 5mm; }
+  .gratis .ster { flex: 0 0 auto; width: 10mm; height: 10mm; border-radius: 50%; background: #E8871E;
+                  display: flex; align-items: center; justify-content: center; font-size: 13pt;
+                  color: #fff; font-weight: 800; }
+  .gratis b { color: #E8871E; }
+  .gratis p { font-size: 9.5pt; line-height: 1.45; color: #d9dcc2; }
+  .betaling { margin-top: 4mm; font-size: 9pt; color: #57543f; line-height: 1.5; }
+  .betaling b { color: #353d2a; }
+  .voet { position: absolute; left: 0; right: 0; bottom: 0; background: #353d2a; color: #9ba183;
+          padding: 5mm 14mm; font-size: 9pt; display: flex; justify-content: space-between; align-items: center; }
+  .voet .oranje { color: #E8871E; font-weight: 700; }
+  .voet img { width: 8mm; height: 8mm; vertical-align: middle; margin-right: 2.5mm;
+              background: #edeadb; border-radius: 2mm; padding: .7mm; }
+  .voet .kem { display: flex; align-items: center; }
+</style></head>
+<body>
+  <div class="kop">
+    <img src="docs/icon-512.png" alt="logo">
+    <div>
+      <h1>Viswedstrijd app · prijzen</h1>
+      <div class="sub">Digitale loting, stekkeuze op de kaart, vangsten met foto en live klassement</div>
+    </div>
+  </div>
+  <div class="body">
+    <p class="intro">De app werkt op elke telefoon, zonder App Store en zonder accounts voor de
+    vissers. Elke organisatie krijgt een eigen omgeving met eigen adres, bijvoorbeeld
+    <b>viswedstrijdapp.nl/naam</b>. Alle prijzen zijn inclusief hosting, updates en hulp bij de
+    eerste wedstrijd.</p>
+
+    <div class="features">
+      <span>🎲 digitale loting</span>
+      <span>🗺️ stekkeuze op de waterkaart</span>
+      <span>⚖️ vangsten met foto</span>
+      <span>🏆 live klassement</span>
+      <span>🔔 pushmeldingen</span>
+      <span>👀 onbeperkt kijkers</span>
+      <span>♾️ onbeperkt wedstrijden</span>
+    </div>
+
+    <div class="kolommen">
+      <div class="kolom">
+        <div class="kolomkop">Vriendengroepen<small>prijzen incl. btw · standaardkaart met zones</small></div>
+        <div class="kaart">
+          <div class="naam">Losse wedstrijd</div>
+          <div class="prijs">€ 29</div>
+          <p>Eén wedstrijd, tot 30 deelnemers. Geen opstartkosten: aanvragen, betalen en vissen.</p>
+        </div>
+        <div class="kaart">
+          <div class="naam">Vrienden-jaar</div>
+          <div class="prijs">€ 79 <small>per jaar</small></div>
+          <p>Eigen omgeving met eigen adres, onbeperkt wedstrijden, tot 20 deelnemers per
+          wedstrijd. Ideaal voor een vaste visgroep.</p>
+        </div>
+      </div>
+      <div class="kolom">
+        <div class="kolomkop">Verenigingen en viswaterbeheerders<small>prijzen excl. btw</small></div>
+        <div class="setup">
+          <b class="titel">Eenmalige start (eigen omgeving + eigen adres)</b>
+          <div class="rij"><span>Met standaardkaart (zone-indeling)</span><b>€ 49</b></div>
+          <div class="rij"><span>Met maatwerk dieptekaart van jullie eigen water</span><b>€ 195</b></div>
+          <div class="rij"><span>Extra water (tweede maatwerkkaart)</span><b>€ 95</b></div>
+        </div>
+        <div class="kaart">
+          <table class="staffel">
+            <tr><th>Jaarabonnement</th><th>Deelnemers</th><th></th></tr>
+            <tr><td><b>Klein</b></td><td>tot 25</td><td class="p">€ 99 /jr</td></tr>
+            <tr><td><b>Middel</b></td><td>tot 60</td><td class="p">€ 169 /jr</td></tr>
+            <tr><td><b>Groot</b></td><td>onbeperkt</td><td class="p">€ 249 /jr</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="gratis">
+      <span class="ster">✓</span>
+      <p><b>Eerst zien, dan geloven?</b> De eerste wedstrijd proberen jullie gratis. Wij zetten
+      alles klaar en denken mee tijdens de wedstrijddag.</p>
+    </div>
+
+    <p class="betaling"><b>Betalen gaat eenvoudig:</b> je ontvangt een factuur met iDEAL-betaallink
+    (vriendengroepen krijgen de betaallink gewoon via WhatsApp). Na betaling staat de omgeving
+    dezelfde week klaar. Abonnementen lopen per jaar en stoppen automatisch als je niet verlengt;
+    oude wedstrijden blijven dan gewoon terug te kijken. Prijswijzigingen voorbehouden.</p>
+  </div>
+  <div class="voet">
+    <span><span class="oranje">viswedstrijdapp.nl</span> &nbsp;·&nbsp; info@kemblinck.nl</span>
+    <span class="kem"><img src="docs/kemblinck-logo.png" alt="">een product van KemblincK &nbsp;·&nbsp; kemblinck.nl</span>
+  </div>
+</body></html>
