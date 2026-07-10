@@ -57,21 +57,17 @@ h2 { font-size: 17px; margin: 0 0 10px; color: var(--blauw-donker); }
 .fout { color: var(--rood); font-weight: 600; }
 .ok { color: var(--groen); font-weight: 600; }
 
-/* merk-blok in de huisstijl van kemblinck.nl (Cinzel, inkt-groen, oranje accent) */
+/* merk-blok in de gewone app-stijl */
 .merk-blok { text-align: center; }
-.merk-titel { margin: 0 0 8px; font-family: 'Cinzel', Georgia, serif; font-weight: 700;
-  font-size: 18px; letter-spacing: .03em; color: #0D360E; }
-.merk-tekst { margin: 0 auto; max-width: 44ch; font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 300; font-size: 13.5px; line-height: 1.55; color: rgba(13, 54, 14, 0.62); }
-.merk-tekst a { color: #EE8303; text-decoration: none; border-bottom: 1px solid transparent;
-  white-space: nowrap; font-weight: 400; }
-.merk-tekst a:hover { border-bottom-color: #EE8303; }
+.merk-titel { margin: 0 0 8px; font-weight: 700; font-size: 17px; color: var(--blauw-donker); }
+.merk-tekst { margin: 0 auto; max-width: 46ch; font-size: 13px; line-height: 1.5; color: var(--grijs); }
+.merk-tekst a { color: var(--blauw); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.merk-tekst a:hover { text-decoration: underline; }
 .merk-voet { margin: 14px 0 6px; }
 .merk-voet img { width: 84px; height: auto; }
-.merk-links { margin: 0; }
-.merk-links a { color: #EE8303; text-decoration: none; font-size: 13.5px;
-  letter-spacing: .08em; border-bottom: 1px solid transparent; }
-.merk-links a:hover { color: #0D360E; border-bottom-color: #EE8303; }
+.merk-links { margin: 0; font-weight: 600; font-size: 13px; }
+.merk-links a { color: var(--blauw); text-decoration: none; }
+.merk-links a:hover { text-decoration: underline; }
 .merk-links span { color: var(--zand-donker); margin: 0 8px; }
 
 input, select, button { font: inherit; }
