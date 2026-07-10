@@ -272,7 +272,7 @@ out = (
     f"const STEK_POSITIE = {json.dumps({str(s): p for s, p in ring})};\n"
     f"const ZONE_STANDAARD = {json.dumps(ZONELAAG['zones'])};\n"
 )
-dest = os.path.join(os.path.dirname(__file__), '..', 'docs', 'kaart.js')
+dest = os.path.join(os.path.dirname(__file__), '..', 'docs', 'nphv', 'kaart.js')
 with open(dest, 'w') as f:
     f.write(out)
 print('kaart.js geschreven:', len(svg), 'bytes svg,', len(ring), 'stekken')
