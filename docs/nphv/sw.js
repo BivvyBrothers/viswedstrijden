@@ -1,15 +1,25 @@
-/* Service worker: web push + offline app-shell.
+/* Service worker NPHV: web push + offline app-shell.
    Strategie: network-first met cache-fallback, dus altijd verse code als er
-   internet is en een werkende app als het bereik aan het water wegvalt. */
-const CACHE = 'shell';
-const SHELL = ['./', 'index.html', 'instructies.html', 'styles.css', 'app.js', 'kaart.js', 'config.js',
-  'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'kemblinck-logo.png'];
+   internet is en een werkende app als het bereik aan het water wegvalt.
+   Let op de paden: deze worker draait onder /nphv/; gedeelde assets staan op
+   de root en MOETEN hier absoluut staan, tenant-bestanden relatief. */
+const CACHE = 'nphv-shell-v1';
+const SHELL = ['./', 'index.html', 'instructies.html', 'kaart.js', 'config.js', 'manifest.webmanifest',
+  '/styles.css', '/app.js', '/icon-180.png', '/icon-192.png', '/icon-512.png', '/kemblinck-logo.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.filter((p) => p !== 'version.json'))).catch(() => {}));
+  // per stuk cachen: één ontbrekende asset mag de rest van de shell niet blokkeren
+  e.waitUntil(caches.open(CACHE).then((c) =>
+    Promise.allSettled(SHELL.map((pad) => c.add(pad)))));
   self.skipWaiting();
 });
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener('activate', (e) => e.waitUntil((async () => {
+  const sleutels = await caches.keys();
+  await Promise.all(sleutels
+    .filter((k) => k !== CACHE && (k.startsWith('nphv-shell') || k === 'shell'))
+    .map((k) => caches.delete(k)));
+  await self.clients.claim();
+})()));
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
@@ -24,7 +34,9 @@ self.addEventListener('fetch', (e) => {
       return r;
     }).catch(() =>
       caches.match(req, { ignoreSearch: true }).then((m) => m
-        || (req.mode === 'navigate' ? caches.match('index.html') : Response.error())))
+        || (req.mode === 'navigate'
+          ? caches.match('./').then((thuis) => thuis || caches.match('index.html'))
+          : Response.error())))
   );
 });
 

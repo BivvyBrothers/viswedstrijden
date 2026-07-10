@@ -110,6 +110,20 @@ De dieptekaart is nagetekend van de originele NPHV-scan (`Dieptekaart plas.pdf`)
 Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tools/`.
 `docs/kaart.js` nooit met de hand bewerken (gegenereerd bestand).
 
+## Release-checklist (multi-tenant, sinds v36)
+
+Bij elke release controleren:
+1. `APP_VERSION` in docs/app.js == ELKE tenant-`version.json` (docs/nphv/version.json;
+   root-version.json bestaat alleen nog voor oude clients en mag meelopen).
+2. Elke tenant-map is compleet: index.html, config.js, kaart.js,
+   manifest.webmanifest, sw.js, version.json, instructies.html (+ print-pdf).
+3. Alle paden in de `SHELL`-lijst van elke tenant-sw.js bestaan ECHT
+   (gedeelde assets absoluut: /app.js, /styles.css, iconen; tenant-bestanden
+   relatief). Cache-naam is tenant-specifiek (`nphv-shell-*`), NOOIT kaal 'shell'.
+4. Elke statische HTML-pagina heeft bewust een eigen meta-CSP
+   (instructiepagina's: script-src 'none').
+5. Bij wijzigingen aan gedeelde teksten: root- én tenant-instructies bijwerken.
+
 ## Lokaal draaien en testen
 
 - Preview-server "viswedstrijden" in de launch.json van de cowork-map (poort 8642).
