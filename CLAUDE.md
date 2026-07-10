@@ -3,7 +3,8 @@
 Webapp voor viswedstrijden: digitale loting, stekkeuze op de dieptekaart,
 vangstregistratie met foto, live klassement met aftelklok. Gepositioneerd voor
 viswedstrijden in het algemeen (niet alleen karper); wordt via kemblinck.nl ook
-aangeboden aan andere viswaters/hengelsportverenigingen die een eigen app willen.
+aangeboden aan verenigingen, viswaterbeheerders en vriendengroepen die zelf
+wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
 
 ## Werkafspraken
 
@@ -19,6 +20,19 @@ aangeboden aan andere viswaters/hengelsportverenigingen die een eigen app willen
 - **Frontend:** statisch, vanilla JS, geen build-stap, geen dependencies.
   Webroot is `docs/` (GitHub Pages, branch main, map /docs).
   Live: https://viswedstrijdapp.nl (CNAME in `docs/CNAME`, DNS bij TransIP).
+- **Multi-tenant (sinds 11 jul 2026):** elke organisatie krijgt een eigen pad,
+  bijv. `/nphv/` (NPHV, Nootdorps Pijnackerse Hengelsportvereniging, Plas van
+  der Ende). De root is een keuzepagina (`docs/index.html` + `docs/landing.js`;
+  stuurt oude `#/w`- en `#/k`-links door naar /nphv/). GEDEELD op de root:
+  app.js, styles.css, iconen, kemblinck-logo. PER TENANT in de eigen map:
+  index.html (naam/branding), config.js, kaart.js, manifest.webmanifest
+  (start_url/scope ./), sw.js (eigen scope), version.json, instructies.html
+  (+ print-pdf). Tenant-index verwijst naar gedeelde assets met absolute paden
+  (/app.js). De oude root-sw.js is een self-destruct (unregister + cache wissen).
+  DATABASE is nog single-tenant: bij de tweede organisatie krijgen
+  instellingen/wedstrijden een tenant-kolom (eigen org-wachtwoord en
+  standaard_zones per water) en gaan de w_*-RPC's een p_water-parameter
+  meekrijgen vanuit config.js; dat is bewust uitgesteld tot die er is.
 - **Backend:** Supabase-project "Samen" (`xyfvkmhkwcjqskxrcfrj`), schema **`wedstrijd`**
   (gedeeld project, LET OP: raak de andere schema's/tabellen daar niet aan).
   Foto's in publieke storage-bucket `wedstrijd-fotos` (max 5 MB, alleen afbeeldingen).
