@@ -1,7 +1,7 @@
 # Viswedstrijden · Plas van der Ende
 
 Webapp voor karperwedstrijden op de Plas van der Ende: digitale loting, stekkeuze op de
-interactieve dieptekaart, vangstregistratie met foto en een live klassement.
+interactieve waterkaart, vangstregistratie met foto en een live klassement.
 
 ## Structuur
 
