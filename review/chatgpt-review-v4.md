@@ -7,6 +7,11 @@ webroot `docs/`, huidige stand = commit met APP_VERSION 39). Sindsdien is het
 "klaar-voor-klanten-pakket" gebouwd. Controleer dat op bugs, security-gaten en
 regressies. Wees streng: dit gaat naar betalende verenigingen.
 
+Dit document staat in `KemblincK/Viswedstrijden/review/`; alle paden hieronder
+zijn relatief aan `KemblincK/Viswedstrijden/` en zijn rechtstreeks leesbaar
+vanaf schijf (zelfde map als dit bestand). De code staat ook publiek op
+https://github.com/BivvyBrothers/viswedstrijden (branch main).
+
 ## Wat is er nieuw sinds jouw v3-controle (v36 → v39)
 
 1. **v37/v38 (klein):** tekstrondes: beide inlogroutes in alle uitleg,
