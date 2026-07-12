@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 38; // gelijk houden met ELKE tenant-version.json (docs/nphv/version.json); verhogen bij elke release
+const APP_VERSION = 39; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -21,6 +21,7 @@ const FOUTEN = {
   pin_onjuist: 'Pincode onjuist.',
   pin_te_kort: 'Pincode moet minimaal 4 tekens zijn.',
   org_wachtwoord_onjuist: 'Organisatie-wachtwoord onjuist.',
+  alleen_lezen: 'Deze omgeving staat op alleen-lezen: nieuwe wedstrijden aanmaken kan nu niet. Oude wedstrijden blijven gewoon te bekijken. Neem contact op via info@kemblinck.nl om weer te activeren.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
   al_geloot: 'De loting is al gestart.',
   geen_deelnemers: 'Er zijn nog geen deelnemers aangemeld.',

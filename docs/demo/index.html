@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Viswedstrijden Demo</title>
+<meta name="description" content="Viswedstrijden van Demo: loting, stekkeuze, vangstregistratie en live klassement.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://xyfvkmhkwcjqskxrcfrj.supabase.co; connect-src 'self' https://xyfvkmhkwcjqskxrcfrj.supabase.co; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+<meta name="theme-color" content="#353d2a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Demo">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="/icon-192.png">
+</head>
+<body>
+
+<header class="topbar">
+  <button id="btn-terug" class="terug-knop" aria-label="Terug" hidden>‹</button>
+  <a href="#/" class="brand"><img src="/icon-192.png" alt="" class="brand-logo"> Demo Viswedstrijden</a>
+  <span id="topcode" class="topcode"></span>
+</header>
+
+<!-- ============ HOME ============ -->
+<main id="view-home" class="container" hidden>
+  <section class="hero card">
+    <img src="/icon-192.png" alt="" class="hero-logo">
+    <div>
+      <h1>Viswedstrijden Demo</h1>
+      <p class="sub">Probeer de app met een voorbeeldwedstrijd</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Bekijk de voorbeeldwedstrijd</h2>
+    <p class="muted">Dit is de demo-omgeving met een afgelopen voorbeeldwedstrijd.
+    Open hem als kijker en je ziet de uitslag en het klassement (met de opbouw
+    per vis), precies zoals het thuisfront dat op de wedstrijddag live volgt.</p>
+    <p><a class="btn primary breed" href="#/k/KIJKJE" style="display:block; text-align:center; text-decoration:none;">🎣 Open de demo-wedstrijd als kijker</a></p>
+    <p class="muted">Het deelnemer-scherm zien, met de kaart met stekken en het
+    vangsten doorgeven? Kies hieronder <b>Deelnemer</b> en log in met code
+    <b>DEMOJA</b>: dan kijk je mee als visser Jan.</p>
+    <p class="muted klein">Zelf wedstrijden organiseren in een eigen omgeving?
+    <a href="/info.html">Bekijk wat de app kan</a> of mail
+    <a href="mailto:info@kemblinck.nl?subject=Wedstrijd-app%20voor%20onze%20wedstrijden">info@kemblinck.nl</a>.</p>
+  </section>
+
+  <section class="card">
+    <h2>Inloggen</h2>
+    <div class="rolknoppen">
+      <button class="rolknop" data-rol="deelnemer">🎣 <b>Deelnemer</b><span>meedoen met een wedstrijd</span></button>
+      <button class="rolknop" data-rol="kijker">📺 <b>Kijker</b><span>klassement live volgen</span></button>
+      <button class="rolknop" data-rol="org">🛠️ <b>Organisator</b><span>wedstrijden beheren</span></button>
+    </div>
+
+    <form id="form-deelnemer" class="rolform" hidden>
+      <p class="muted klein">Nieuw? Vul de wedstrijdcode van de organisator in.
+      Al aangemeld? Vul je persoonlijke code in en je gaat verder onder je eigen naam.</p>
+      <div class="row">
+        <input id="deelnemer-code" type="text" placeholder="wedstrijd- of persoonlijke code" maxlength="6" autocapitalize="characters" autocomplete="off" required>
+        <button type="submit" class="btn primary">Meedoen</button>
+      </div>
+    </form>
+
+    <form id="form-kijker" class="rolform" hidden>
+      <p class="muted klein">Vul de kijkcode in om het klassement live te volgen (met meldingen bij nieuwe vangsten).</p>
+      <div class="row">
+        <input id="kijker-code" type="text" placeholder="kijkcode" maxlength="6" autocapitalize="characters" autocomplete="off" required>
+        <button type="submit" class="btn primary">Volgen</button>
+      </div>
+    </form>
+
+    <form id="form-orglogin" class="rolform" hidden>
+      <p class="muted klein">Alleen voor de organisatie.</p>
+      <div class="row">
+        <input id="org-ww" type="password" placeholder="organisatie-wachtwoord" autocomplete="off" required>
+        <button type="submit" class="btn primary">Inloggen</button>
+      </div>
+      <p id="org-fout" class="fout" hidden></p>
+    </form>
+
+    <p class="muted klein installeer-tip">📲 Nieuw hier? <a href="instructies.html">Bekijk de uitleg</a> over de app en hoe je hem op je beginscherm zet, voor snelle toegang en meldingen bij nieuwe vangsten.</p>
+  </section>
+
+  <section class="card merk-blok">
+    <p class="merk-titel">Zelf viswedstrijden organiseren?</p>
+    <p class="merk-tekst">Voor hengelsportverenigingen en viswaterbeheerders, maar net zo goed
+    voor een groep vrienden die zelf een wedstrijd organiseert. Iedere organisatie krijgt een
+    eigen omgeving met eigen kaart, loting en klassement.
+    <a href="mailto:info@kemblinck.nl?subject=Wedstrijd-app%20voor%20onze%20wedstrijden">Neem contact op</a>
+    of <a href="/info.html">bekijk wat de app allemaal kan</a>.</p>
+    <p class="merk-voet"><a href="https://kemblinck.nl" target="_blank" rel="noopener" aria-label="Een product van KemblincK"><img src="/kemblinck-logo.png" alt="Een product van KemblincK" width="84" height="84"></a></p>
+    <p class="merk-links">
+      <a href="https://kemblinck.nl" target="_blank" rel="noopener">kemblinck.nl</a>
+      <span aria-hidden="true">·</span>
+      <a href="mailto:info@kemblinck.nl">info@kemblinck.nl</a>
+    </p>
+  </section>
+</main>
+
+<!-- ============ ORGANISATIE ============ -->
+<main id="view-org" class="container" hidden>
+  <section class="card">
+    <div class="w-kop" style="justify-content:space-between">
+      <h1>🛠️ Organisatie</h1>
+      <button id="org-uitloggen" class="btn klein-btn">uitloggen</button>
+    </div>
+    <p class="muted klein">Deel per wedstrijd de <b>deelnemerscode</b> met de vissers en de <b>kijkcode</b> met iedereen die mag meekijken.</p>
+  </section>
+
+  <section class="card">
+    <h2>Actieve wedstrijden</h2>
+    <div id="org-actief"></div>
+  </section>
+
+  <section class="card">
+    <h2>Nieuwe wedstrijd</h2>
+    <form id="form-nieuw" class="stack">
+      <label>Naam van de wedstrijd
+        <input id="nw-naam" type="text" maxlength="60" placeholder="bijv. Voorjaarswedstrijd 2027" required>
+      </label>
+      <label>Type
+        <select id="nw-mode">
+          <option value="individueel">Individueel (1 stek per visser)</option>
+          <option value="koppel">Koppels (2 stekken naast elkaar)</option>
+        </select>
+      </label>
+      <label>Maximaal aantal deelnemers <span class="muted">(optioneel; bij koppels telt een koppel als 1)</span>
+        <input id="nw-max" type="number" inputmode="numeric" min="2" max="200" placeholder="onbeperkt">
+      </label>
+      <label>Wedstrijdregels <span class="muted">(optioneel; deelnemers zien dit na het inloggen)</span>
+        <textarea id="nw-regels" rows="5" maxlength="3000" placeholder="bijv.&#10;- Maximaal 2 hengels per visser&#10;- Onthaakmat en schepnet verplicht&#10;- Alle vissoorten tellen mee&#10;- Vis direct terugzetten na weging en foto"></textarea>
+      </label>
+      <div class="row2">
+        <label>Start
+          <input id="nw-start" type="datetime-local" required>
+        </label>
+        <label>Einde
+          <input id="nw-eind" type="datetime-local" required>
+        </label>
+      </div>
+      <button type="submit" class="btn primary">Wedstrijd aanmaken</button>
+      <p id="nieuw-fout" class="fout" hidden></p>
+    </form>
+  </section>
+
+  <section class="card" id="org-zones-card">
+    <h2>Vaste zone-indeling van de plas</h2>
+    <p class="muted klein">Deze indeling geldt automatisch voor elke nieuwe wedstrijd.
+    Eén regel per zone, formaat <b>Naam: steknummers</b>, bijv. <b>Zone A: 20-30</b> of <b>B: 55</b>
+    (een zone mag ook uit 1 stek bestaan). Leeg = loting per losse stek.</p>
+    <textarea id="org-zones" rows="8"></textarea>
+    <button id="org-zones-opslaan" class="btn primary">Vaste indeling opslaan</button>
+    <p id="org-zones-fout" class="fout" hidden></p>
+    <p id="org-zones-ok" class="ok" hidden></p>
+  </section>
+
+  <section class="card">
+    <h2>Eerdere wedstrijden</h2>
+    <div id="org-verleden"></div>
+  </section>
+</main>
+
+<!-- ============ WEDSTRIJD ============ -->
+<main id="view-wedstrijd" class="container" hidden>
+  <section class="card klok-card">
+    <div class="w-kop">
+      <h1 id="w-naam"></h1>
+      <span id="w-status" class="chip"></span>
+    </div>
+    <div id="w-tijden" class="muted klein"></div>
+    <div id="klok" class="klok"></div>
+    <div id="klok-sub" class="muted klein"></div>
+    <div class="push-rij">
+      <button id="btn-push" class="btn klein-btn" hidden>🔔 Meldingen aan</button>
+      <span id="push-tip" class="muted klein" hidden></span>
+    </div>
+  </section>
+
+  <details class="card regels-card" id="regels-card" hidden>
+    <summary>📋 Wedstrijdregels</summary>
+    <div id="regels-tekst" class="regels-tekst"></div>
+  </details>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="kaart" class="actief">Kaart</button>
+    <button data-tab="klassement">Klassement</button>
+    <button data-tab="vangsten">Vangsten</button>
+    <button data-tab="team">Mijn team</button>
+    <button data-tab="beheer">Beheer</button>
+  </nav>
+
+  <!-- Kaart -->
+  <section id="tab-kaart" class="tab">
+    <div class="card">
+      <div id="kaart-melding" class="melding" hidden></div>
+      <div id="kaart-houder" class="kaart-houder"></div>
+      <div class="kaart-legenda">
+        <span><i class="dot vrij"></i> vrij</span>
+        <span><i class="dot bezet"></i> bezet</span>
+        <span><i class="dot mijn"></i> mijn stek</span>
+        <span><i class="dot keuze"></i> selectie</span>
+      </div>
+      <div id="stek-actie" hidden>
+        <button id="btn-kies" class="btn primary breed" disabled></button>
+        <button id="btn-kies-annuleer" class="btn breed" hidden>Annuleer (terug naar Beheer)</button>
+      </div>
+    </div>
+    <div class="card" id="loting-card">
+      <h2>Loting &amp; volgorde</h2>
+      <div id="loting-lijst"></div>
+    </div>
+  </section>
+
+  <!-- Klassement -->
+  <section id="tab-klassement" class="tab" hidden>
+    <div class="card">
+      <div class="schakel">
+        <button id="kl-totaal" class="actief">Totaalgewicht</button>
+        <button id="kl-grootste">Grootste vis</button>
+      </div>
+      <div id="klassement-inhoud"></div>
+    </div>
+  </section>
+
+  <!-- Vangsten -->
+  <section id="tab-vangsten" class="tab" hidden>
+    <div class="card">
+      <h2>Vangsten</h2>
+      <div id="vangsten-feed"></div>
+    </div>
+  </section>
+
+  <!-- Mijn team -->
+  <section id="tab-team" class="tab" hidden>
+    <div class="card" id="join-card" hidden>
+      <h2>Meedoen</h2>
+      <p id="join-uitleg" class="muted"></p>
+      <form id="form-join" class="stack">
+        <label>Naam <input id="join-naam" type="text" maxlength="40" required></label>
+        <label id="join-naam2-label" hidden>Naam koppelmaat <input id="join-naam2" type="text" maxlength="40"></label>
+        <label id="join-teamnaam-label" hidden>Teamnaam <span class="muted">(optioneel)</span> <input id="join-teamnaam" type="text" maxlength="40" placeholder="bijv. De Bivvy Brothers"></label>
+        <button type="submit" class="btn primary">Aanmelden</button>
+        <p id="join-fout" class="fout" hidden></p>
+      </form>
+    </div>
+
+    <div class="card" id="team-card" hidden>
+      <h2 id="team-titel"></h2>
+      <p id="team-info" class="muted"></p>
+      <p class="muted klein">🔑 Jouw persoonlijke inlogcode (bewaar hem goed; hiermee log je op
+      elk toestel weer in onder je eigen naam, ook in de beginscherm-app):</p>
+      <p><b id="team-code" class="codegroot"></b>
+      <button id="btn-herstel" class="btn klein-btn">kopieer</button></p>
+      <p><button id="btn-team-uitloggen" class="btn gevaar klein-btn">uitloggen bij dit team</button></p>
+    </div>
+
+    <div class="card" id="registreer-card" hidden>
+      <h2>Vangst registreren</h2>
+      <form id="form-vangst" class="stack">
+        <label>Gewicht (kg) <input id="v-gewicht" type="text" inputmode="decimal" placeholder="bijv. 12,45" required></label>
+        <label class="fotoknop">
+          <input id="v-foto" type="file" accept="image/*" required>
+          <span id="v-foto-label">📷 Foto maken of kiezen</span>
+        </label>
+        <img id="v-preview" class="preview" hidden alt="voorbeeld vangstfoto">
+        <button type="submit" class="btn primary" id="v-submit">Registreer vangst</button>
+        <p id="v-fout" class="fout" hidden></p>
+        <p id="v-ok" class="ok" hidden></p>
+      </form>
+    </div>
+    <div class="card" id="dicht-card" hidden>
+      <p id="dicht-tekst"></p>
+    </div>
+    <div class="card" id="mijn-vangsten-card" hidden>
+      <h2>Mijn vangsten</h2>
+      <div id="mijn-vangsten"></div>
+    </div>
+  </section>
+
+  <!-- Beheer -->
+  <section id="tab-beheer" class="tab" hidden>
+    <div class="card" id="pin-card" hidden>
+      <p class="muted">Beheer is alleen toegankelijk voor de organisatie, via de organisatie-omgeving op de startpagina.</p>
+    </div>
+    <div id="beheer-inhoud" hidden>
+      <div class="card">
+        <h2>Wedstrijd</h2>
+        <p class="muted">Deel deze code met de deelnemers: <b id="b-code" class="codegroot"></b></p>
+        <p class="muted">Directe link: <span id="b-link" class="klein"></span> <button id="b-kopieer" class="btn klein-btn">kopieer</button></p>
+        <label>Naam van de wedstrijd
+          <input id="b-naam" type="text" maxlength="60"></label>
+        <label>Maximaal aantal deelnemers <span class="muted">(leeg = onbeperkt)</span>
+          <input id="b-max" type="number" inputmode="numeric" min="2" max="200" placeholder="onbeperkt"></label>
+        <button id="b-wedstrijd-opslaan" class="btn">Naam &amp; maximum opslaan</button>
+        <div class="row2">
+          <label>Start <input id="b-start" type="datetime-local"></label>
+          <label>Einde <input id="b-eind" type="datetime-local"></label>
+        </div>
+        <button id="b-tijden" class="btn">Tijden opslaan</button>
+        <p id="b-fout" class="fout" hidden></p>
+      </div>
+      <div class="card">
+        <h2>Zones <span class="muted">(optioneel)</span></h2>
+        <p class="muted klein">Nieuwe wedstrijden krijgen automatisch de vaste zone-indeling van de plas
+        (te beheren op de homepagina, achter het organisatie-wachtwoord). Pas hieronder alleen aan als deze
+        wedstrijd afwijkt, bijv. een zone die dicht is. Formaat: <b>Naam: steknummers</b>, 1 regel per zone.
+        Leeg = loting per losse stek. Alleen aan te passen vóór de loting.</p>
+        <textarea id="b-zones" rows="6" placeholder="Zone A: 20-30&#10;Zone B: 32-44&#10;Zone C: 54-70"></textarea>
+        <button id="b-zones-opslaan" class="btn">Zones opslaan</button>
+        <p id="b-zones-fout" class="fout" hidden></p>
+        <p id="b-zones-ok" class="ok" hidden></p>
+      </div>
+      <div class="card">
+        <h2>Wedstrijdregels</h2>
+        <p class="muted klein">Deelnemers en kijkers zien dit als uitklapbaar blok onder de klok. Leeg = geen regels-blok.</p>
+        <textarea id="b-regels" rows="5" maxlength="3000" placeholder="bijv. Maximaal 2 hengels per visser"></textarea>
+        <button id="b-regels-opslaan" class="btn">Regels opslaan</button>
+        <p id="b-regels-ok" class="ok" hidden></p>
+      </div>
+      <div class="card">
+        <h2>Loting</h2>
+        <p class="muted">Start de loting als alle deelnemers aangemeld zijn. De site bepaalt willekeurig de volgorde; daarna kiest iedereen op zijn beurt een stek op de kaart.</p>
+        <div class="row">
+          <button id="b-loting" class="btn primary">🎲 Start loting</button>
+          <button id="b-reset" class="btn gevaar">Reset loting</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Deelnemers</h2>
+        <div id="b-teams"></div>
+      </div>
+      <div class="card">
+        <h2>Vangsten corrigeren</h2>
+        <div id="b-vangsten"></div>
+        <details id="b-toevoegen">
+          <summary>➕ Vangst handmatig toevoegen</summary>
+          <p class="muted klein">Vangnet voor als registreren bij een deelnemer niet lukte
+          (geen bereik, lege batterij, upload net te laat). Werkt ook na de eindtijd.</p>
+          <form id="form-b-vangst" class="stack">
+            <label>Team <select id="bv-team"></select></label>
+            <label>Gewicht (kg) <input id="bv-gewicht" type="text" inputmode="decimal" placeholder="bijv. 12,45" required></label>
+            <label class="fotoknop">
+              <input id="bv-foto" type="file" accept="image/*">
+              <span id="bv-foto-label">📷 Foto (optioneel)</span>
+            </label>
+            <button type="submit" class="btn primary" id="bv-submit">Vangst toevoegen</button>
+            <p id="bv-fout" class="fout" hidden></p>
+            <p id="bv-ok" class="ok" hidden></p>
+          </form>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="foto-groot" class="lightbox" hidden><img alt="vangstfoto"><span class="sluit">✕</span></div>
+<div id="toast" class="toast" hidden></div>
+<button id="update-banner" class="update-banner" hidden>🔄 Nieuwe versie beschikbaar: tik om te vernieuwen</button>
+
+<script src="config.js"></script>
+<script src="kaart.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

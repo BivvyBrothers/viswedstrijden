@@ -26,7 +26,8 @@ create table wedstrijd.instellingen (
   vapid_private text,
   push_secret text,
   push_contact text not null default 'mailto:patrick@kemblinck.nl',
-  standaard_zones jsonb
+  standaard_zones jsonb,
+  alleen_lezen boolean not null default false  -- abonnement verlopen: geen nieuwe wedstrijden (migratie wedstrijd_alleen_lezen)
 );
 
 create table wedstrijd.wedstrijden (
@@ -907,6 +908,9 @@ declare
 begin
   if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_org_wachtwoord)) then
     raise exception 'org_wachtwoord_onjuist';
+  end if;
+  if (select alleen_lezen from wedstrijd.instellingen where id = 1) then
+    raise exception 'alleen_lezen';
   end if;
   if coalesce(trim(p_naam),'') = '' or length(p_naam) > 60 then raise exception 'ongeldige_naam'; end if;
   if p_mode not in ('individueel','koppel') then raise exception 'ongeldige_mode'; end if;

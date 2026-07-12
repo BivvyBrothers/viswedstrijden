@@ -110,11 +110,45 @@ De dieptekaart is nagetekend van de originele NPHV-scan (`Dieptekaart plas.pdf`)
 Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tools/`.
 `docs/kaart.js` nooit met de hand bewerken (gegenereerd bestand).
 
+## Standaardkaart en nieuwe tenants (12 jul 2026)
+
+- `tools/gen_standaardkaart.py --slug X --stekken 40 --zones 8`: genereert een
+  GENERIEKE zonekaart (organische watervorm, stekken op booglengte verdeeld,
+  radiale zonegrenzen A-Z) met exact dezelfde interface en markup als de
+  NPHV-kaart. Dit is het goedkope-instap-product uit de prijsstrategie.
+- `tools/nieuwe_tenant.py --slug X --kort NAAM --volledig "..." [--water "..."]
+  [--kaart-van nphv]`: scaffold een complete tenant-map vanaf docs/nphv/
+  (index/instructies/sw/manifest/config/version + standaardkaart) en voegt de
+  keuzeregel op de rootpagina toe. ELKE vervanging heeft een assert; als het
+  NPHV-sjabloon wijzigt, faalt het script luid in plaats van stil.
+- LET OP tot de DB-tenancy er is: de server valideert stekken tegen de
+  NPHV-`stek_ring`; standaardkaart-tenants kunnen dus nog geen eigen
+  stekkeuze/koppelmode draaien. Kijk-demo's en direct geseede data werken wel.
+
+## Demo-omgeving (/demo/, 12 jul 2026)
+
+- Volledige tenant (eerste product van nieuwe_tenant.py) met standaardkaart
+  (40 stekken, 8 zones) en een geseede AFGELOPEN voorbeeldwedstrijd
+  "Voorjaarswedstrijd (demo)": 12 vissers, 20 vangsten zonder foto.
+- Publieke codes: kijkcode `KIJKJE` (knop op /demo/), persoonlijke
+  deelnemercode `DEMOJA` (meekijken als visser Jan, deelnemer-scherm + kaart).
+  De wedstrijd is afgelopen dus registreren/aanmelden is server-side dicht.
+- Demo vernieuwen: seed-SQL opnieuw draaien (delete op kijk_code KIJKJE +
+  insert; zie sessie 12 jul of schrijf hem opnieuw), daarna Jan's code weer
+  op DEMOJA zetten.
+
+## Alleen-lezen-vlag (abonnement verlopen)
+
+`wedstrijd.instellingen.alleen_lezen` (migratie `wedstrijd_alleen_lezen`):
+true = `w_maak_wedstrijd` weigert met 'alleen_lezen' (nette fouttekst in
+app.js), bestaande wedstrijden blijven bekijkbaar. Nu 1 vlag voor de hele
+database; wordt per tenant bij de tenancy-migratie.
+
 ## Release-checklist (multi-tenant, sinds v36)
 
 Bij elke release controleren:
-1. `APP_VERSION` in docs/app.js == ELKE tenant-`version.json` (docs/nphv/version.json;
-   root-version.json bestaat alleen nog voor oude clients en mag meelopen).
+1. `APP_VERSION` in docs/app.js == ELKE tenant-`version.json` (docs/nphv/ en
+   docs/demo/; root-version.json bestaat alleen nog voor oude clients en mag meelopen).
 2. Elke tenant-map is compleet: index.html, config.js, kaart.js,
    manifest.webmanifest, sw.js, version.json, instructies.html (+ print-pdf).
 3. Alle paden in de `SHELL`-lijst van elke tenant-sw.js bestaan ECHT
