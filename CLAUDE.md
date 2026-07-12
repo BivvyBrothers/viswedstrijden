@@ -157,6 +157,9 @@ Bij elke release controleren:
 4. Elke statische HTML-pagina heeft bewust een eigen meta-CSP
    (instructiepagina's: script-src 'none').
 5. Bij wijzigingen aan gedeelde teksten: root- én tenant-instructies bijwerken.
+6. Root-hash-test: `/#/k/KIJKJE` moet in /demo/ landen, `/#/org` in /nphv/
+   (landing.js: kale root-hashes zijn legacy-NPHV; nieuwe tenants delen
+   ALTIJD links met tenantpad, alleen de demo-kijkcode heeft een mapping).
 
 ## Lokaal draaien en testen
 

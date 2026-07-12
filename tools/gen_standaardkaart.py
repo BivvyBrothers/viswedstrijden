@@ -203,6 +203,13 @@ if __name__ == '__main__':
     ap.add_argument('--stekken', type=int, default=40)
     ap.add_argument('--zones', type=int, default=8)
     args = ap.parse_args()
-    dest = os.path.join(os.path.dirname(__file__), '..', 'docs', args.slug, 'kaart.js')
+    # zelfde slug-regels als nieuwe_tenant.py: alfanumeriek + lowercase, zodat
+    # een padachtige slug nooit buiten docs/<slug>/ kan schrijven (Codex v4 P2-4)
+    if not args.slug.isalnum() or args.slug != args.slug.lower():
+        raise SystemExit('FOUT: slug moet kleine letters/cijfers zijn')
+    docs = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'docs'))
+    dest = os.path.realpath(os.path.join(docs, args.slug, 'kaart.js'))
+    if os.path.dirname(os.path.dirname(dest)) != docs:
+        raise SystemExit('FOUT: doelpad valt buiten docs/')
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     bouw(args.slug, args.stekken, args.zones, dest)

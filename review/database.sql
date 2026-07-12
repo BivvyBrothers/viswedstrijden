@@ -981,6 +981,9 @@ begin
   select * into v_w from wedstrijd.wedstrijden
   where code = upper(trim(p_code)) or kijk_code = upper(trim(p_code));
   if not found then raise exception 'wedstrijd_niet_gevonden'; end if;
+  if now() > v_w.eind_ts then
+    raise exception 'wedstrijd_afgelopen';
+  end if;
   if p_endpoint is null or length(p_endpoint) > 500 or p_endpoint not like 'https://%'
      or p_p256dh is null or p_p256dh !~ '^[A-Za-z0-9_-]{80,130}$'
      or p_auth is null or p_auth !~ '^[A-Za-z0-9_-]{16,50}$' then

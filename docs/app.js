@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 39; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 40; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -22,6 +22,7 @@ const FOUTEN = {
   pin_te_kort: 'Pincode moet minimaal 4 tekens zijn.',
   org_wachtwoord_onjuist: 'Organisatie-wachtwoord onjuist.',
   alleen_lezen: 'Deze omgeving staat op alleen-lezen: nieuwe wedstrijden aanmaken kan nu niet. Oude wedstrijden blijven gewoon te bekijken. Neem contact op via info@kemblinck.nl om weer te activeren.',
+  wedstrijd_afgelopen: 'Deze wedstrijd is afgelopen; meldingen aanzetten kan niet meer.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
   al_geloot: 'De loting is al gestart.',
   geen_deelnemers: 'Er zijn nog geen deelnemers aangemeld.',
@@ -968,6 +969,11 @@ function pushAan(code) { return localStorage.getItem('push:' + code) === '1'; }
 
 function renderPushKnop() {
   const knop = $('#btn-push'), tip = $('#push-tip');
+  // afgelopen wedstrijd: aanmelden voor meldingen kan niet meer (server blokkeert
+  // ook); alleen wie nog geabonneerd is ziet de knop om uit te zetten
+  if (fase() === 'voorbij' && !(pushKanHier() && pushAan(CODE))) {
+    knop.hidden = true; tip.hidden = true; return;
+  }
   if (pushKanHier()) {
     knop.hidden = false; tip.hidden = true;
     knop.textContent = pushAan(CODE)
