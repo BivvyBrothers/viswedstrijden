@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 45; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 46; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -464,6 +464,7 @@ function initHome() {
         p_org_wachtwoord: sessie.orgWw() || '',
         p_max_teams: $('#nw-max').value ? parseInt($('#nw-max').value, 10) : null,
         p_regels: $('#nw-regels').value.trim() || null,
+        p_klant: typeof TENANT !== 'undefined' ? TENANT : null,
       });
       sessie.zetPin(res.code, res.pin);
       location.hash = '#/w/' + res.code;
@@ -622,6 +623,7 @@ function renderOrgSeizoenen() {
 
 /* ---------- beheerdersomgeving (KemblincK support, route #/beheerder) ---------- */
 let SU_DATA = null;
+let SU_KLANT = null;  // geselecteerde klant-tab in het beheeroverzicht
 
 function initSu() {
   $('#su-login').hidden = !!sessie.suWw();
@@ -666,7 +668,7 @@ function renderSu() {
   $('#su-login').hidden = true;
   $('#su-omgeving').hidden = false;
   const s = SU_DATA.stats, i = SU_DATA.instellingen;
-  $('#su-stats').textContent = `${s.wedstrijden} wedstrijden \u00b7 ${s.teams} teams \u00b7 ` +
+  $('#su-stats').textContent = `${s.klanten} klanten \u00b7 ${s.wedstrijden} wedstrijden \u00b7 ${s.teams} teams \u00b7 ` +
     `${s.vangsten} vangsten \u00b7 ${s.push_subs} push-abonnementen \u00b7 ${s.seizoenen} seizoenen`;
   $('#su-instellingen').innerHTML = `
     <p class="muted klein">alleen-lezen: <b>${i.alleen_lezen ? 'AAN (nieuwe wedstrijden geblokkeerd)' : 'uit'}</b>
@@ -675,9 +677,24 @@ function renderSu() {
     <button id="su-alleen-lezen" class="btn${i.alleen_lezen ? '' : ' gevaar'}">${i.alleen_lezen
       ? 'Zet alleen-lezen UIT (weer activeren)' : 'Zet alleen-lezen AAN (abonnement verlopen)'}</button>`;
   const nuMs = new Date(SU_DATA.server_now).getTime();
-  $('#su-wedstrijden').innerHTML = (SU_DATA.wedstrijden || []).length
-    ? SU_DATA.wedstrijden.map((w) => suKaart(w, nuMs)).join('')
-    : '<p class="muted">Geen wedstrijden.</p>';
+  const klanten = SU_DATA.klanten || [];
+  if (!klanten.some((k) => k.slug === SU_KLANT)) SU_KLANT = klanten.length ? klanten[0].slug : null;
+  const actieve = klanten.find((k) => k.slug === SU_KLANT);
+  const zonder = SU_DATA.zonder_klant || [];
+  $('#su-wedstrijden').innerHTML = `
+    <div class="schakel" style="flex-wrap:wrap">${klanten.map((k) =>
+      `<button data-su-klant="${esc(k.slug)}" class="${k.slug === SU_KLANT ? 'actief' : ''}">${esc(k.naam)}
+        <span class="muted klein">(${k.stats.wedstrijden})</span></button>`).join('')}</div>
+    ${actieve ? `<p class="muted klein" style="margin-top:10px">/${esc(actieve.slug)} \u00b7
+      ${actieve.stats.wedstrijden} wedstrijd${actieve.stats.wedstrijden === 1 ? '' : 'en'} \u00b7
+      ${actieve.stats.teams} teams \u00b7 ${actieve.stats.vangsten} vangsten</p>` : ''}
+    ${actieve && actieve.wedstrijden.length
+      ? actieve.wedstrijden.map((w) => suKaart(w, nuMs)).join('')
+      : '<p class="muted">Geen wedstrijden bij deze klant.</p>'}
+    ${zonder.length ? `<p class="fout">LET OP: ${zonder.length} wedstrijd(en) zonder klant: ${zonder.map((w) => esc(w.naam)).join(', ')}</p>` : ''}`;
+  document.querySelectorAll('[data-su-klant]').forEach((b) => {
+    b.onclick = () => { SU_KLANT = b.dataset.suKlant; renderSu(); };
+  });
   $('#su-alleen-lezen').onclick = () => tikNogmaals($('#su-alleen-lezen'), '\u26a0\ufe0f Tik nogmaals', async () => {
     try {
       await rpc('w_su_alleen_lezen', { p_wachtwoord: sessie.suWw() || '', p_aan: !SU_DATA.instellingen.alleen_lezen });

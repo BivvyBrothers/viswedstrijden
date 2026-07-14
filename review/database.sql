@@ -31,6 +31,16 @@ create table wedstrijd.instellingen (
   beheerder_wachtwoord text                     -- KemblincK-support (route #/beheerder, migratie wedstrijd_beheerder); waarde NOOIT in deze repo
 );
 
+create table wedstrijd.klanten (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique check (slug ~ '^[a-z0-9]{1,30}$'),  -- tenant-map (docs/<slug>/)
+  naam text not null check (length(naam) between 1 and 80),
+  created_at timestamptz not null default now()
+);
+alter table wedstrijd.klanten enable row level security;
+-- migratie wedstrijd_klanten: lichte eerste tenancy-stap voor het
+-- beheeroverzicht; org-wachtwoord/zones/stek_ring blijven nog gedeeld
+
 create table wedstrijd.seizoenen (
   id uuid primary key default gen_random_uuid(),
   naam text not null check (length(naam) between 1 and 60),
@@ -58,10 +68,12 @@ create table wedstrijd.wedstrijden (
   regels text check (length(regels) <= 3000),
   seizoen_id uuid references wedstrijd.seizoenen(id) on delete set null,  -- migratie wedstrijd_seizoenen
   dag_regels jsonb,                    -- per-wedstrijd override, nu alleen {"ex_aequo": ...}
+  klant_id uuid references wedstrijd.klanten(id) on delete set null,      -- migratie wedstrijd_klanten
   check (eind_ts > start_ts),
   constraint codes_verschillend check (code <> kijk_code)
 );
 create index wedstrijden_seizoen_idx on wedstrijd.wedstrijden (seizoen_id);
+create index wedstrijden_klant_idx on wedstrijd.wedstrijden (klant_id);
 
 create table wedstrijd.teams (
   id uuid primary key default gen_random_uuid(),
@@ -909,7 +921,7 @@ begin
   return json_build_object('ok', true, 'zones', jsonb_array_length(p_zones));
 end $function$;
 
-CREATE OR REPLACE FUNCTION public.w_maak_wedstrijd(p_naam text, p_mode text, p_start timestamp with time zone, p_eind timestamp with time zone, p_org_wachtwoord text, p_max_teams integer DEFAULT NULL::integer, p_regels text DEFAULT NULL::text)
+CREATE OR REPLACE FUNCTION public.w_maak_wedstrijd(p_naam text, p_mode text, p_start timestamp with time zone, p_eind timestamp with time zone, p_org_wachtwoord text, p_max_teams integer DEFAULT NULL::integer, p_regels text DEFAULT NULL::text, p_klant text DEFAULT NULL::text)
  RETURNS json
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -920,6 +932,7 @@ declare
   v_kijk text;
   v_pin text;
   v_id uuid;
+  v_klant uuid;
 begin
   if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_org_wachtwoord)) then
     raise exception 'org_wachtwoord_onjuist';
@@ -934,13 +947,17 @@ begin
     raise exception 'ongeldig_maximum';
   end if;
   if p_regels is not null and length(p_regels) > 3000 then raise exception 'regels_te_lang'; end if;
+  select id into v_klant from wedstrijd.klanten where slug = coalesce(nullif(lower(trim(p_klant)), ''), 'nphv');
+  if v_klant is null then
+    select id into v_klant from wedstrijd.klanten where slug = 'nphv';
+  end if;
   v_code := wedstrijd.nieuwe_team_code();
   v_kijk := wedstrijd.nieuwe_team_code();
   v_pin := lower(wedstrijd.nieuwe_team_code()) || floor(random()*1000)::text;
-  insert into wedstrijd.wedstrijden (code, kijk_code, naam, mode, start_ts, eind_ts, admin_pin, zones, max_teams, regels)
+  insert into wedstrijd.wedstrijden (code, kijk_code, naam, mode, start_ts, eind_ts, admin_pin, zones, max_teams, regels, klant_id)
   values (v_code, v_kijk, trim(p_naam), p_mode, p_start, p_eind, v_pin,
           (select standaard_zones from wedstrijd.instellingen where id = 1), p_max_teams,
-          nullif(trim(coalesce(p_regels,'')), ''))
+          nullif(trim(coalesce(p_regels,'')), ''), v_klant)
   returning id into v_id;
   return json_build_object('code', v_code, 'kijk_code', v_kijk, 'pin', v_pin, 'id', v_id);
 end $function$;
@@ -1383,22 +1400,33 @@ begin
       'heeft_push_secret', (push_secret is not null))
       from wedstrijd.instellingen where id = 1),
     'stats', json_build_object(
+      'klanten', (select count(*) from wedstrijd.klanten),
       'wedstrijden', (select count(*) from wedstrijd.wedstrijden),
       'teams', (select count(*) from wedstrijd.teams),
       'vangsten', (select count(*) from wedstrijd.vangsten where status = 'actief'),
       'push_subs', (select count(*) from wedstrijd.push_subs),
       'seizoenen', (select count(*) from wedstrijd.seizoenen)),
-    'wedstrijden', coalesce((select json_agg(json_build_object(
-      'code', w.code, 'kijk_code', w.kijk_code, 'admin_pin', w.admin_pin,
-      'naam', w.naam, 'mode', w.mode, 'status', w.status,
-      'start_ts', w.start_ts, 'eind_ts', w.eind_ts,
-      'heeft_zones', (w.zones is not null), 'max_teams', w.max_teams,
-      'seizoen_naam', (select z.naam from wedstrijd.seizoenen z where z.id = w.seizoen_id),
-      'teams', (select count(*) from wedstrijd.teams t where t.wedstrijd_id = w.id),
-      'vangsten', (select count(*) from wedstrijd.vangsten v where v.wedstrijd_id = w.id and v.status = 'actief'),
-      'push_subs', (select count(*) from wedstrijd.push_subs p where p.wedstrijd_id = w.id))
-      order by w.start_ts desc)
-    from wedstrijd.wedstrijden w), '[]'::json));
+    'klanten', coalesce((select json_agg(json_build_object(
+      'slug', k.slug, 'naam', k.naam,
+      'stats', json_build_object(
+        'wedstrijden', (select count(*) from wedstrijd.wedstrijden w where w.klant_id = k.id),
+        'teams', (select count(*) from wedstrijd.teams t join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id where w.klant_id = k.id),
+        'vangsten', (select count(*) from wedstrijd.vangsten v join wedstrijd.wedstrijden w on w.id = v.wedstrijd_id where w.klant_id = k.id and v.status = 'actief')),
+      'wedstrijden', coalesce((select json_agg(json_build_object(
+        'code', w.code, 'kijk_code', w.kijk_code, 'admin_pin', w.admin_pin,
+        'naam', w.naam, 'mode', w.mode, 'status', w.status,
+        'start_ts', w.start_ts, 'eind_ts', w.eind_ts,
+        'heeft_zones', (w.zones is not null), 'max_teams', w.max_teams,
+        'seizoen_naam', (select z.naam from wedstrijd.seizoenen z where z.id = w.seizoen_id),
+        'teams', (select count(*) from wedstrijd.teams t where t.wedstrijd_id = w.id),
+        'vangsten', (select count(*) from wedstrijd.vangsten v where v.wedstrijd_id = w.id and v.status = 'actief'),
+        'push_subs', (select count(*) from wedstrijd.push_subs p where p.wedstrijd_id = w.id))
+        order by w.start_ts desc)
+      from wedstrijd.wedstrijden w where w.klant_id = k.id), '[]'::json))
+      order by k.created_at) from wedstrijd.klanten k), '[]'::json),
+    'zonder_klant', coalesce((select json_agg(json_build_object(
+      'code', w.code, 'naam', w.naam, 'start_ts', w.start_ts) order by w.start_ts desc)
+      from wedstrijd.wedstrijden w where w.klant_id is null), '[]'::json));
 end $function$;
 
 CREATE OR REPLACE FUNCTION public.w_su_alleen_lezen(p_wachtwoord text, p_aan boolean)

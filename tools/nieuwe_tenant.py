@@ -113,8 +113,10 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     schrijf(os.path.join(doel, 'manifest.webmanifest'),
             json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 
-    # --- config.js en version.json: 1-op-1 ---
-    shutil.copy(os.path.join(BRON, 'config.js'), os.path.join(doel, 'config.js'))
+    # --- config.js: 1-op-1 op de TENANT-slug na ---
+    t = lees(os.path.join(BRON, 'config.js'))
+    t = vervang(t, "const TENANT = 'nphv';", f"const TENANT = '{slug}';", 1, 'config TENANT')
+    schrijf(os.path.join(doel, 'config.js'), t)
     shutil.copy(os.path.join(BRON, 'version.json'), os.path.join(doel, 'version.json'))
 
     # --- kaart.js ---
@@ -181,7 +183,9 @@ def bouw_tenant(slug, kort, volledig, water, stekken, zones, kaart_van):
     print(f'  1. Controleer docs/{slug}/index.html (teksten) en de kaart in de browser.')
     print(f'  2. instructies-print.pdf voor deze tenant maken (link is weggelaten).')
     print(f'  3. Release-checklist in CLAUDE.md nalopen (versies, SHELL-paden, CSP).')
-    print(f'  4. LET OP: database is nog single-tenant (org-wachtwoord/zones/stek_ring')
+    print(f'  4. Klant-rij in de database aanmaken (voor het beheeroverzicht):')
+    print(f"     insert into wedstrijd.klanten (slug, naam) values ('{slug}', '<volledige naam>');")
+    print(f'  5. LET OP: database is nog single-tenant (org-wachtwoord/zones/stek_ring')
     print(f'     gedeeld met NPHV) tot de tenancy-migratie; zie CLAUDE.md.')
 
 

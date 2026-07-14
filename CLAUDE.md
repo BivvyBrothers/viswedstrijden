@@ -20,6 +20,13 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
 - **Frontend:** statisch, vanilla JS, geen build-stap, geen dependencies.
   Webroot is `docs/` (GitHub Pages, branch main, map /docs).
   Live: https://viswedstrijdapp.nl (CNAME in `docs/CNAME`, DNS bij TransIP).
+- **Klanten (migratie wedstrijd_klanten, 14 jul 2026):** tabel
+  `wedstrijd.klanten` (slug = tenant-map, naam) + `wedstrijden.klant_id`.
+  Elke tenant-omgeving is een klant; `config.js` heeft `const TENANT = '<slug>'`
+  en `w_maak_wedstrijd` krijgt `p_klant` mee (oude clients zonder parameter
+  vallen terug op nphv). Lichte eerste tenancy-stap voor het beheeroverzicht;
+  org-wachtwoord/zones/stek_ring blijven gedeeld tot de volledige migratie.
+  Nieuwe tenant = ook een klant-rij inserten (nieuwe_tenant.py print de SQL).
 - **Multi-tenant (sinds 11 jul 2026):** elke organisatie krijgt een eigen pad,
   bijv. `/nphv/` (NPHV, Nootdorps Pijnackerse Hengelsportvereniging, Plas van
   der Ende). De root is een keuzepagina (`docs/index.html` + `docs/landing.js`;
@@ -194,7 +201,8 @@ route `#/beheerder` (geen knop in de UI; werkt in elke tenant en via de root
 dankzij landing.js). Eigen `beheerder_wachtwoord` in wedstrijd.instellingen
 (migratie `wedstrijd_beheerder`; waarde alleen in DB + Patricks
 wachtwoordmanager, NOOIT in deze repo). RPC's: `w_su_overzicht` (stats,
-instellingen-status, alle wedstrijden incl. admin_pin), `w_su_alleen_lezen`,
+instellingen-status, wedstrijden GEGROEPEERD PER KLANT incl. admin_pin;
+klant-tabs in de UI), `w_su_alleen_lezen`,
 `w_su_org_wachtwoord` (reset voor organisator die hem kwijt is),
 `w_su_wachtwoord` (eigen ww wijzigen; min. 12 tekens); alles via
 wedstrijd.su_check met pg_sleep. Client: view-beheerder in beide
