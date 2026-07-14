@@ -30,6 +30,18 @@ create table wedstrijd.instellingen (
   alleen_lezen boolean not null default false  -- abonnement verlopen: geen nieuwe wedstrijden (migratie wedstrijd_alleen_lezen)
 );
 
+create table wedstrijd.seizoenen (
+  id uuid primary key default gen_random_uuid(),
+  naam text not null check (length(naam) between 1 and 60),
+  regels jsonb not null default '{}'::jsonb,
+  -- telling plaatspunten|totaalgewicht, aftrek 0-20, niet_vanger gemiddelde|
+  -- vangers_plus_1|max_plus_1, gemist hoogste_plus_1|deelnemers_plus_1,
+  -- ex_aequo app|sportvisunie|karper (zie seizoensklassement-ontwerp.md)
+  created_at timestamptz not null default now()
+);
+alter table wedstrijd.seizoenen enable row level security;
+create index wedstrijden_seizoen_idx on wedstrijd.wedstrijden (seizoen_id);
+
 create table wedstrijd.wedstrijden (
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
@@ -44,6 +56,8 @@ create table wedstrijd.wedstrijden (
   kijk_code text not null unique,
   max_teams int check (max_teams >= 2 and max_teams <= 200),
   regels text check (length(regels) <= 3000),
+  seizoen_id uuid references wedstrijd.seizoenen(id) on delete set null,  -- migratie wedstrijd_seizoenen
+  dag_regels jsonb,                    -- per-wedstrijd override, nu alleen {"ex_aequo": ...}
   check (eind_ts > start_ts),
   constraint codes_verschillend check (code <> kijk_code)
 );
@@ -1071,3 +1085,261 @@ begin
     execute format('grant execute on function %s to anon, authenticated', f.proc);
   end loop;
 end $$;
+
+-- =====================================================================
+-- Seizoensklassement (migraties wedstrijd_seizoenen +
+-- wedstrijd_seizoen_stand_fix_windows, 14 jul 2026; defs = live
+-- pg_get_functiondef). Ontwerp: seizoensklassement-ontwerp.md.
+-- =====================================================================
+
+CREATE OR REPLACE FUNCTION wedstrijd.seizoen_regels_check(p jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
+begin
+  if p is null then return; end if;
+  if coalesce(p->>'telling','plaatspunten') not in ('plaatspunten','totaalgewicht')
+     or coalesce(p->>'niet_vanger','gemiddelde') not in ('gemiddelde','vangers_plus_1','max_plus_1')
+     or coalesce(p->>'gemist','hoogste_plus_1') not in ('hoogste_plus_1','deelnemers_plus_1')
+     or coalesce(p->>'ex_aequo','app') not in ('app','sportvisunie','karper')
+     or coalesce((p->>'aftrek')::int, 0) not between 0 and 20 then
+    raise exception 'ongeldige_regels';
+  end if;
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_org_seizoen_maak(p_wachtwoord text, p_naam text, p_regels jsonb DEFAULT '{}'::jsonb)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_id uuid;
+begin
+  if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_wachtwoord)) then
+    perform pg_catalog.pg_sleep(0.5); raise exception 'org_wachtwoord_onjuist';
+  end if;
+  if coalesce(trim(p_naam),'') = '' or length(p_naam) > 60 then raise exception 'ongeldige_naam'; end if;
+  perform wedstrijd.seizoen_regels_check(p_regels);
+  insert into wedstrijd.seizoenen (naam, regels) values (trim(p_naam), coalesce(p_regels,'{}'::jsonb))
+  returning id into v_id;
+  return json_build_object('id', v_id);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_org_seizoen_wijzig(p_wachtwoord text, p_id uuid, p_naam text, p_regels jsonb)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_wachtwoord)) then
+    perform pg_catalog.pg_sleep(0.5); raise exception 'org_wachtwoord_onjuist';
+  end if;
+  if coalesce(trim(p_naam),'') = '' or length(p_naam) > 60 then raise exception 'ongeldige_naam'; end if;
+  perform wedstrijd.seizoen_regels_check(p_regels);
+  update wedstrijd.seizoenen set naam = trim(p_naam), regels = coalesce(p_regels,'{}'::jsonb) where id = p_id;
+  if not found then raise exception 'seizoen_niet_gevonden'; end if;
+  return json_build_object('ok', true);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_org_seizoen_verwijder(p_wachtwoord text, p_id uuid)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_wachtwoord)) then
+    perform pg_catalog.pg_sleep(0.5); raise exception 'org_wachtwoord_onjuist';
+  end if;
+  delete from wedstrijd.seizoenen where id = p_id;  -- wedstrijden.seizoen_id valt op null
+  if not found then raise exception 'seizoen_niet_gevonden'; end if;
+  return json_build_object('ok', true);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_org_seizoen_koppel(p_wachtwoord text, p_code text, p_seizoen_id uuid, p_ex_aequo text DEFAULT NULL::text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_id uuid;
+begin
+  if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_wachtwoord)) then
+    perform pg_catalog.pg_sleep(0.5); raise exception 'org_wachtwoord_onjuist';
+  end if;
+  if p_ex_aequo is not null and p_ex_aequo not in ('app','sportvisunie','karper') then
+    raise exception 'ongeldige_regels';
+  end if;
+  if p_seizoen_id is not null and not exists (select 1 from wedstrijd.seizoenen where id = p_seizoen_id) then
+    raise exception 'seizoen_niet_gevonden';
+  end if;
+  update wedstrijd.wedstrijden
+    set seizoen_id = p_seizoen_id,
+        dag_regels = case when p_ex_aequo is null then null else jsonb_build_object('ex_aequo', p_ex_aequo) end
+  where upper(code) = upper(trim(p_code)) returning id into v_id;
+  if v_id is null then raise exception 'wedstrijd_niet_gevonden'; end if;
+  return json_build_object('ok', true);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_org_seizoenen(p_wachtwoord text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_wachtwoord)) then
+    perform pg_catalog.pg_sleep(0.5); raise exception 'org_wachtwoord_onjuist';
+  end if;
+  return coalesce((select json_agg(s order by s.created_at desc) from (
+    select z.id, z.naam, z.regels, z.created_at,
+      coalesce((select json_agg(json_build_object('code', w.code, 'naam', w.naam,
+                 'start_ts', w.start_ts, 'ex_aequo', w.dag_regels->>'ex_aequo') order by w.start_ts)
+        from wedstrijd.wedstrijden w where w.seizoen_id = z.id), '[]'::json) as wedstrijden
+    from wedstrijd.seizoenen z) s), '[]'::json);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_seizoen_stand(p_code text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_seizoen wedstrijd.seizoenen;
+  v_regels jsonb;
+  v_telling text; v_aftrek int; v_niet_vanger text; v_gemist text; v_ex_default text;
+  v_w record;
+  v_widx int := 0;
+  v_aantal_w int;
+begin
+  select z.* into v_seizoen
+  from wedstrijd.wedstrijden w join wedstrijd.seizoenen z on z.id = w.seizoen_id
+  where upper(w.code) = upper(trim(p_code)) or upper(w.kijk_code) = upper(trim(p_code));
+  if not found then raise exception 'geen_seizoen'; end if;
+
+  v_regels := coalesce(v_seizoen.regels, '{}'::jsonb);
+  v_telling := coalesce(v_regels->>'telling', 'plaatspunten');
+  v_aftrek := coalesce((v_regels->>'aftrek')::int, 1);
+  v_niet_vanger := coalesce(v_regels->>'niet_vanger', 'gemiddelde');
+  v_gemist := coalesce(v_regels->>'gemist', 'hoogste_plus_1');
+  v_ex_default := coalesce(v_regels->>'ex_aequo', 'app');
+
+  drop table if exists _sz_res; drop table if exists _sz_w;
+  create temp table _sz_w (widx int, naam text, start_ts timestamptz) on commit drop;
+  create temp table _sz_res (
+    sleutel text, display text, widx int,
+    punten numeric, gewicht bigint, aantal int, gemist boolean default false, vervallen boolean default false
+  ) on commit drop;
+
+  for v_w in
+    select w.*, coalesce(w.dag_regels->>'ex_aequo', v_ex_default) as ex
+    from wedstrijd.wedstrijden w
+    where w.seizoen_id = v_seizoen.id and w.eind_ts < now()
+    order by w.start_ts
+  loop
+    v_widx := v_widx + 1;
+    insert into _sz_w values (v_widx, v_w.naam, v_w.start_ts);
+
+    insert into _sz_res (sleutel, display, widx, punten, gewicht, aantal)
+    select s.sleutel, s.display, v_widx,
+      case
+        when s.gewicht > 0 then s.plaats::numeric
+        when v_niet_vanger = 'vangers_plus_1' then s.vangers + 1
+        when v_niet_vanger = 'max_plus_1' then coalesce(s.max_vanger_punt, 0) + 1
+        else ceil(((s.vangers + 1) + s.totaal)::numeric / 2)  -- gemiddelde (ONK/KKKC)
+      end,
+      s.gewicht, s.aantal
+    from (
+      select p.*,
+        count(*) filter (where p.gewicht > 0) over () as vangers,
+        count(*) over () as totaal,
+        max(p.plaats) filter (where p.gewicht > 0) over () as max_vanger_punt
+      from (
+        select b.*,
+          case v_w.ex
+            when 'sportvisunie' then rank() over (order by b.gewicht desc)
+            when 'karper' then rank() over (order by b.gewicht desc, b.aantal desc, b.t_grootste asc)
+            else row_number() over (order by b.gewicht desc, b.grootste desc, b.t_grootste asc)
+          end as plaats
+        from (
+          select
+            case when t.naam2 is not null and trim(t.naam2) <> ''
+              then least(lower(trim(t.naam)), lower(trim(t.naam2))) || ' & ' || greatest(lower(trim(t.naam)), lower(trim(t.naam2)))
+              else lower(trim(t.naam)) end as sleutel,
+            coalesce(nullif(trim(t.team_naam), ''),
+              case when t.naam2 is not null and trim(t.naam2) <> ''
+                then trim(t.naam) || ' & ' || trim(t.naam2) else trim(t.naam) end) as display,
+            coalesce(sum(v.gewicht_gram) filter (where v.status = 'actief'), 0)::bigint as gewicht,
+            coalesce(count(v.id) filter (where v.status = 'actief'), 0)::int as aantal,
+            coalesce(max(v.gewicht_gram) filter (where v.status = 'actief'), 0) as grootste,
+            min(v.created_at) filter (where v.status = 'actief'
+              and v.gewicht_gram = (select max(v2.gewicht_gram) from wedstrijd.vangsten v2
+                                    where v2.team_id = t.id and v2.status = 'actief')) as t_grootste
+          from wedstrijd.teams t
+          left join wedstrijd.vangsten v on v.team_id = t.id
+          where t.wedstrijd_id = v_w.id
+          group by t.id, t.naam, t.naam2, t.team_naam
+        ) b
+      ) p
+    ) s;
+  end loop;
+
+  v_aantal_w := v_widx;
+  if v_aantal_w = 0 then raise exception 'seizoen_nog_leeg'; end if;
+
+  insert into _sz_res (sleutel, display, widx, punten, gewicht, aantal, gemist)
+  select d.sleutel, d.display, w.widx,
+    case when v_gemist = 'deelnemers_plus_1'
+      then (select count(*) from _sz_res r2 where r2.widx = w.widx and not r2.gemist) + 1
+      else (select coalesce(max(r2.punten), 0) from _sz_res r2 where r2.widx = w.widx and not r2.gemist) + 1
+    end,
+    0, 0, true
+  from (select distinct on (sleutel) sleutel, display from _sz_res order by sleutel, widx) d
+  cross join _sz_w w
+  where not exists (select 1 from _sz_res r where r.sleutel = d.sleutel and r.widx = w.widx);
+
+  update _sz_res r set vervallen = true
+  from (
+    select sleutel, widx, row_number() over (partition by sleutel order by
+      case when v_telling = 'totaalgewicht' then gewicht end asc,
+      case when v_telling <> 'totaalgewicht' then punten end desc,
+      gewicht asc) as slecht_rn
+    from _sz_res
+  ) k
+  where k.sleutel = r.sleutel and k.widx = r.widx
+    and k.slecht_rn <= least(v_aftrek, v_aantal_w - 1);
+
+  return (
+    with stand as (
+      select sleutel, min(display) as display,
+        sum(punten) filter (where not vervallen) as punten_totaal,
+        sum(gewicht) filter (where not vervallen) as gewicht_geteld,
+        sum(gewicht) as gewicht_totaal,
+        max(gewicht) as hoogste_dag
+      from _sz_res group by sleutel
+    ), gerangschikt as (
+      select s.*,
+        case when v_telling = 'totaalgewicht'
+          then rank() over (order by s.gewicht_geteld desc, s.hoogste_dag desc)
+          else rank() over (order by s.punten_totaal asc, s.gewicht_totaal desc, s.hoogste_dag desc)
+        end as plaats
+      from stand s
+    )
+    select json_build_object(
+      'seizoen', json_build_object('naam', v_seizoen.naam, 'regels', json_build_object(
+        'telling', v_telling, 'aftrek', v_aftrek, 'niet_vanger', v_niet_vanger,
+        'gemist', v_gemist, 'ex_aequo', v_ex_default)),
+      'wedstrijden', (select json_agg(json_build_object('naam', naam, 'start_ts', start_ts) order by widx) from _sz_w),
+      'stand', (select json_agg(json_build_object(
+          'plaats', g.plaats, 'naam', g.display,
+          'punten', case when v_telling = 'totaalgewicht' then null else g.punten_totaal end,
+          'gewicht_geteld', g.gewicht_geteld, 'gewicht_totaal', g.gewicht_totaal,
+          'resultaten', (select json_agg(json_build_object(
+              'punten', r.punten, 'gewicht', r.gewicht, 'gemist', r.gemist, 'vervallen', r.vervallen)
+            order by r.widx) from _sz_res r where r.sleutel = g.sleutel))
+        order by g.plaats, g.display) from gerangschikt g)
+    )
+  );
+end $function$;

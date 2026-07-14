@@ -38,7 +38,9 @@
     <h2>Bekijk de voorbeeldwedstrijd</h2>
     <p class="muted">Dit is de demo-omgeving met een afgelopen voorbeeldwedstrijd.
     Open hem als kijker en je ziet de uitslag en het klassement (met de opbouw
-    per vis), precies zoals het thuisfront dat op de wedstrijddag live volgt.</p>
+    per vis), precies zoals het thuisfront dat op de wedstrijddag live volgt.
+    De wedstrijd hoort bij de <b>Demo-competitie 2026</b>: open het tabblad
+    <b>Seizoen</b> voor het doorlopende klassement over drie wedstrijden.</p>
     <p><a class="btn primary breed" href="#/k/KIJKJE" style="display:block; text-align:center; text-decoration:none;">🎣 Open de demo-wedstrijd als kijker</a></p>
     <p class="muted">Het deelnemer-scherm zien, met de kaart met stekken en het
     vangsten doorgeven? Kies hieronder <b>Deelnemer</b> en log in met code
@@ -147,6 +149,51 @@
     </form>
   </section>
 
+  <section class="card">
+    <h2>Seizoenen (competitie)</h2>
+    <p class="muted klein">Een seizoen telt de uitslagen van meerdere wedstrijden op tot een
+    doorlopend klassement (regels naar de Sportvisunie-reglementen, per seizoen instelbaar).
+    Koppel wedstrijden via de wedstrijdkaarten hierboven; deelnemers en kijkers zien dan
+    een extra tabblad Seizoen.</p>
+    <div id="org-seizoenen"></div>
+    <form id="form-seizoen" class="stack">
+      <label>Naam van het seizoen
+        <input id="sz-naam" type="text" maxlength="60" placeholder="bijv. Zomercompetitie 2027" required>
+      </label>
+      <label>Telling
+        <select id="sz-telling">
+          <option value="plaatspunten">Plaatspunten: dagklassering = punten, minste punten wint (Sportvisunie)</option>
+          <option value="totaalgewicht">Totaalgewicht: alle kilo's opgeteld, meeste wint (simpel)</option>
+        </select>
+      </label>
+      <label>Aftrekwedstrijden <span class="muted">(aantal slechtste resultaten dat vervalt)</span>
+        <input id="sz-aftrek" type="number" inputmode="numeric" min="0" max="20" value="1">
+      </label>
+      <label>Deelnemer zonder vangst krijgt
+        <select id="sz-nietvanger">
+          <option value="gemiddelde">gemiddelde van (vangers + 1) en aantal deelnemers (Sportvisunie ONK)</option>
+          <option value="vangers_plus_1">aantal vangers + 1</option>
+          <option value="max_plus_1">hoogste uitgedeelde punten + 1</option>
+        </select>
+      </label>
+      <label>Wedstrijd gemist
+        <select id="sz-gemist">
+          <option value="hoogste_plus_1">hoogste punten van die wedstrijd + 1 (Sportvisunie TTC)</option>
+          <option value="deelnemers_plus_1">aantal deelnemers + 1</option>
+        </select>
+      </label>
+      <label>Bij exact gelijk gewicht in een daguitslag
+        <select id="sz-exaequo">
+          <option value="app">grootste vis wint, dan vroegst gevangen (app-standaard)</option>
+          <option value="sportvisunie">gedeelde plaats, doortellen (Sportvisunie)</option>
+          <option value="karper">meeste vissen wint, dan grootste vis het eerst (karper/KKKC)</option>
+        </select>
+      </label>
+      <button type="submit" class="btn primary">Seizoen aanmaken</button>
+      <p id="seizoen-fout" class="fout" hidden></p>
+    </form>
+  </section>
+
   <section class="card" id="org-zones-card">
     <h2>Vaste zone-indeling van de plas</h2>
     <p class="muted klein">Deze indeling geldt automatisch voor elke nieuwe wedstrijd.
@@ -190,6 +237,7 @@
     <button data-tab="klassement">Klassement</button>
     <button data-tab="vangsten">Vangsten</button>
     <button data-tab="team">Mijn team</button>
+    <button data-tab="seizoen" hidden>Seizoen</button>
     <button data-tab="beheer">Beheer</button>
   </nav>
 
@@ -224,6 +272,15 @@
       </div>
       <div id="klassement-inhoud"></div>
       <p id="deel-rij" hidden style="margin-top:12px"><button id="btn-deel-uitslag" class="btn breed">📤 Deel de einduitslag</button></p>
+    </div>
+  </section>
+
+  <!-- Seizoen -->
+  <section id="tab-seizoen" class="tab" hidden>
+    <div class="card">
+      <h2>Seizoensklassement</h2>
+      <div id="seizoen-inhoud"></div>
+      <p id="seizoen-deel-rij" hidden style="margin-top:12px"><button id="btn-deel-seizoen" class="btn breed">📤 Deel de seizoensstand</button></p>
     </div>
   </section>
 

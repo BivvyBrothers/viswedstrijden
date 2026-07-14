@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 41; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 42; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -23,6 +23,8 @@ const FOUTEN = {
   org_wachtwoord_onjuist: 'Organisatie-wachtwoord onjuist.',
   alleen_lezen: 'Deze omgeving staat op alleen-lezen: nieuwe wedstrijden aanmaken kan nu niet. Oude wedstrijden blijven gewoon te bekijken. Neem contact op via info@kemblinck.nl om weer te activeren.',
   wedstrijd_afgelopen: 'Deze wedstrijd is afgelopen; meldingen aanzetten kan niet meer.',
+  seizoen_niet_gevonden: 'Seizoen niet gevonden.',
+  ongeldige_regels: 'Ongeldige seizoensinstellingen.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
   al_geloot: 'De loting is al gestart.',
   geen_deelnemers: 'Er zijn nog geen deelnemers aangemeld.',
@@ -191,6 +193,7 @@ let KLOKTIK = null;
 let SELECTIE = [];        // geselecteerde stekken (stekkeuze zonder zones)
 let SELECTIE_ZONE = null; // geselecteerde zone (stekkeuze met zones)
 let KLASSEMENT_MODE = 'totaal';
+let SEIZOEN = null;           // seizoensstand (w_seizoen_stand) of null
 let ADMIN_OPEN = false;
 let KIJKER = false;          // true = kijkersweergave (alleen klassement)
 let ROL = 'deelnemer';       // 'deelnemer' | 'kijker' | 'organisator' 
@@ -297,6 +300,8 @@ function route() {
     ADMIN_KIES = null;
     POLL_TELLER = 0;
     laadState(true);
+    SEIZOEN = null;
+    laadSeizoen();
     POLL = setInterval(() => {
       POLL_TELLER += 1;
       if (document.hidden && POLL_TELLER % 10 !== 0) return; // op de achtergrond: 1x per minuut (accu)
@@ -329,17 +334,19 @@ function activateTab(naam) {
 
 // welke tabs elke rol ziet
 const TABS_PER_ROL = {
-  kijker: ['klassement'],
-  deelnemer: ['kaart', 'klassement', 'vangsten', 'team'],
-  organisator: ['kaart', 'klassement', 'vangsten', 'beheer'],
+  kijker: ['klassement', 'seizoen'],
+  deelnemer: ['kaart', 'klassement', 'vangsten', 'team', 'seizoen'],
+  organisator: ['kaart', 'klassement', 'vangsten', 'seizoen', 'beheer'],
 };
 function renderTabs() {
-  const zichtbaar = TABS_PER_ROL[ROL] || TABS_PER_ROL.deelnemer;
-  $('#tabs').hidden = ROL === 'kijker';
+  // de seizoen-tab bestaat alleen als deze wedstrijd bij een seizoen hoort
+  const zichtbaar = (TABS_PER_ROL[ROL] || TABS_PER_ROL.deelnemer)
+    .filter((naam) => naam !== 'seizoen' || !!SEIZOEN);
+  $('#tabs').hidden = ROL === 'kijker' && !SEIZOEN;
   document.querySelectorAll('#tabs button').forEach((b) => {
     b.hidden = !zichtbaar.includes(b.dataset.tab);
   });
-  if (ROL === 'kijker') {
+  if (ROL === 'kijker' && !SEIZOEN) {
     document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-klassement'; });
     return;
   }
@@ -537,7 +544,67 @@ async function laadOrg(eerste) {
     if (!res) { sessionStorage.removeItem('orgww'); location.hash = ''; return; }
     ORG_DATA = res;
     renderOrg();
+    if (eerste) laadOrgSeizoenen();
   } catch { if (eerste) location.hash = ''; }
+}
+
+/* ---------- seizoenenbeheer (organisatie) ---------- */
+let ORG_SEIZOENEN = null;      // lijst uit w_org_seizoenen
+let SEIZOEN_PER_CODE = {};     // wedstrijdcode -> { id, ex }
+
+async function laadOrgSeizoenen() {
+  try {
+    ORG_SEIZOENEN = await rpc('w_org_seizoenen', { p_wachtwoord: sessie.orgWw() || '' });
+    SEIZOEN_PER_CODE = {};
+    for (const z of ORG_SEIZOENEN) {
+      for (const w of z.wedstrijden) SEIZOEN_PER_CODE[w.code] = { id: z.id, ex: w.ex_aequo || '' };
+    }
+    renderOrgSeizoenen();
+    renderOrg();
+  } catch { /* seizoenen zijn optioneel; stil falen */ }
+}
+
+const SEIZOEN_REGEL_TEKST = {
+  telling: { plaatspunten: 'plaatspunten', totaalgewicht: 'totaalgewicht' },
+  niet_vanger: { gemiddelde: 'niet-vanger: gemiddelde (ONK)', vangers_plus_1: 'niet-vanger: vangers+1', max_plus_1: 'niet-vanger: hoogste+1' },
+  gemist: { hoogste_plus_1: 'gemist: hoogste+1', deelnemers_plus_1: 'gemist: deelnemers+1' },
+  ex_aequo: { app: 'gelijk: grootste vis', sportvisunie: 'gelijk: gedeelde plaats', karper: 'gelijk: karper (KKKC)' },
+};
+
+function renderOrgSeizoenen() {
+  const el = $('#org-seizoenen');
+  if (!el || ORG_SEIZOENEN === null) return;
+  if (!ORG_SEIZOENEN.length) {
+    el.innerHTML = '<p class="muted">Nog geen seizoenen. Maak er hieronder een aan en koppel daarna wedstrijden via de wedstrijdkaarten hierboven.</p>';
+    return;
+  }
+  el.innerHTML = ORG_SEIZOENEN.map((z) => {
+    const r = z.regels || {};
+    const samenvatting = [
+      SEIZOEN_REGEL_TEKST.telling[r.telling || 'plaatspunten'],
+      `aftrek: ${Number(r.aftrek ?? 1)}`,
+      SEIZOEN_REGEL_TEKST.niet_vanger[r.niet_vanger || 'gemiddelde'],
+      SEIZOEN_REGEL_TEKST.gemist[r.gemist || 'hoogste_plus_1'],
+      SEIZOEN_REGEL_TEKST.ex_aequo[r.ex_aequo || 'app'],
+    ].join(' · ');
+    return `<div class="org-w">
+      <div class="org-w-kop"><b>${esc(z.naam)}</b>
+        <button class="btn gevaar klein-btn" data-seizoen-verwijder="${esc(z.id)}" data-naam="${esc(z.naam)}">🗑️</button></div>
+      <div class="muted klein">${esc(samenvatting)}</div>
+      <div class="muted klein">${z.wedstrijden.length
+        ? 'wedstrijden: ' + z.wedstrijden.map((w) => esc(w.naam)).join(' · ')
+        : 'nog geen wedstrijden gekoppeld'}</div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('[data-seizoen-verwijder]').forEach((b) => {
+    b.onclick = () => tikNogmaals(b, '⚠️ Definitief weg', async () => {
+      try {
+        await rpc('w_org_seizoen_verwijder', { p_wachtwoord: sessie.orgWw() || '', p_id: b.dataset.seizoenVerwijder });
+        toast(`Seizoen "${b.dataset.naam}" verwijderd; de wedstrijden zelf blijven bestaan.`);
+        laadOrgSeizoenen();
+      } catch (err) { toast(foutTekst(err)); }
+    });
+  });
 }
 
 function orgWedstrijdKaart(w, nuMs) {
@@ -550,6 +617,18 @@ function orgWedstrijdKaart(w, nuMs) {
     : w.status === 'aanmelden' ? (vol ? `✅ compleet (${teller}) · klaar voor loting` : `aanmelden open · ${teller} aangemeld`)
     : w.status === 'stekkeuze' ? 'loting/stekkeuze bezig'
     : 'wacht op start';
+  const gekoppeld = SEIZOEN_PER_CODE[w.code];
+  const seizoenRegel = (ORG_SEIZOENEN && ORG_SEIZOENEN.length) ? `<div class="row org-seizoen muted klein" style="align-items:center; gap:6px; margin-top:4px">seizoen
+      <select data-org-seizoen="${esc(w.code)}"><option value="">geen</option>
+        ${ORG_SEIZOENEN.map((z) => `<option value="${esc(z.id)}"${gekoppeld && gekoppeld.id === z.id ? ' selected' : ''}>${esc(z.naam)}</option>`).join('')}
+      </select>
+      ${gekoppeld ? `<select data-org-dagregel="${esc(w.code)}" title="wat telt bij exact gelijk gewicht in de daguitslag">
+        <option value="">gelijk gewicht: seizoensregel</option>
+        <option value="app"${gekoppeld.ex === 'app' ? ' selected' : ''}>gelijk gewicht: grootste vis</option>
+        <option value="sportvisunie"${gekoppeld.ex === 'sportvisunie' ? ' selected' : ''}>gelijk gewicht: gedeelde plaats</option>
+        <option value="karper"${gekoppeld.ex === 'karper' ? ' selected' : ''}>gelijk gewicht: karper (KKKC)</option>
+      </select>` : ''}
+    </div>` : '';
   return `<div class="org-w">
     <div class="org-w-kop">
       <b>${esc(w.naam)}</b>
@@ -560,6 +639,7 @@ function orgWedstrijdKaart(w, nuMs) {
       ${w.max_teams ? `${w.teams}/${w.max_teams}` : w.teams} team${w.teams === 1 && !w.max_teams ? '' : 's'} · ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'}</div>
     <div class="org-codes muted klein">deelnemerscode <b class="codegroot klein-code">${esc(w.code)}</b>
       · kijkcode <b class="codegroot klein-code">${esc(w.kijk_code)}</b></div>
+    ${seizoenRegel}
     <div class="row org-acties">
       <button class="btn primary" data-org-open="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">Openen &amp; beheren</button>
       ${w.status === 'aanmelden' && actief ? `<button class="btn" data-org-loting="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">🎲 Start loting</button>` : ''}
@@ -608,6 +688,33 @@ function renderOrg() {
         laadOrg();
       } catch (err) { toast(foutTekst(err)); }
     });
+  });
+  document.querySelectorAll('[data-org-seizoen]').forEach((sel) => {
+    sel.onchange = async () => {
+      try {
+        await rpc('w_org_seizoen_koppel', {
+          p_wachtwoord: sessie.orgWw() || '',
+          p_code: sel.dataset.orgSeizoen,
+          p_seizoen_id: sel.value || null,
+          p_ex_aequo: null,
+        });
+        await laadOrgSeizoenen();
+      } catch (err) { toast(foutTekst(err)); laadOrgSeizoenen(); }
+    };
+  });
+  document.querySelectorAll('[data-org-dagregel]').forEach((sel) => {
+    sel.onchange = async () => {
+      const code = sel.dataset.orgDagregel;
+      try {
+        await rpc('w_org_seizoen_koppel', {
+          p_wachtwoord: sessie.orgWw() || '',
+          p_code: code,
+          p_seizoen_id: (SEIZOEN_PER_CODE[code] || {}).id || null,
+          p_ex_aequo: sel.value || null,
+        });
+        await laadOrgSeizoenen();
+      } catch (err) { toast(foutTekst(err)); laadOrgSeizoenen(); }
+    };
   });
 }
 
@@ -955,21 +1062,7 @@ function tekenUitslag() {
   const c = document.createElement('canvas');
   c.width = B; c.height = H;
   const ctx = c.getContext('2d');
-  const F = (px, vet = false) => `${vet ? '800 ' : ''}${px}px system-ui, "Segoe UI", Arial, sans-serif`;
-  const rond = (x, y, br, h, r) => {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + br, y, x + br, y + h, r);
-    ctx.arcTo(x + br, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + br, y, r);
-    ctx.closePath();
-  };
-  const kort = (tekst, maxB) => {
-    let s = String(tekst);
-    while (s.length > 3 && ctx.measureText(s).width > maxB) s = s.slice(0, -2).trimEnd() + '…';
-    return s;
-  };
+  const { F, rond, kort } = canvasHulp(ctx);
 
   // achtergrond + kop
   ctx.fillStyle = '#edeadb'; ctx.fillRect(0, 0, B, H);
@@ -1036,26 +1129,160 @@ function tekenUitslag() {
   return c;
 }
 
+function canvasHulp(ctx) {
+  const F = (px, vet = false) => `${vet ? '800 ' : ''}${px}px system-ui, "Segoe UI", Arial, sans-serif`;
+  const rond = (x, y, br, h, r) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + br, y, x + br, y + h, r);
+    ctx.arcTo(x + br, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + br, y, r);
+    ctx.closePath();
+  };
+  const kort = (tekst, maxB) => {
+    let s = String(tekst);
+    while (s.length > 3 && ctx.measureText(s).width > maxB) s = s.slice(0, -2).trimEnd() + '…';
+    return s;
+  };
+  return { F, rond, kort };
+}
+
+const naarBestandsnaam = (voorvoegsel, naam) => voorvoegsel + '-' + String(naam).toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) + '.png';
+
+async function deelPng(canvas, bestandsnaam, titel) {
+  const blob = await new Promise((klaar) => canvas.toBlob(klaar, 'image/png'));
+  if (!blob) throw new Error('afbeelding_mislukt');
+  const bestand = new File([blob], bestandsnaam, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [bestand] })) {
+    await navigator.share({ files: [bestand], title: titel });
+  } else {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = bestandsnaam;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    toast('Opgeslagen als afbeelding.');
+  }
+}
+
 async function deelUitslag() {
   const knop = $('#btn-deel-uitslag');
   if (knop) knop.disabled = true;
   try {
-    const canvas = tekenUitslag();
-    const blob = await new Promise((klaar) => canvas.toBlob(klaar, 'image/png'));
-    if (!blob) throw new Error('afbeelding_mislukt');
-    const naam = 'uitslag-' + String(STATE.wedstrijd.naam).toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) + '.png';
-    const bestand = new File([blob], naam, { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [bestand] })) {
-      await navigator.share({ files: [bestand], title: `Uitslag ${STATE.wedstrijd.naam}` });
-    } else {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = naam;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-      toast('Uitslag opgeslagen als afbeelding.');
-    }
+    await deelPng(tekenUitslag(), naarBestandsnaam('uitslag', STATE.wedstrijd.naam),
+      `Uitslag ${STATE.wedstrijd.naam}`);
+  } catch (err) {
+    if (err && err.name !== 'AbortError') toast('Delen lukte niet: ' + (err.message || err));
+  } finally {
+    if (knop) knop.disabled = false;
+  }
+}
+
+/* ---------- seizoensklassement ---------- */
+async function laadSeizoen() {
+  try {
+    SEIZOEN = await rpc('w_seizoen_stand', { p_code: CODE });
+  } catch { SEIZOEN = null; } // geen seizoen, of nog geen afgelopen wedstrijden
+  renderTabs();
+  renderSeizoen();
+}
+
+function renderSeizoen() {
+  const el = $('#seizoen-inhoud');
+  if (!el) return;
+  const deelRij = $('#seizoen-deel-rij');
+  if (!SEIZOEN) { el.innerHTML = ''; if (deelRij) deelRij.hidden = true; return; }
+  if (deelRij) deelRij.hidden = false;
+  const s = SEIZOEN;
+  const regels = s.seizoen.regels;
+  const opGewicht = regels.telling === 'totaalgewicht';
+  const rangKlas = (r) => 'rank' + (r === 1 ? ' goud' : r === 2 ? ' zilver' : r === 3 ? ' brons' : '');
+  const cel = (r) => {
+    const inhoud = opGewicht ? fmtKg(r.gewicht) : String(Number(r.punten));
+    return `<td class="r${r.gemist ? ' muted' : ''}">${r.vervallen ? `<s>${inhoud}</s>` : inhoud}</td>`;
+  };
+  el.innerHTML = `
+    <p class="muted klein">${esc(s.seizoen.naam)} · na ${s.wedstrijden.length} wedstrijd${s.wedstrijden.length === 1 ? '' : 'en'} ·
+      ${opGewicht ? 'telling op totaalgewicht' : 'plaatspunten: minste punten wint'}${regels.aftrek > 0 ? ` · beste ${Math.max(1, s.wedstrijden.length - regels.aftrek)} resultaten tellen` : ''}</p>
+    <div style="overflow-x:auto"><table class="klassement">
+      <tr><th>#</th><th>Deelnemer</th>${s.wedstrijden.map((w, i) => `<th class="r" title="${esc(w.naam)}">${i + 1}</th>`).join('')}<th class="r">${opGewicht ? 'Totaal' : 'Punten'}</th></tr>
+      ${s.stand.map((d) => `<tr>
+        <td class="${rangKlas(d.plaats)}">${d.plaats}</td>
+        <td>${esc(d.naam)}<div class="opbouw">${fmtKg(d.gewicht_totaal)} gevangen</div></td>
+        ${d.resultaten.map(cel).join('')}
+        <td class="r"><b>${opGewicht ? fmtKg(d.gewicht_geteld) : Number(d.punten)}</b></td>
+      </tr>`).join('')}
+    </table></div>
+    <p class="muted klein">${s.wedstrijden.map((w, i) => `${i + 1} = ${esc(w.naam)}`).join(' · ')}.
+    Doorgestreept = vervalt (aftrek) · grijs = niet meegedaan.</p>`;
+}
+
+// tekent de seizoensstand op een canvas in de app-huisstijl
+function tekenSeizoen() {
+  const s = SEIZOEN;
+  const opGewicht = s.seizoen.regels.telling === 'totaalgewicht';
+  const top = s.stand.slice(0, 10);
+  const rest = s.stand.length - top.length;
+  const B = 1080, KOP = 216, RIJ = 78, NA = rest > 0 ? 46 : 10, VOET = 92;
+  const H = KOP + 24 + top.length * RIJ + NA + VOET;
+  const c = document.createElement('canvas');
+  c.width = B; c.height = H;
+  const ctx = c.getContext('2d');
+  const { F, rond, kort } = canvasHulp(ctx);
+
+  ctx.fillStyle = '#edeadb'; ctx.fillRect(0, 0, B, H);
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, 0, B, KOP);
+  ctx.fillStyle = '#E8871E'; ctx.font = F(26, true);
+  ctx.fillText('SEIZOENSSTAND', 64, 74);
+  ctx.fillStyle = '#ffffff'; ctx.font = F(46, true);
+  ctx.fillText(kort(s.seizoen.naam, B - 128), 64, 130);
+  const orgNaam = (document.querySelector('.topbar .brand')?.textContent || '').trim();
+  ctx.fillStyle = '#d9dcc2'; ctx.font = F(26);
+  ctx.fillText(kort(`na ${s.wedstrijden.length} wedstrijd${s.wedstrijden.length === 1 ? '' : 'en'}${orgNaam ? ' · ' + orgNaam : ''}`, B - 128), 64, 174);
+
+  const rangKleur = { 1: '#c9a227', 2: '#8f959c', 3: '#b5713f' };
+  let y = KOP + 24;
+  top.forEach((d) => {
+    ctx.fillStyle = '#ffffff';
+    rond(40, y, B - 80, RIJ - 12, 16); ctx.fill();
+    ctx.fillStyle = rangKleur[d.plaats] || '#e7e4d4';
+    ctx.beginPath(); ctx.arc(88, y + (RIJ - 12) / 2, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = rangKleur[d.plaats] ? '#ffffff' : '#57543f';
+    ctx.font = F(24, true); ctx.textAlign = 'center';
+    ctx.fillText(String(d.plaats), 88, y + (RIJ - 12) / 2 + 9);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#29271e'; ctx.font = F(30, true);
+    ctx.fillText(kort(d.naam, B - 520), 132, y + 42);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#353d2a'; ctx.font = F(32, true);
+    ctx.fillText(opGewicht ? fmtKg(d.gewicht_geteld) : `${Number(d.punten)} pnt`, B - 64, y + 44);
+    ctx.fillStyle = '#7a7660'; ctx.font = F(20);
+    ctx.fillText(fmtKg(d.gewicht_totaal), B - 250, y + 44);
+    ctx.textAlign = 'left';
+    y += RIJ;
+  });
+  if (rest > 0) {
+    ctx.fillStyle = '#7a7660'; ctx.font = F(22);
+    ctx.fillText(`+ nog ${rest} deelnemer${rest === 1 ? '' : 's'}`, 64, y + 18);
+  }
+
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, H - VOET, B, VOET);
+  ctx.fillStyle = '#E8871E'; ctx.font = `800 30px "Courier New", monospace`;
+  ctx.fillText('viswedstrijdapp.nl', 64, H - VOET + 56);
+  ctx.fillStyle = '#9ba183'; ctx.font = F(22); ctx.textAlign = 'right';
+  ctx.fillText('loting · stekkeuze · live klassement', B - 64, H - VOET + 56);
+  ctx.textAlign = 'left';
+  return c;
+}
+
+async function deelSeizoen() {
+  const knop = $('#btn-deel-seizoen');
+  if (knop) knop.disabled = true;
+  try {
+    await deelPng(tekenSeizoen(), naarBestandsnaam('seizoensstand', SEIZOEN.seizoen.naam),
+      `Stand ${SEIZOEN.seizoen.naam}`);
   } catch (err) {
     if (err && err.name !== 'AbortError') toast('Delen lukte niet: ' + (err.message || err));
   } finally {
@@ -1180,6 +1407,28 @@ function initWedstrijd() {
   $('#kl-totaal').addEventListener('click', () => { KLASSEMENT_MODE = 'totaal'; renderKlassement(); });
   $('#kl-grootste').addEventListener('click', () => { KLASSEMENT_MODE = 'grootste'; renderKlassement(); });
   $('#btn-deel-uitslag')?.addEventListener('click', deelUitslag);
+  $('#btn-deel-seizoen')?.addEventListener('click', deelSeizoen);
+  $('#form-seizoen')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const foutEl = $('#seizoen-fout');
+    foutEl.hidden = true;
+    try {
+      await rpc('w_org_seizoen_maak', {
+        p_wachtwoord: sessie.orgWw() || '',
+        p_naam: $('#sz-naam').value.trim(),
+        p_regels: {
+          telling: $('#sz-telling').value,
+          aftrek: Math.max(0, Math.min(20, parseInt($('#sz-aftrek').value, 10) || 0)),
+          niet_vanger: $('#sz-nietvanger').value,
+          gemist: $('#sz-gemist').value,
+          ex_aequo: $('#sz-exaequo').value,
+        },
+      });
+      $('#sz-naam').value = '';
+      toast('Seizoen aangemaakt. Koppel nu wedstrijden via de wedstrijdkaarten hierboven.');
+      laadOrgSeizoenen();
+    } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+  });
   $('#btn-push').addEventListener('click', pushToggle);
 
   $('#btn-kies').addEventListener('click', async () => {

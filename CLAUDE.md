@@ -147,6 +147,27 @@ canvas in de app-huisstijl met viswedstrijdapp.nl in de voet (gratis reclame in
 de groepsapp). `deelUitslag()`: Web Share API met bestand (share-sheet op
 mobiel), anders PNG-download. Geen server-kant.
 
+## Seizoensklassement (v42, 14 jul 2026)
+
+Ontwerp + regelonderbouwing: `seizoensklassement-ontwerp.md` (Sportvisunie 2026).
+- Tabel `wedstrijd.seizoenen` (naam + regels jsonb) + `wedstrijden.seizoen_id`
+  en `wedstrijden.dag_regels` ({"ex_aequo": app|sportvisunie|karper}).
+- Regels per seizoen: telling (plaatspunten|totaalgewicht), aftrek (0-20),
+  niet_vanger (gemiddelde|vangers_plus_1|max_plus_1), gemist
+  (hoogste_plus_1|deelnemers_plus_1), ex_aequo-default. Defaults = Sportvisunie.
+- RPC's: w_org_seizoen_maak/wijzig/verwijder/koppel + w_org_seizoenen (org-ww)
+  en publiek `w_seizoen_stand(p_code)` (wedstrijd- of kijkcode van een
+  gekoppelde wedstrijd; alleen AFGELOPEN wedstrijden tellen; berekent punten,
+  aftrek doorgestreept, gemist, tiebreaks; deelnemers gematcht op
+  genormaliseerde naam, koppels op het naampaar ongeacht volgorde).
+- Client: tabblad Seizoen (ook voor kijkers) verschijnt alleen als de
+  wedstrijd bij een seizoen hoort (laadSeizoen na het openen); org-omgeving
+  heeft een Seizoenen-kaart + per wedstrijdkaart een seizoen-select en een
+  daguitslag(ex-aequo)-select; "Deel de seizoensstand" hergebruikt het
+  v41-canvas. Demo: "Demo-competitie 2026" met 3 gekoppelde wedstrijden
+  (extra kijkcodes KIJKD2/KIJKD3, niet geadverteerd).
+- FASE 2 (bewust later): vak/zone-klassering, naam-aliassen samenvoegen.
+
 ## Alleen-lezen-vlag (abonnement verlopen)
 
 `wedstrijd.instellingen.alleen_lezen` (migratie `wedstrijd_alleen_lezen`):
