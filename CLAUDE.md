@@ -222,7 +222,10 @@ Bij elke release controleren:
 4. Elke statische HTML-pagina heeft bewust een eigen meta-CSP
    (instructiepagina's: script-src 'none').
 5. Bij wijzigingen aan gedeelde teksten: root- én tenant-instructies bijwerken.
-6. Root-hash-test: `/#/k/KIJKJE` moet in /demo/ landen, `/#/org` in /nphv/
+6. Nieuwe tenant: de klant-rij MOET in wedstrijd.klanten staan voordat de
+   omgeving live gaat (w_maak_wedstrijd faalt anders met klant_niet_gevonden;
+   nieuwe_tenant.py print de insert-SQL).
+7. Root-hash-test: `/#/k/KIJKJE` moet in /demo/ landen, `/#/org` in /nphv/
    (landing.js: kale root-hashes zijn legacy-NPHV; nieuwe tenants delen
    ALTIJD links met tenantpad, alleen de demo-kijkcode heeft een mapping).
 

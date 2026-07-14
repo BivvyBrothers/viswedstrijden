@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 46; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 47; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -25,6 +25,7 @@ const FOUTEN = {
   meldingen_gesloten: 'Deze wedstrijd is afgelopen; meldingen aanzetten kan niet meer.',
   seizoen_niet_gevonden: 'Seizoen niet gevonden.',
   beheerder_wachtwoord_onjuist: 'Beheerderswachtwoord onjuist.',
+  klant_niet_gevonden: 'Deze omgeving is nog niet gekoppeld aan een klant. Neem contact op via info@kemblinck.nl.',
   ongeldige_regels: 'Ongeldige seizoensinstellingen.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
   al_geloot: 'De loting is al gestart.',
@@ -288,6 +289,7 @@ function route() {
     history.replaceState(null, '', location.pathname + '#/w/' + mW[1].toUpperCase());
   }
   clearInterval(POLL); clearInterval(KLOKTIK); clearInterval(ORG_POLL);
+  if (location.hash !== '#/beheerder' && SU_DATA) wisSuScherm();
   if (mW || mK) {
     KIJKER = !!mK;
     CODE = (mW || mK)[1].toUpperCase();
@@ -624,6 +626,15 @@ function renderOrgSeizoenen() {
 /* ---------- beheerdersomgeving (KemblincK support, route #/beheerder) ---------- */
 let SU_DATA = null;
 let SU_KLANT = null;  // geselecteerde klant-tab in het beheeroverzicht
+
+// pins en overzicht horen niet in memory/DOM achter te blijven (Codex v6 P2-2)
+function wisSuScherm() {
+  SU_DATA = null;
+  SU_KLANT = null;
+  ['#su-stats'].forEach((s) => { const el = $(s); if (el) el.textContent = ''; });
+  ['#su-instellingen', '#su-wedstrijden'].forEach((s) => { const el = $(s); if (el) el.innerHTML = ''; });
+  ['#su-ww', '#su-ww-nieuw', '#su-orgww-nieuw'].forEach((s) => { const el = $(s); if (el) el.value = ''; });
+}
 
 function initSu() {
   $('#su-login').hidden = !!sessie.suWw();
@@ -1272,7 +1283,17 @@ async function deelPng(canvas, bestandsnaam, titel) {
 
 // duidelijke app-vermelding op ALLE deel-afbeeldingen: logo + adres in de voet
 const APP_ICOON = new Image();
+const APP_ICOON_KLAAR = new Promise((klaar) => {
+  APP_ICOON.onload = klaar;
+  APP_ICOON.onerror = klaar;
+});
 APP_ICOON.src = '/icon-192.png';
+
+// kort wachten op het logo zodat de eerste deelactie het ook al heeft;
+// na 1,5s delen we zonder logo in plaats van te blijven hangen (Codex v6 P2-4)
+function wachtOpVoetLogo() {
+  return Promise.race([APP_ICOON_KLAAR, new Promise((klaar) => setTimeout(klaar, 1500))]);
+}
 
 function tekenVoet(ctx, B, H, VOET, rechts = 'loting \u00b7 stekkeuze \u00b7 live klassement') {
   ctx.fillStyle = '#353d2a'; ctx.fillRect(0, H - VOET, B, VOET);
@@ -1299,12 +1320,20 @@ function tekenVoet(ctx, B, H, VOET, rechts = 'loting \u00b7 stekkeuze \u00b7 liv
   ctx.textAlign = 'left';
 }
 
-function laadFoto(url) {
+function laadFoto(url, timeoutMs = 12000) {
   return new Promise((ok, nee) => {
     const img = new Image();
+    // zonder timeout kan de deel-knop eeuwig disabled blijven bij een
+    // hangende verbinding (Codex v6 P2-3)
+    const timer = setTimeout(() => {
+      img.onload = null;
+      img.onerror = null;
+      img.src = '';
+      nee(new Error('foto_laden_mislukt'));
+    }, timeoutMs);
     img.crossOrigin = 'anonymous'; // bucket stuurt ACAO *, dus canvas blijft deelbaar
-    img.onload = () => ok(img);
-    img.onerror = () => nee(new Error('foto_laden_mislukt'));
+    img.onload = () => { clearTimeout(timer); ok(img); };
+    img.onerror = () => { clearTimeout(timer); nee(new Error('foto_laden_mislukt')); };
     img.src = url;
   });
 }
@@ -1355,6 +1384,7 @@ async function tekenVangst(v, t) {
 async function deelVangst(v, t, knop) {
   if (knop) knop.disabled = true;
   try {
+    await wachtOpVoetLogo();
     const canvas = await tekenVangst(v, t);
     await deelPng(canvas, naarBestandsnaam('vangst', `${t ? teamNaam(t) : 'vis'}-${v.gewicht_gram}g`),
       `Vangst ${fmtKg(v.gewicht_gram)} \u00b7 ${STATE.wedstrijd.naam}`);
@@ -1379,6 +1409,7 @@ async function deelUitslag() {
   const knop = $('#btn-deel-uitslag');
   if (knop) knop.disabled = true;
   try {
+    await wachtOpVoetLogo();
     await deelPng(tekenUitslag(), naarBestandsnaam('uitslag', STATE.wedstrijd.naam),
       `Uitslag ${STATE.wedstrijd.naam}`);
   } catch (err) {
@@ -1490,6 +1521,7 @@ async function deelSeizoen() {
   const knop = $('#btn-deel-seizoen');
   if (knop) knop.disabled = true;
   try {
+    await wachtOpVoetLogo();
     await deelPng(tekenSeizoen(), naarBestandsnaam('seizoensstand', SEIZOEN.seizoen.naam),
       `Stand ${SEIZOEN.seizoen.naam}`);
   } catch (err) {
@@ -1630,7 +1662,11 @@ function initWedstrijd() {
       renderSu();
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
-  $('#su-uitloggen')?.addEventListener('click', () => { sessionStorage.removeItem('suww'); location.hash = ''; });
+  $('#su-uitloggen')?.addEventListener('click', () => {
+    sessionStorage.removeItem('suww');
+    wisSuScherm();
+    location.hash = '';
+  });
   $('#su-ververs')?.addEventListener('click', () => laadSu());
   $('#form-su-orgww')?.addEventListener('submit', async (e) => {
     e.preventDefault();

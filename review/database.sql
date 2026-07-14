@@ -933,6 +933,7 @@ declare
   v_pin text;
   v_id uuid;
   v_klant uuid;
+  v_klant_slug text;
 begin
   if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_org_wachtwoord)) then
     raise exception 'org_wachtwoord_onjuist';
@@ -947,9 +948,12 @@ begin
     raise exception 'ongeldig_maximum';
   end if;
   if p_regels is not null and length(p_regels) > 3000 then raise exception 'regels_te_lang'; end if;
-  select id into v_klant from wedstrijd.klanten where slug = coalesce(nullif(lower(trim(p_klant)), ''), 'nphv');
+  -- alleen NULL/leeg (oude gecachte clients) valt terug op nphv; een
+  -- onbekende niet-lege slug is een configuratiefout en faalt luid (Codex v6 P1)
+  v_klant_slug := coalesce(nullif(lower(trim(p_klant)), ''), 'nphv');
+  select id into v_klant from wedstrijd.klanten where slug = v_klant_slug;
   if v_klant is null then
-    select id into v_klant from wedstrijd.klanten where slug = 'nphv';
+    raise exception 'klant_niet_gevonden';
   end if;
   v_code := wedstrijd.nieuwe_team_code();
   v_kijk := wedstrijd.nieuwe_team_code();
