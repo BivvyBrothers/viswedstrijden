@@ -175,6 +175,20 @@ true = `w_maak_wedstrijd` weigert met 'alleen_lezen' (nette fouttekst in
 app.js), bestaande wedstrijden blijven bekijkbaar. Nu 1 vlag voor de hele
 database; wordt per tenant bij de tenancy-migratie.
 
+## Beheerdersomgeving (v44, 14 jul 2026; alleen Patrick)
+
+Vierde rol naast kijker/deelnemer/organisator: KemblincK-support. VERBORGEN
+route `#/beheerder` (geen knop in de UI; werkt in elke tenant en via de root
+dankzij landing.js). Eigen `beheerder_wachtwoord` in wedstrijd.instellingen
+(migratie `wedstrijd_beheerder`; waarde alleen in DB + Patricks
+wachtwoordmanager, NOOIT in deze repo). RPC's: `w_su_overzicht` (stats,
+instellingen-status, alle wedstrijden incl. admin_pin), `w_su_alleen_lezen`,
+`w_su_org_wachtwoord` (reset voor organisator die hem kwijt is),
+`w_su_wachtwoord` (eigen ww wijzigen; min. 12 tekens); alles via
+wedstrijd.su_check met pg_sleep. Client: view-beheerder in beide
+tenant-indexen, sessionStorage `suww`, "Openen & beheren" gebruikt de
+bestaande pin-flow.
+
 ## Release-checklist (multi-tenant, sinds v36)
 
 Bij elke release controleren:

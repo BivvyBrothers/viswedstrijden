@@ -27,7 +27,8 @@ create table wedstrijd.instellingen (
   push_secret text,
   push_contact text not null default 'mailto:patrick@kemblinck.nl',
   standaard_zones jsonb,
-  alleen_lezen boolean not null default false  -- abonnement verlopen: geen nieuwe wedstrijden (migratie wedstrijd_alleen_lezen)
+  alleen_lezen boolean not null default false,  -- abonnement verlopen: geen nieuwe wedstrijden (migratie wedstrijd_alleen_lezen)
+  beheerder_wachtwoord text                     -- KemblincK-support (route #/beheerder, migratie wedstrijd_beheerder); waarde NOOIT in deze repo
 );
 
 create table wedstrijd.seizoenen (
@@ -1345,4 +1346,95 @@ begin
         order by g.plaats, g.display) from gerangschikt g)
     )
   );
+end $function$;
+
+-- =====================================================================
+-- Beheerdersomgeving (migratie wedstrijd_beheerder, 14 jul 2026):
+-- KemblincK-support via verborgen route #/beheerder, eigen wachtwoord.
+-- =====================================================================
+
+CREATE OR REPLACE FUNCTION wedstrijd.su_check(p_wachtwoord text)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
+begin
+  if not exists (select 1 from wedstrijd.instellingen
+                 where id = 1 and beheerder_wachtwoord is not null
+                   and beheerder_wachtwoord = trim(p_wachtwoord)) then
+    perform pg_catalog.pg_sleep(0.5);
+    raise exception 'beheerder_wachtwoord_onjuist';
+  end if;
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_su_overzicht(p_wachtwoord text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  perform wedstrijd.su_check(p_wachtwoord);
+  return json_build_object(
+    'server_now', now(),
+    'instellingen', (select json_build_object(
+      'alleen_lezen', alleen_lezen,
+      'heeft_standaard_zones', (standaard_zones is not null),
+      'heeft_vapid', (vapid_private is not null),
+      'heeft_push_secret', (push_secret is not null))
+      from wedstrijd.instellingen where id = 1),
+    'stats', json_build_object(
+      'wedstrijden', (select count(*) from wedstrijd.wedstrijden),
+      'teams', (select count(*) from wedstrijd.teams),
+      'vangsten', (select count(*) from wedstrijd.vangsten where status = 'actief'),
+      'push_subs', (select count(*) from wedstrijd.push_subs),
+      'seizoenen', (select count(*) from wedstrijd.seizoenen)),
+    'wedstrijden', coalesce((select json_agg(json_build_object(
+      'code', w.code, 'kijk_code', w.kijk_code, 'admin_pin', w.admin_pin,
+      'naam', w.naam, 'mode', w.mode, 'status', w.status,
+      'start_ts', w.start_ts, 'eind_ts', w.eind_ts,
+      'heeft_zones', (w.zones is not null), 'max_teams', w.max_teams,
+      'seizoen_naam', (select z.naam from wedstrijd.seizoenen z where z.id = w.seizoen_id),
+      'teams', (select count(*) from wedstrijd.teams t where t.wedstrijd_id = w.id),
+      'vangsten', (select count(*) from wedstrijd.vangsten v where v.wedstrijd_id = w.id and v.status = 'actief'),
+      'push_subs', (select count(*) from wedstrijd.push_subs p where p.wedstrijd_id = w.id))
+      order by w.start_ts desc)
+    from wedstrijd.wedstrijden w), '[]'::json));
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_su_alleen_lezen(p_wachtwoord text, p_aan boolean)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  perform wedstrijd.su_check(p_wachtwoord);
+  update wedstrijd.instellingen set alleen_lezen = coalesce(p_aan, false) where id = 1;
+  return json_build_object('alleen_lezen', (select alleen_lezen from wedstrijd.instellingen where id = 1));
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_su_org_wachtwoord(p_wachtwoord text, p_nieuw text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  perform wedstrijd.su_check(p_wachtwoord);
+  if coalesce(length(trim(p_nieuw)), 0) < 6 then raise exception 'wachtwoord_te_kort'; end if;
+  update wedstrijd.instellingen set organisator_wachtwoord = trim(p_nieuw) where id = 1;
+  return json_build_object('ok', true);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_su_wachtwoord(p_wachtwoord text, p_nieuw text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  perform wedstrijd.su_check(p_wachtwoord);
+  if coalesce(length(trim(p_nieuw)), 0) < 12 then raise exception 'wachtwoord_te_kort'; end if;
+  update wedstrijd.instellingen set beheerder_wachtwoord = trim(p_nieuw) where id = 1;
+  return json_build_object('ok', true);
 end $function$;

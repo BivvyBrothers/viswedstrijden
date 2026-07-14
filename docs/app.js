@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 43; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 44; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -24,6 +24,7 @@ const FOUTEN = {
   alleen_lezen: 'Deze omgeving staat op alleen-lezen: nieuwe wedstrijden aanmaken kan nu niet. Oude wedstrijden blijven gewoon te bekijken. Neem contact op via info@kemblinck.nl om weer te activeren.',
   meldingen_gesloten: 'Deze wedstrijd is afgelopen; meldingen aanzetten kan niet meer.',
   seizoen_niet_gevonden: 'Seizoen niet gevonden.',
+  beheerder_wachtwoord_onjuist: 'Beheerderswachtwoord onjuist.',
   ongeldige_regels: 'Ongeldige seizoensinstellingen.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
   al_geloot: 'De loting is al gestart.',
@@ -212,6 +213,8 @@ const sessie = {
   zetPin(code, pin) { sessionStorage.setItem('pin:' + code, pin); },
   orgWw() { return sessionStorage.getItem('orgww'); },
   zetOrgWw(ww) { sessionStorage.setItem('orgww', ww); },
+  suWw() { return sessionStorage.getItem('suww'); },
+  zetSuWw(ww) { sessionStorage.setItem('suww', ww); },
 };
 
 const nu = () => Date.now() + TIJD_OFFSET;
@@ -310,6 +313,12 @@ function route() {
       if (SEIZOEN && POLL_TELLER % 10 === 0) laadSeizoen();
     }, 6000);
     KLOKTIK = setInterval(tikKlok, 1000);
+  } else if (location.hash === '#/beheerder') {
+    // verborgen support-omgeving (KemblincK); geen knop op de homepagina
+    CODE = null; KIJKER = false;
+    $('#topcode').textContent = 'beheer';
+    toonView('beheerder');
+    initSu();
   } else if (location.hash === '#/org') {
     if (!sessie.orgWw()) { location.hash = ''; return; }
     CODE = null; KIJKER = false;
@@ -327,6 +336,8 @@ function toonView(naam) {
   $('#view-home').hidden = naam !== 'home';
   $('#view-wedstrijd').hidden = naam !== 'wedstrijd';
   $('#view-org').hidden = naam !== 'org';
+  const su = $('#view-beheerder');
+  if (su) su.hidden = naam !== 'beheerder';
   $('#btn-terug').hidden = naam === 'home';
 }
 function activateTab(naam) {
@@ -606,6 +617,78 @@ function renderOrgSeizoenen() {
         laadOrgSeizoenen();
       } catch (err) { toast(foutTekst(err)); }
     });
+  });
+}
+
+/* ---------- beheerdersomgeving (KemblincK support, route #/beheerder) ---------- */
+let SU_DATA = null;
+
+function initSu() {
+  $('#su-login').hidden = !!sessie.suWw();
+  $('#su-omgeving').hidden = !sessie.suWw();
+  if (sessie.suWw()) laadSu();
+}
+
+async function laadSu() {
+  try {
+    SU_DATA = await rpc('w_su_overzicht', { p_wachtwoord: sessie.suWw() || '' });
+    renderSu();
+  } catch (err) {
+    sessionStorage.removeItem('suww');
+    SU_DATA = null;
+    initSu();
+    const foutEl = $('#su-fout');
+    if (foutEl) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+  }
+}
+
+function suKaart(w, nuMs) {
+  const actief = new Date(w.eind_ts).getTime() >= nuMs;
+  const live = actief && new Date(w.start_ts).getTime() <= nuMs;
+  return `<div class="org-w">
+    <div class="org-w-kop"><b>${esc(w.naam)}</b>
+      <span class="chip${live ? ' live' : ''}${!actief ? ' voorbij' : ''}">${!actief ? 'afgelopen' : live ? '\u25cf LIVE' : esc(w.status)}</span></div>
+    <div class="muted klein">${fmtDatumTijd(w.start_ts)} tot ${fmtDatumTijd(w.eind_ts)} \u00b7
+      ${w.mode === 'koppel' ? 'koppels' : 'individueel'} \u00b7 ${w.teams} team${w.teams === 1 ? '' : 's'} \u00b7
+      ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'} \u00b7 ${w.push_subs} push${w.seizoen_naam ? ' \u00b7 seizoen: ' + esc(w.seizoen_naam) : ''}</div>
+    <div class="org-codes muted klein">deelnemer <b class="codegroot klein-code">${esc(w.code)}</b>
+      \u00b7 kijk <b class="codegroot klein-code">${esc(w.kijk_code)}</b>
+      \u00b7 pin <b class="codegroot klein-code">${esc(w.admin_pin)}</b></div>
+    <div class="row org-acties">
+      <button class="btn primary" data-su-open="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">Openen &amp; beheren</button>
+      <button class="btn" data-su-kopieer="${esc(w.admin_pin)}">\ud83d\udd11 kopieer pin</button>
+    </div>
+  </div>`;
+}
+
+function renderSu() {
+  if (!SU_DATA) return;
+  $('#su-login').hidden = true;
+  $('#su-omgeving').hidden = false;
+  const s = SU_DATA.stats, i = SU_DATA.instellingen;
+  $('#su-stats').textContent = `${s.wedstrijden} wedstrijden \u00b7 ${s.teams} teams \u00b7 ` +
+    `${s.vangsten} vangsten \u00b7 ${s.push_subs} push-abonnementen \u00b7 ${s.seizoenen} seizoenen`;
+  $('#su-instellingen').innerHTML = `
+    <p class="muted klein">alleen-lezen: <b>${i.alleen_lezen ? 'AAN (nieuwe wedstrijden geblokkeerd)' : 'uit'}</b>
+      \u00b7 vaste zones: ${i.heeft_standaard_zones ? 'ja' : 'nee'}
+      \u00b7 push-sleutels: ${i.heeft_vapid && i.heeft_push_secret ? 'ok' : 'ONTBREKEN'}</p>
+    <button id="su-alleen-lezen" class="btn${i.alleen_lezen ? '' : ' gevaar'}">${i.alleen_lezen
+      ? 'Zet alleen-lezen UIT (weer activeren)' : 'Zet alleen-lezen AAN (abonnement verlopen)'}</button>`;
+  const nuMs = new Date(SU_DATA.server_now).getTime();
+  $('#su-wedstrijden').innerHTML = (SU_DATA.wedstrijden || []).length
+    ? SU_DATA.wedstrijden.map((w) => suKaart(w, nuMs)).join('')
+    : '<p class="muted">Geen wedstrijden.</p>';
+  $('#su-alleen-lezen').onclick = () => tikNogmaals($('#su-alleen-lezen'), '\u26a0\ufe0f Tik nogmaals', async () => {
+    try {
+      await rpc('w_su_alleen_lezen', { p_wachtwoord: sessie.suWw() || '', p_aan: !SU_DATA.instellingen.alleen_lezen });
+      laadSu();
+    } catch (err) { toast(foutTekst(err)); }
+  });
+  document.querySelectorAll('[data-su-open]').forEach((b) => {
+    b.onclick = () => { sessie.zetPin(b.dataset.suOpen, b.dataset.pin); location.hash = '#/w/' + b.dataset.suOpen; };
+  });
+  document.querySelectorAll('[data-su-kopieer]').forEach((b) => {
+    b.onclick = async () => { await kopieerTekst(b.dataset.suKopieer); toast('Pin gekopieerd.'); };
   });
 }
 
@@ -1423,6 +1506,38 @@ function initWedstrijd() {
   $('#kl-grootste').addEventListener('click', () => { KLASSEMENT_MODE = 'grootste'; renderKlassement(); });
   $('#btn-deel-uitslag')?.addEventListener('click', deelUitslag);
   $('#btn-deel-seizoen')?.addEventListener('click', deelSeizoen);
+  $('#form-sulogin')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const foutEl = $('#su-fout');
+    foutEl.hidden = true;
+    try {
+      SU_DATA = await rpc('w_su_overzicht', { p_wachtwoord: $('#su-ww').value });
+      sessie.zetSuWw($('#su-ww').value);
+      $('#su-ww').value = '';
+      renderSu();
+    } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+  });
+  $('#su-uitloggen')?.addEventListener('click', () => { sessionStorage.removeItem('suww'); location.hash = ''; });
+  $('#su-ververs')?.addEventListener('click', () => laadSu());
+  $('#form-su-orgww')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const foutEl = $('#su-instel-fout'); foutEl.hidden = true;
+    try {
+      await rpc('w_su_org_wachtwoord', { p_wachtwoord: sessie.suWw() || '', p_nieuw: $('#su-orgww-nieuw').value });
+      $('#su-orgww-nieuw').value = '';
+      toast('Organisatie-wachtwoord aangepast. Geef het door aan de organisator.');
+    } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+  });
+  $('#form-su-ww')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const foutEl = $('#su-instel-fout'); foutEl.hidden = true;
+    try {
+      await rpc('w_su_wachtwoord', { p_wachtwoord: sessie.suWw() || '', p_nieuw: $('#su-ww-nieuw').value });
+      sessie.zetSuWw($('#su-ww-nieuw').value.trim());
+      $('#su-ww-nieuw').value = '';
+      toast('Beheerderswachtwoord gewijzigd.');
+    } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+  });
   $('#form-seizoen')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#seizoen-fout');

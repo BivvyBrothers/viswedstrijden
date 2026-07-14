@@ -211,6 +211,54 @@
   </section>
 </main>
 
+<!-- ============ BEHEERDER (KemblincK support; alleen via directe route #/beheerder) ============ -->
+<main id="view-beheerder" class="container" hidden>
+  <section class="card" id="su-login">
+    <h1>🧰 Beheer (KemblincK)</h1>
+    <p class="muted klein">Alleen voor de app-beheerder.</p>
+    <form id="form-sulogin" class="rolform">
+      <div class="row">
+        <input id="su-ww" type="password" placeholder="beheerderswachtwoord" autocomplete="off" required>
+        <button type="submit" class="btn primary">Inloggen</button>
+      </div>
+      <p id="su-fout" class="fout" hidden></p>
+    </form>
+  </section>
+  <div id="su-omgeving" hidden>
+    <section class="card">
+      <div class="w-kop" style="justify-content:space-between">
+        <h1>🧰 Beheer (KemblincK)</h1>
+        <span><button id="su-ververs" class="btn klein-btn">ververs</button>
+        <button id="su-uitloggen" class="btn klein-btn">uitloggen</button></span>
+      </div>
+      <div id="su-stats" class="muted klein"></div>
+    </section>
+    <section class="card">
+      <h2>Instellingen</h2>
+      <div id="su-instellingen"></div>
+      <form id="form-su-orgww" class="rolform" style="margin-top:12px">
+        <p class="muted klein">Organisatie-wachtwoord resetten (als de organisator het kwijt is):</p>
+        <div class="row">
+          <input id="su-orgww-nieuw" type="text" minlength="6" placeholder="nieuw organisatie-wachtwoord" autocomplete="off" required>
+          <button type="submit" class="btn">Reset</button>
+        </div>
+      </form>
+      <form id="form-su-ww" class="rolform" style="margin-top:12px">
+        <p class="muted klein">Eigen beheerderswachtwoord wijzigen (min. 12 tekens):</p>
+        <div class="row">
+          <input id="su-ww-nieuw" type="password" minlength="12" placeholder="nieuw beheerderswachtwoord" autocomplete="off" required>
+          <button type="submit" class="btn">Wijzig</button>
+        </div>
+      </form>
+      <p id="su-instel-fout" class="fout" hidden></p>
+    </section>
+    <section class="card">
+      <h2>Alle wedstrijden</h2>
+      <div id="su-wedstrijden"></div>
+    </section>
+  </div>
+</main>
+
 <!-- ============ WEDSTRIJD ============ -->
 <main id="view-wedstrijd" class="container" hidden>
   <section class="card klok-card">

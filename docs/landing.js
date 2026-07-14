@@ -11,7 +11,7 @@ function naarTenant() {
     location.replace('/demo/' + location.hash);
     return;
   }
-  if (/^#\/(w|k)\//.test(location.hash) || location.hash === '#/org') {
+  if (/^#\/(w|k)\//.test(location.hash) || location.hash === '#/org' || location.hash === '#/beheerder') {
     let hash = location.hash;
     const token = new URLSearchParams(location.search).get('t');
     if (token && /^#\/w\//.test(hash) && !/[?&]t=/.test(hash)) {
