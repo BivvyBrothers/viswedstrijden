@@ -137,6 +137,18 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
   insert; zie sessie 12 jul of schrijf hem opnieuw), daarna Jan's code weer
   op DEMOJA zetten.
 
+## Vangst delen op social media (v45, 14 jul 2026)
+
+Per vangst een deel-knop (vangsten-feed + Mijn vangsten): `tekenVangst()`
+maakt een 1080x1352-afbeelding (Instagram-vriendelijk 4:5) met de vangstfoto
+cover-gecropt (of de karper-placeholder bij handmatige invoer), gewicht groot,
+visser, wedstrijd + datum en de app-voet. Foto's laden met
+crossOrigin='anonymous' (bucket stuurt ACAO *, dus geen canvas-taint).
+Alle deel-afbeeldingen (uitslag, seizoen, vangst) hebben sinds v45 een
+gedeelde voet `tekenVoet()` met het KARPERLOGO + viswedstrijdapp.nl
+(APP_ICOON preload van /icon-192.png). Delen gaat via `deelPng()`
+(share-sheet op mobiel = WhatsApp/Instagram/Facebook, anders download).
+
 ## Uitslag delen als afbeelding (v41, 14 jul 2026)
 
 Op een AFGELOPEN wedstrijd met vangsten toont het klassement een knop

@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 44; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 45; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -1211,13 +1211,7 @@ function tekenUitslag() {
     ctx.fillText(kort(`🏆 Grootste vis: ${fmtKg(kampioenVis.grootste.gewicht_gram)} · ${teamNaam(kampioenVis.team)}`, B - 160), 64, y + 45);
   }
 
-  // voet
-  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, H - VOET, B, VOET);
-  ctx.fillStyle = '#E8871E'; ctx.font = `800 30px "Courier New", monospace`;
-  ctx.fillText('viswedstrijdapp.nl', 64, H - VOET + 56);
-  ctx.fillStyle = '#9ba183'; ctx.font = F(22); ctx.textAlign = 'right';
-  ctx.fillText('loting · stekkeuze · live klassement', B - 64, H - VOET + 56);
-  ctx.textAlign = 'left';
+  tekenVoet(ctx, B, H, VOET);
   return c;
 }
 
@@ -1257,6 +1251,111 @@ async function deelPng(canvas, bestandsnaam, titel) {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
     toast('Opgeslagen als afbeelding.');
   }
+}
+
+// duidelijke app-vermelding op ALLE deel-afbeeldingen: logo + adres in de voet
+const APP_ICOON = new Image();
+APP_ICOON.src = '/icon-192.png';
+
+function tekenVoet(ctx, B, H, VOET, rechts = 'loting \u00b7 stekkeuze \u00b7 live klassement') {
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, H - VOET, B, VOET);
+  let x = 64;
+  if (APP_ICOON.complete && APP_ICOON.naturalWidth) {
+    const m = 54, y = H - VOET + (VOET - m) / 2, r = 12;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + m, y, x + m, y + m, r);
+    ctx.arcTo(x + m, y + m, x, y + m, r);
+    ctx.arcTo(x, y + m, x, y, r);
+    ctx.arcTo(x, y, x + m, y, r);
+    ctx.closePath(); ctx.clip();
+    ctx.drawImage(APP_ICOON, x, y, m, m);
+    ctx.restore();
+    x += m + 22;
+  }
+  ctx.fillStyle = '#E8871E'; ctx.font = '800 30px "Courier New", monospace';
+  ctx.fillText('viswedstrijdapp.nl', x, H - VOET / 2 + 11);
+  ctx.fillStyle = '#9ba183'; ctx.font = '22px system-ui, "Segoe UI", Arial, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(rechts, B - 64, H - VOET / 2 + 8);
+  ctx.textAlign = 'left';
+}
+
+function laadFoto(url) {
+  return new Promise((ok, nee) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // bucket stuurt ACAO *, dus canvas blijft deelbaar
+    img.onload = () => ok(img);
+    img.onerror = () => nee(new Error('foto_laden_mislukt'));
+    img.src = url;
+  });
+}
+
+function tekenVangstPlaceholder(ctx, B, H) {
+  ctx.fillStyle = '#2f4a2a'; ctx.fillRect(0, 0, B, H);
+  if (APP_ICOON.complete && APP_ICOON.naturalWidth) {
+    const m = 340;
+    ctx.save(); ctx.globalAlpha = 0.9;
+    ctx.drawImage(APP_ICOON, (B - m) / 2, (H - m) / 2 - 40, m, m);
+    ctx.restore();
+  }
+}
+
+// deelbare vangst-afbeelding: foto (of placeholder) + gewicht + visser + app-voet
+async function tekenVangst(v, t) {
+  const B = 1080, FOTO_H = 1010, INFO = 250, VOET = 92;
+  const H = FOTO_H + INFO + VOET; // ~4:5, Instagram-vriendelijk
+  const c = document.createElement('canvas');
+  c.width = B; c.height = H;
+  const ctx = c.getContext('2d');
+  const { F, kort } = canvasHulp(ctx);
+  if (v.foto_path) {
+    try {
+      const img = await laadFoto(fotoUrl(v.foto_path));
+      const s = Math.max(B / img.width, FOTO_H / img.height); // cover-crop
+      const w2 = img.width * s, h2 = img.height * s;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, 0, B, FOTO_H); ctx.clip();
+      ctx.drawImage(img, (B - w2) / 2, (FOTO_H - h2) / 2, w2, h2);
+      ctx.restore();
+    } catch { tekenVangstPlaceholder(ctx, B, FOTO_H); }
+  } else {
+    tekenVangstPlaceholder(ctx, B, FOTO_H);
+  }
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, FOTO_H, B, INFO + VOET);
+  ctx.fillStyle = '#E8871E'; ctx.font = F(72, true);
+  ctx.fillText(fmtKg(v.gewicht_gram), 64, FOTO_H + 98);
+  ctx.fillStyle = '#ffffff'; ctx.font = F(34, true);
+  ctx.fillText(kort(t ? teamNaam(t) : 'vangst', B - 128), 64, FOTO_H + 154);
+  ctx.fillStyle = '#d9dcc2'; ctx.font = F(26);
+  const wanneer = new Date(v.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+  ctx.fillText(kort(`${STATE.wedstrijd.naam} \u00b7 ${wanneer}`, B - 128), 64, FOTO_H + 198);
+  tekenVoet(ctx, B, H, VOET, 'volg de wedstrijd live');
+  return c;
+}
+
+async function deelVangst(v, t, knop) {
+  if (knop) knop.disabled = true;
+  try {
+    const canvas = await tekenVangst(v, t);
+    await deelPng(canvas, naarBestandsnaam('vangst', `${t ? teamNaam(t) : 'vis'}-${v.gewicht_gram}g`),
+      `Vangst ${fmtKg(v.gewicht_gram)} \u00b7 ${STATE.wedstrijd.naam}`);
+  } catch (err) {
+    if (err && err.name !== 'AbortError') toast('Delen lukte niet: ' + (err.message || err));
+  } finally {
+    if (knop) knop.disabled = false;
+  }
+}
+
+function koppelVangstDelen() {
+  document.querySelectorAll('[data-deel-vangst]').forEach((b) => {
+    b.onclick = () => {
+      const v = STATE.vangsten.find((x) => x.id === b.dataset.deelVangst);
+      if (!v) return;
+      deelVangst(v, STATE.teams.find((x) => x.id === v.team_id), b);
+    };
+  });
 }
 
 async function deelUitslag() {
@@ -1366,12 +1465,7 @@ function tekenSeizoen() {
     ctx.fillText(`+ nog ${rest} deelnemer${rest === 1 ? '' : 's'}`, 64, y + 18);
   }
 
-  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, H - VOET, B, VOET);
-  ctx.fillStyle = '#E8871E'; ctx.font = `800 30px "Courier New", monospace`;
-  ctx.fillText('viswedstrijdapp.nl', 64, H - VOET + 56);
-  ctx.fillStyle = '#9ba183'; ctx.font = F(22); ctx.textAlign = 'right';
-  ctx.fillText('loting · stekkeuze · live klassement', B - 64, H - VOET + 56);
-  ctx.textAlign = 'left';
+  tekenVoet(ctx, B, H, VOET);
   return c;
 }
 
@@ -1404,9 +1498,11 @@ function renderVangsten() {
         <div class="gewicht">${fmtKg(v.gewicht_gram)}</div>
         <div class="wie">${t ? teamNaamHtml(t) : 'onbekend'}</div>
         <div class="tijd">${fmtDatumTijd(v.created_at)}</div>
+        <div style="margin-top:6px"><button class="btn klein-btn" data-deel-vangst="${esc(v.id)}">\ud83d\udce4 deel</button></div>
       </div>
     </div>`;
   }).join('');
+  koppelVangstDelen();
 }
 
 // foto of nette placeholder (vangsten die de organisator zonder foto invoerde)
@@ -1750,9 +1846,11 @@ function renderTeamTab() {
       <div class="info">
         <div class="gewicht">${fmtKg(v.gewicht_gram)}</div>
         <div class="tijd">${fmtDatumTijd(v.created_at)}</div>
+        <div style="margin-top:6px"><button class="btn klein-btn" data-deel-vangst="${esc(v.id)}">\ud83d\udce4 deel op social media</button></div>
       </div>
     </div>`).join('') +
     '<p class="muted klein">Fout gemaakt? Alleen de organisator kan een vangst aanpassen of verwijderen.</p>';
+  koppelVangstDelen();
 }
 
 /* ---------- beheer ---------- */
