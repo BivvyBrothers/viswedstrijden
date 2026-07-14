@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 40; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 41; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -860,10 +860,11 @@ function renderLoting() {
 }
 
 /* ---------- klassement ---------- */
-function renderKlassement() {
-  $('#kl-totaal').classList.toggle('actief', KLASSEMENT_MODE === 'totaal');
-  $('#kl-grootste').classList.toggle('actief', KLASSEMENT_MODE === 'grootste');
-  const el = $('#klassement-inhoud');
+// tiebreaks: gelijk totaal -> grootste vis wint; gelijk grootste -> vroegst gevangen wint
+const klGrootsteVan = (r) => r.grootste ? r.grootste.gewicht_gram : 0;
+const klTijdGrootste = (r) => r.grootste ? new Date(r.grootste.created_at).getTime() : Infinity;
+// telt vangsten per team op; alleen teams met vangsten, nog ongesorteerd
+function klassementRijen() {
   const perTeam = new Map();
   for (const t of STATE.teams) perTeam.set(t.id, { team: t, totaal: 0, aantal: 0, grootste: null });
   for (const v of STATE.vangsten) {
@@ -873,16 +874,25 @@ function renderKlassement() {
     r.aantal += 1;
     if (!r.grootste || v.gewicht_gram > r.grootste.gewicht_gram) r.grootste = v;
   }
-  const rijen = [...perTeam.values()].filter((r) => r.aantal > 0);
+  return [...perTeam.values()].filter((r) => r.aantal > 0);
+}
+
+function renderKlassement() {
+  $('#kl-totaal').classList.toggle('actief', KLASSEMENT_MODE === 'totaal');
+  $('#kl-grootste').classList.toggle('actief', KLASSEMENT_MODE === 'grootste');
+  const el = $('#klassement-inhoud');
+  const rijen = klassementRijen();
+  // deel-knop alleen op een afgelopen wedstrijd met uitslag
+  const deelRij = $('#deel-rij');
+  if (deelRij) deelRij.hidden = !(fase() === 'voorbij' && rijen.length > 0);
   if (!rijen.length) {
     el.innerHTML = '<p class="muted">Nog geen vangsten geregistreerd.</p>';
     return;
   }
   const plek = (t) => t.zone ? zoneLabel(t.zone) : (t.stekken?.length ? `stek ${t.stekken.join('+')}` : '');
   const rangKlas = (rang) => 'rank' + (rang === 1 ? ' goud' : rang === 2 ? ' zilver' : rang === 3 ? ' brons' : '');
-  // tiebreaks: gelijk totaal -> grootste vis wint; gelijk grootste -> vroegst gevangen wint
-  const grootsteVan = (r) => r.grootste ? r.grootste.gewicht_gram : 0;
-  const tijdGrootste = (r) => r.grootste ? new Date(r.grootste.created_at).getTime() : Infinity;
+  const grootsteVan = klGrootsteVan;
+  const tijdGrootste = klTijdGrootste;
   // volledig gelijke stand krijgt hetzelfde rangnummer
   const metRang = (sleutelVan) => {
     let rang = 0, vorige = null;
@@ -926,6 +936,130 @@ function renderKlassement() {
           : '<span class="foto-leeg thumb-maat">🎣</span>'}</td>
       </tr>`).join('')}
     </table>`;
+  }
+}
+
+/* ---------- uitslag delen als afbeelding ---------- */
+// tekent de einduitslag (totaal-klassement) op een canvas in de app-huisstijl
+function tekenUitslag() {
+  const w = STATE.wedstrijd;
+  const rijen = klassementRijen();
+  rijen.sort((a, b) => b.totaal - a.totaal
+    || klGrootsteVan(b) - klGrootsteVan(a) || klTijdGrootste(a) - klTijdGrootste(b));
+  const top = rijen.slice(0, 10);
+  const rest = rijen.length - top.length;
+  const kampioenVis = rijen.reduce((m, r) => (klGrootsteVan(r) > klGrootsteVan(m) ? r : m), rijen[0]);
+
+  const B = 1080, KOP = 216, RIJ = 78, NA = rest > 0 ? 46 : 10, VIS = 92, VOET = 92;
+  const H = KOP + 24 + top.length * RIJ + NA + VIS + VOET;
+  const c = document.createElement('canvas');
+  c.width = B; c.height = H;
+  const ctx = c.getContext('2d');
+  const F = (px, vet = false) => `${vet ? '800 ' : ''}${px}px system-ui, "Segoe UI", Arial, sans-serif`;
+  const rond = (x, y, br, h, r) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + br, y, x + br, y + h, r);
+    ctx.arcTo(x + br, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + br, y, r);
+    ctx.closePath();
+  };
+  const kort = (tekst, maxB) => {
+    let s = String(tekst);
+    while (s.length > 3 && ctx.measureText(s).width > maxB) s = s.slice(0, -2).trimEnd() + '…';
+    return s;
+  };
+
+  // achtergrond + kop
+  ctx.fillStyle = '#edeadb'; ctx.fillRect(0, 0, B, H);
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, 0, B, KOP);
+  ctx.fillStyle = '#E8871E'; ctx.font = F(26, true);
+  ctx.fillText('EINDUITSLAG', 64, 74);
+  ctx.fillStyle = '#ffffff'; ctx.font = F(46, true);
+  ctx.fillText(kort(w.naam, B - 128), 64, 130);
+  const orgNaam = (document.querySelector('.topbar .brand')?.textContent || '').trim();
+  const datum = new Date(w.start_ts).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+  ctx.fillStyle = '#d9dcc2'; ctx.font = F(26);
+  ctx.fillText(kort(`${datum}${orgNaam ? ' · ' + orgNaam : ''}`, B - 128), 64, 174);
+
+  // klassement-rijen
+  const plek = (t) => t.zone ? zoneLabel(t.zone) : (t.stekken?.length ? `stek ${t.stekken.join('+')}` : '');
+  const rangKleur = { 1: '#c9a227', 2: '#8f959c', 3: '#b5713f' };
+  let y = KOP + 24;
+  top.forEach((r, i) => {
+    const rang = i + 1;
+    ctx.fillStyle = '#ffffff';
+    rond(40, y, B - 80, RIJ - 12, 16); ctx.fill();
+    ctx.fillStyle = rangKleur[rang] || '#e7e4d4';
+    ctx.beginPath(); ctx.arc(88, y + (RIJ - 12) / 2, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = rangKleur[rang] ? '#ffffff' : '#57543f';
+    ctx.font = F(24, true); ctx.textAlign = 'center';
+    ctx.fillText(String(rang), 88, y + (RIJ - 12) / 2 + 9);
+    ctx.textAlign = 'left';
+    const naamVeld = B - 500;              // naam + stek links; kg en vissen rechts
+    ctx.fillStyle = '#29271e'; ctx.font = F(30, true);
+    const naamTekst = kort(teamNaam(r.team), naamVeld - 110);
+    ctx.fillText(naamTekst, 132, y + 42);
+    const naamBreed = ctx.measureText(naamTekst).width;
+    ctx.fillStyle = '#7a7660'; ctx.font = F(22);
+    ctx.fillText(kort(plek(r.team), naamVeld - naamBreed - 14), 132 + naamBreed + 14, y + 42);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#353d2a'; ctx.font = F(32, true);
+    ctx.fillText(fmtKg(r.totaal), B - 64, y + 44);
+    ctx.fillStyle = '#7a7660'; ctx.font = F(20);
+    ctx.fillText(`${r.aantal} ${r.aantal === 1 ? 'vis' : 'vissen'}`, B - 236, y + 44);
+    ctx.textAlign = 'left';
+    y += RIJ;
+  });
+  if (rest > 0) {
+    ctx.fillStyle = '#7a7660'; ctx.font = F(22);
+    ctx.fillText(`+ nog ${rest} ${rest === 1 ? 'deelnemer' : 'deelnemers'} met vangst`, 64, y + 18);
+  }
+  y += NA;
+
+  // grootste vis
+  if (kampioenVis && kampioenVis.grootste) {
+    ctx.fillStyle = '#dfdcc6';
+    rond(40, y, B - 80, VIS - 22, 16); ctx.fill();
+    ctx.fillStyle = '#353d2a'; ctx.font = F(28, true);
+    ctx.fillText(kort(`🏆 Grootste vis: ${fmtKg(kampioenVis.grootste.gewicht_gram)} · ${teamNaam(kampioenVis.team)}`, B - 160), 64, y + 45);
+  }
+
+  // voet
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, H - VOET, B, VOET);
+  ctx.fillStyle = '#E8871E'; ctx.font = `800 30px "Courier New", monospace`;
+  ctx.fillText('viswedstrijdapp.nl', 64, H - VOET + 56);
+  ctx.fillStyle = '#9ba183'; ctx.font = F(22); ctx.textAlign = 'right';
+  ctx.fillText('loting · stekkeuze · live klassement', B - 64, H - VOET + 56);
+  ctx.textAlign = 'left';
+  return c;
+}
+
+async function deelUitslag() {
+  const knop = $('#btn-deel-uitslag');
+  if (knop) knop.disabled = true;
+  try {
+    const canvas = tekenUitslag();
+    const blob = await new Promise((klaar) => canvas.toBlob(klaar, 'image/png'));
+    if (!blob) throw new Error('afbeelding_mislukt');
+    const naam = 'uitslag-' + String(STATE.wedstrijd.naam).toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) + '.png';
+    const bestand = new File([blob], naam, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [bestand] })) {
+      await navigator.share({ files: [bestand], title: `Uitslag ${STATE.wedstrijd.naam}` });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = naam;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      toast('Uitslag opgeslagen als afbeelding.');
+    }
+  } catch (err) {
+    if (err && err.name !== 'AbortError') toast('Delen lukte niet: ' + (err.message || err));
+  } finally {
+    if (knop) knop.disabled = false;
   }
 }
 
@@ -1045,6 +1179,7 @@ function initWedstrijd() {
 
   $('#kl-totaal').addEventListener('click', () => { KLASSEMENT_MODE = 'totaal'; renderKlassement(); });
   $('#kl-grootste').addEventListener('click', () => { KLASSEMENT_MODE = 'grootste'; renderKlassement(); });
+  $('#btn-deel-uitslag')?.addEventListener('click', deelUitslag);
   $('#btn-push').addEventListener('click', pushToggle);
 
   $('#btn-kies').addEventListener('click', async () => {

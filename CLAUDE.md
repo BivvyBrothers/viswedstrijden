@@ -137,6 +137,16 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
   insert; zie sessie 12 jul of schrijf hem opnieuw), daarna Jan's code weer
   op DEMOJA zetten.
 
+## Uitslag delen als afbeelding (v41, 14 jul 2026)
+
+Op een AFGELOPEN wedstrijd met vangsten toont het klassement een knop
+"Deel de einduitslag" (#deel-rij in beide tenant-indexen; app.js verbergt hem
+via renderKlassement). `tekenUitslag()` tekent de top-10 (totaal-klassement,
+zelfde tiebreaks via gedeelde helper `klassementRijen()`) + grootste vis op een
+canvas in de app-huisstijl met viswedstrijdapp.nl in de voet (gratis reclame in
+de groepsapp). `deelUitslag()`: Web Share API met bestand (share-sheet op
+mobiel), anders PNG-download. Geen server-kant.
+
 ## Alleen-lezen-vlag (abonnement verlopen)
 
 `wedstrijd.instellingen.alleen_lezen` (migratie `wedstrijd_alleen_lezen`):
