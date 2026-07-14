@@ -15,6 +15,9 @@ Noord-Oostelijk Kampioenschap 2026, Karper Koppel Kanalen Competitie 2026.
    Bron: ONK 2.5/3.5/4.5, ONK Clubs 3.1, NOK 3.1.
    De KKKC (karper) wijkt af: bij gelijk gewicht wint het koppel met MEER
    karpers, daarna de grootste vis die het eerst gevangen is (KKKC 6.5).
+   Interpretatie in de app (na Codex v5 P1-2): eerst het GEWICHT van de
+   grootste vis (zwaarder wint), en pas bij ook een gelijke grootste vis het
+   tijdstip (vroegst gevangen wint).
 3. **Niet-vangers** krijgen punten volgens een van drie varianten:
    - ONK + KKKC: het gemiddelde van (aantal vangers + 1) en (totaal aantal
      plaatsen), naar boven afgerond;

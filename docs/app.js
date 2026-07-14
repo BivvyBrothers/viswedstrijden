@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 42; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 43; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -22,7 +22,7 @@ const FOUTEN = {
   pin_te_kort: 'Pincode moet minimaal 4 tekens zijn.',
   org_wachtwoord_onjuist: 'Organisatie-wachtwoord onjuist.',
   alleen_lezen: 'Deze omgeving staat op alleen-lezen: nieuwe wedstrijden aanmaken kan nu niet. Oude wedstrijden blijven gewoon te bekijken. Neem contact op via info@kemblinck.nl om weer te activeren.',
-  wedstrijd_afgelopen: 'Deze wedstrijd is afgelopen; meldingen aanzetten kan niet meer.',
+  meldingen_gesloten: 'Deze wedstrijd is afgelopen; meldingen aanzetten kan niet meer.',
   seizoen_niet_gevonden: 'Seizoen niet gevonden.',
   ongeldige_regels: 'Ongeldige seizoensinstellingen.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
@@ -306,6 +306,8 @@ function route() {
       POLL_TELLER += 1;
       if (document.hidden && POLL_TELLER % 10 !== 0) return; // op de achtergrond: 1x per minuut (accu)
       laadState(!INIT_KLAAR);
+      // seizoensstand rustig meeverversen (corrigeerde vangsten, nieuwe wedstrijden)
+      if (SEIZOEN && POLL_TELLER % 10 === 0) laadSeizoen();
     }, 6000);
     KLOKTIK = setInterval(tikKlok, 1000);
   } else if (location.hash === '#/org') {
@@ -651,6 +653,9 @@ function orgWedstrijdKaart(w, nuMs) {
 function renderOrg() {
   if (!ORG_DATA) return;
   if (document.querySelector('#org-actief [data-scherp], #org-verleden [data-scherp]')) return;
+  // niet onder iemands handen weg-renderen: open seizoen-selects overleven de poll
+  if (document.activeElement && document.activeElement.closest
+      && document.activeElement.closest('.org-seizoen')) return;
   const nuMs = new Date(ORG_DATA.server_now).getTime();
   const alle = ORG_DATA.wedstrijden || [];
   const actief = alle.filter((w) => new Date(w.eind_ts).getTime() >= nuMs);
@@ -1080,8 +1085,12 @@ function tekenUitslag() {
   const plek = (t) => t.zone ? zoneLabel(t.zone) : (t.stekken?.length ? `stek ${t.stekken.join('+')}` : '');
   const rangKleur = { 1: '#c9a227', 2: '#8f959c', 3: '#b5713f' };
   let y = KOP + 24;
+  // gedeelde plaatsen exact zoals de klassement-tabel (volledig gelijke stand
+  // = zelfde rangnummer, doortellen)
+  let rang = 0, vorigeSleutel = null;
   top.forEach((r, i) => {
-    const rang = i + 1;
+    const sleutel = `${r.totaal}|${klGrootsteVan(r)}|${klTijdGrootste(r)}`;
+    if (sleutel !== vorigeSleutel) { rang = i + 1; vorigeSleutel = sleutel; }
     ctx.fillStyle = '#ffffff';
     rond(40, y, B - 80, RIJ - 12, 16); ctx.fill();
     ctx.fillStyle = rangKleur[rang] || '#e7e4d4';
@@ -1182,9 +1191,15 @@ async function deelUitslag() {
 
 /* ---------- seizoensklassement ---------- */
 async function laadSeizoen() {
+  const code = CODE; // late responses van een vorige wedstrijd negeren (Codex v5 P1-4)
   try {
-    SEIZOEN = await rpc('w_seizoen_stand', { p_code: CODE });
-  } catch { SEIZOEN = null; } // geen seizoen, of nog geen afgelopen wedstrijden
+    const stand = await rpc('w_seizoen_stand', { p_code: code });
+    if (CODE !== code) return;
+    SEIZOEN = stand;
+  } catch {
+    if (CODE !== code) return;
+    SEIZOEN = null; // geen seizoen, of nog geen afgelopen wedstrijden
+  }
   renderTabs();
   renderSeizoen();
 }

@@ -40,7 +40,6 @@ create table wedstrijd.seizoenen (
   created_at timestamptz not null default now()
 );
 alter table wedstrijd.seizoenen enable row level security;
-create index wedstrijden_seizoen_idx on wedstrijd.wedstrijden (seizoen_id);
 
 create table wedstrijd.wedstrijden (
   id uuid primary key default gen_random_uuid(),
@@ -61,6 +60,7 @@ create table wedstrijd.wedstrijden (
   check (eind_ts > start_ts),
   constraint codes_verschillend check (code <> kijk_code)
 );
+create index wedstrijden_seizoen_idx on wedstrijd.wedstrijden (seizoen_id);
 
 create table wedstrijd.teams (
   id uuid primary key default gen_random_uuid(),
@@ -996,7 +996,7 @@ begin
   where code = upper(trim(p_code)) or kijk_code = upper(trim(p_code));
   if not found then raise exception 'wedstrijd_niet_gevonden'; end if;
   if now() > v_w.eind_ts then
-    raise exception 'wedstrijd_afgelopen';
+    raise exception 'meldingen_gesloten';
   end if;
   if p_endpoint is null or length(p_endpoint) > 500 or p_endpoint not like 'https://%'
      or p_p256dh is null or p_p256dh !~ '^[A-Za-z0-9_-]{80,130}$'
@@ -1098,6 +1098,9 @@ CREATE OR REPLACE FUNCTION wedstrijd.seizoen_regels_check(p jsonb)
 AS $function$
 begin
   if p is null then return; end if;
+  if p ? 'aftrek' and (p->>'aftrek') !~ '^[0-9]{1,2}$' then
+    raise exception 'ongeldige_regels';
+  end if;
   if coalesce(p->>'telling','plaatspunten') not in ('plaatspunten','totaalgewicht')
      or coalesce(p->>'niet_vanger','gemiddelde') not in ('gemiddelde','vangers_plus_1','max_plus_1')
      or coalesce(p->>'gemist','hoogste_plus_1') not in ('hoogste_plus_1','deelnemers_plus_1')
@@ -1260,7 +1263,7 @@ begin
         select b.*,
           case v_w.ex
             when 'sportvisunie' then rank() over (order by b.gewicht desc)
-            when 'karper' then rank() over (order by b.gewicht desc, b.aantal desc, b.t_grootste asc)
+            when 'karper' then rank() over (order by b.gewicht desc, b.aantal desc, b.grootste desc, b.t_grootste asc)
             else row_number() over (order by b.gewicht desc, b.grootste desc, b.t_grootste asc)
           end as plaats
         from (
