@@ -13,10 +13,13 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
    hem dan aan het seizoen (dropdown op de wedstrijdkaart in de
    organisatie-omgeving); deelnemers en kijkers krijgen er dan een
    Seizoen-tabblad met de doorlopende stand bij.
-2. **Adres en codes delen** (bijv. in de groepsapp): vissers gaan naar
-   **viswedstrijdapp.nl** en kiezen **NPHV** (direct kan ook:
-   viswedstrijdapp.nl/nphv). Stuur daarbij de **deelnemerscode**, en de
-   **kijkcode** naar het thuisfront. De directe wedstrijd-link kopieer je in Beheer.
+2. **Adres en codes delen:** direct na het aanmaken verschijnt een
+   deel-melding met de deelnemerscode, de directe link en de kijkcode;
+   met **📤 Deel de uitnodiging** zet je alles in één bericht in de
+   groepsapp. Later opnieuw delen kan altijd: de codes staan op de
+   wedstrijdkaart in de organisatie-omgeving en de directe link in Beheer.
+   (Handmatig: vissers gaan naar **viswedstrijdapp.nl** en kiezen **NPHV**,
+   direct kan ook viswedstrijdapp.nl/nphv; kijkcode is voor het thuisfront.)
 3. **Vraag iedereen alvast aan te melden** en de app op het beginscherm te
    zetten (nodig voor pushmeldingen op iPhone). Bij het aanmelden krijgt
    iedereen een **persoonlijke inlogcode**: laat ze die bewaren.

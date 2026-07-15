@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 47; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 48; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -196,6 +196,7 @@ let SELECTIE = [];        // geselecteerde stekken (stekkeuze zonder zones)
 let SELECTIE_ZONE = null; // geselecteerde zone (stekkeuze met zones)
 let KLASSEMENT_MODE = 'totaal';
 let SEIZOEN = null;           // seizoensstand (w_seizoen_stand) of null
+let DEEL_NIEUW = null;        // gegevens voor de deel-melding na wedstrijd aanmaken
 let ADMIN_OPEN = false;
 let KIJKER = false;          // true = kijkersweergave (alleen klassement)
 let ROL = 'deelnemer';       // 'deelnemer' | 'kijker' | 'organisator' 
@@ -469,6 +470,19 @@ function initHome() {
         p_klant: typeof TENANT !== 'undefined' ? TENANT : null,
       });
       sessie.zetPin(res.code, res.pin);
+      DEEL_NIEUW = {
+        naam: $('#nw-naam').value.trim(),
+        start: new Date(startVeld.value).toISOString(),
+        eind: new Date(eindVeld.value).toISOString(),
+        code: res.code,
+        kijk: res.kijk_code,
+        link: location.origin + location.pathname + '#/w/' + res.code,
+      };
+      $('#dn-naam').textContent = DEEL_NIEUW.naam;
+      $('#dn-code').textContent = DEEL_NIEUW.code;
+      $('#dn-kijk').textContent = DEEL_NIEUW.kijk;
+      $('#dn-link').textContent = DEEL_NIEUW.link;
+      $('#deel-nieuw').hidden = false;
       location.hash = '#/w/' + res.code;
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
@@ -1651,6 +1665,31 @@ function initWedstrijd() {
   $('#kl-grootste').addEventListener('click', () => { KLASSEMENT_MODE = 'grootste'; renderKlassement(); });
   $('#btn-deel-uitslag')?.addEventListener('click', deelUitslag);
   $('#btn-deel-seizoen')?.addEventListener('click', deelSeizoen);
+  $('#dn-sluit')?.addEventListener('click', () => { $('#deel-nieuw').hidden = true; });
+  $('#dn-deel')?.addEventListener('click', async () => {
+    const d = DEEL_NIEUW;
+    if (!d) return;
+    const tekst = `\ud83c\udfa3 ${d.naam}\n\ud83d\udcc5 ${fmtDatumTijd(d.start)} tot ${fmtDatumTijd(d.eind)}\n\n`
+      + `Doe mee: open ${d.link} en meld je aan met code ${d.code}.\n`
+      + `Thuis meekijken kan met kijkcode ${d.kijk} op ${location.origin}${location.pathname}\n\n`
+      + `Tip: zet de app op je beginscherm voor meldingen bij elke vangst: ${location.origin}${location.pathname}instructies.html`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ text: tekst });
+      } else {
+        await kopieerTekst(tekst);
+        toast('Uitnodiging gekopieerd; plak hem in de groepsapp.');
+      }
+    } catch (err) { if (err && err.name !== 'AbortError') toast(foutTekst(err)); }
+  });
+  document.querySelectorAll('[data-dn-kopieer]').forEach((b) => {
+    b.addEventListener('click', async () => {
+      const d = DEEL_NIEUW;
+      if (!d) return;
+      await kopieerTekst({ code: d.code, link: d.link, kijk: d.kijk }[b.dataset.dnKopieer]);
+      toast('Gekopieerd.');
+    });
+  });
   $('#form-sulogin')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#su-fout');

@@ -156,6 +156,15 @@ gedeelde voet `tekenVoet()` met het KARPERLOGO + viswedstrijdapp.nl
 (APP_ICOON preload van /icon-192.png). Delen gaat via `deelPng()`
 (share-sheet op mobiel = WhatsApp/Instagram/Facebook, anders download).
 
+## Deel-melding na wedstrijd aanmaken (v48, 15 jul 2026)
+
+Na een succesvolle w_maak_wedstrijd toont de organisator-flow een overlay
+(#deel-nieuw, buiten de views zoals de lightbox) met deelnemerscode, directe
+link en kijkcode + kopieer-knoppen en "Deel de uitnodiging" (navigator.share
+met kant-en-klare uitnodigingstekst incl. instructies-link; fallback =
+tekst naar klembord). Data in DEEL_NIEUW; overlay blijft staan over de
+wedstrijdweergave waarnaar genavigeerd wordt.
+
 ## Uitslag delen als afbeelding (v41, 14 jul 2026)
 
 Op een AFGELOPEN wedstrijd met vangsten toont het klassement een knop
@@ -250,9 +259,9 @@ Bij elke release controleren:
    omgeving live gaat (w_maak_wedstrijd faalt anders met klant_niet_gevonden;
    nieuwe_tenant.py print de insert-SQL).
 7. Root-hash-test: `/#/k/KIJKJE` moet in /demo/ landen, `/#/org` in /nphv/
-8. Bij features: de documentatie-oppervlakken-lijst hierboven volledig langslopen.
    (landing.js: kale root-hashes zijn legacy-NPHV; nieuwe tenants delen
    ALTIJD links met tenantpad, alleen de demo-kijkcode heeft een mapping).
+8. Bij features: de documentatie-oppervlakken-lijst hierboven volledig langslopen.
 
 ## Lokaal draaien en testen
 
@@ -288,5 +297,4 @@ by design (de RPC's zijn de publieke API, validatie zit erin).
 ## Bewuste beperkingen (niet "fixen" zonder overleg)
 
 - Foto's in een publieke bucket, geen rate-limiting, pins niet gehasht (hobby-schaal).
-- Geen seizoensklassement; elke wedstrijd staat op zichzelf.
 - Deelnemers kunnen eigen vangsten niet wijzigen (alleen organisator).

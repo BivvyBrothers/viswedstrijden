@@ -448,6 +448,25 @@
 </main>
 
 <div id="foto-groot" class="lightbox" hidden><img alt="vangstfoto"><span class="sluit">✕</span></div>
+
+<!-- deel-melding direct na het aanmaken van een wedstrijd -->
+<div id="deel-nieuw" class="lightbox" hidden>
+  <div class="card" style="max-width:440px; width:92vw; text-align:left">
+    <h2>🎉 <span id="dn-naam"></span> staat klaar!</h2>
+    <p class="muted klein">Nodig nu de vissers uit; dat kan meteen vanuit hier.</p>
+    <p class="muted klein" style="margin-bottom:2px">Deelnemerscode (voor de vissers):</p>
+    <p style="margin-top:0"><b id="dn-code" class="codegroot"></b>
+      <button class="btn klein-btn" data-dn-kopieer="code">kopieer</button></p>
+    <p class="muted klein" style="margin-bottom:2px">Directe link:</p>
+    <p style="margin-top:0"><span id="dn-link" class="klein"></span>
+      <button class="btn klein-btn" data-dn-kopieer="link">kopieer</button></p>
+    <p class="muted klein" style="margin-bottom:2px">Kijkcode (voor het thuisfront):</p>
+    <p style="margin-top:0"><b id="dn-kijk" class="codegroot klein-code"></b>
+      <button class="btn klein-btn" data-dn-kopieer="kijk">kopieer</button></p>
+    <p><button id="dn-deel" class="btn primary breed">📤 Deel de uitnodiging</button></p>
+    <p style="margin-bottom:0"><button id="dn-sluit" class="btn breed">Naar de wedstrijd</button></p>
+  </div>
+</div>
 <div id="toast" class="toast" hidden></div>
 <button id="update-banner" class="update-banner" hidden>🔄 Nieuwe versie beschikbaar: tik om te vernieuwen</button>
 
