@@ -9,7 +9,10 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
 1. **Wedstrijd aanmaken:** startpagina → Organisator → inloggen → Nieuwe wedstrijd.
    Kies individueel of koppels, zet start- en eindtijd, het maximum aantal
    deelnemers en plak de wedstrijdregels erin. De vaste zone-indeling (A t/m S)
-   staat er automatisch op.
+   staat er automatisch op. Telt de wedstrijd mee voor een competitie? Koppel
+   hem dan aan het seizoen (dropdown op de wedstrijdkaart in de
+   organisatie-omgeving); deelnemers en kijkers krijgen er dan een
+   Seizoen-tabblad met de doorlopende stand bij.
 2. **Adres en codes delen** (bijv. in de groepsapp): vissers gaan naar
    **viswedstrijdapp.nl** en kiezen **NPHV** (direct kan ook:
    viswedstrijdapp.nl/nphv). Stuur daarbij de **deelnemerscode**, en de
@@ -54,6 +57,11 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
 
 - Het klassement staat vast: totaalgewicht en grootste vis, met tiebreak
   (gelijk totaal → grootste vis wint; gelijk → vroegst gevangen wint).
+- **Deel de einduitslag:** onder het klassement staat na afloop de knop
+  "Deel de einduitslag": één tik en de uitslag gaat als afbeelding de
+  groepsapp of social media in. Vissers kunnen tijdens en na de wedstrijd hun
+  eigen vangst delen (deel-knop bij de vangst). Bij een competitie kan ook de
+  seizoensstand gedeeld worden vanaf het Seizoen-tabblad.
 - De wedstrijd blijft bewaard onder "Eerdere wedstrijden"; deelnemers en
   kijkers kunnen alles terugkijken met hun code.
 - Wil je hem later definitief weg (inclusief alle foto's): het 🗑️-knopje,

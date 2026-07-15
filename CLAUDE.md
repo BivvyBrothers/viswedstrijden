@@ -209,6 +209,30 @@ wedstrijd.su_check met pg_sleep. Client: view-beheerder in beide
 tenant-indexen, sessionStorage `suww`, "Openen & beheren" gebruikt de
 bestaande pin-flow.
 
+## Documentatie-oppervlakken (WERKAFSPRAAK sinds 15 jul 2026)
+
+Bij ELKE nieuwe feature of gedragswijziging die gebruikers raakt worden ALLE
+documentatie-oppervlakken in dezelfde sessie bijgewerkt (afspraak Patrick;
+zie ook feedback_docs_consequent.md in de memory). De lijst:
+
+1. `docs/info.html` | klantenpagina "Wat kan de app?" (features + wedstrijddag)
+2. `docs/index.html` | root-keuzepagina (hero-sub + meta description)
+3. `docs/nphv/index.html` + `docs/demo/index.html` | meta descriptions
+4. `docs/instructies.html` + `docs/nphv/instructies.html` +
+   `docs/demo/instructies.html` | intro-zin met de mogelijkheden
+5. `beginscherm-a4.html` -> REGENEREREN: `beginscherm-instructie.pdf/.png` +
+   kopie naar `docs/instructies-print.pdf` + `docs/nphv/instructies-print.pdf`
+   (headless Chrome --print-to-pdf, PNG via pymupdf)
+6. `prijzenblad-a4.html` (feature-chips) -> REGENEREREN: `prijzenblad.pdf/.png`
+7. `draaiboek-wedstrijddag.md` | organisator-draaiboek
+8. `README.md` | repo-omschrijving
+9. **kemblinck.nl** (repo `KemblincK/Bedrijf/site/`): Viswedstrijden-productkaart
+   (product__desc + product__info); na akkoord direct pushen (vaste afspraak)
+10. Deze CLAUDE.md + de project-memory
+
+De demo-omgeving is zelf ook documentatie: nieuwe zichtbare features waar
+mogelijk in de demo laten zien (zoals de demo-competitie).
+
 ## Release-checklist (multi-tenant, sinds v36)
 
 Bij elke release controleren:
@@ -226,6 +250,7 @@ Bij elke release controleren:
    omgeving live gaat (w_maak_wedstrijd faalt anders met klant_niet_gevonden;
    nieuwe_tenant.py print de insert-SQL).
 7. Root-hash-test: `/#/k/KIJKJE` moet in /demo/ landen, `/#/org` in /nphv/
+8. Bij features: de documentatie-oppervlakken-lijst hierboven volledig langslopen.
    (landing.js: kale root-hashes zijn legacy-NPHV; nieuwe tenants delen
    ALTIJD links met tenantpad, alleen de demo-kijkcode heeft een mapping).
 
