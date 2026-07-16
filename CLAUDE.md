@@ -236,9 +236,12 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
    eyebrow-secties, telefoon-mockups met demo-screenshots uit
    `docs/schermen/`, privacy-blok, FAQ. Bij zichtbare UI-wijzigingen de
    screenshots verversen: headless Chrome `--screenshot --window-size=430,860
-   --force-device-scale-factor=2 --virtual-time-budget=9000` op de
-   demo-omgeving (klassement = /demo/#/k/KIJKJE, kaart = /demo/#/w/DEMOJA,
-   home = /demo/). `docs/info.html` is alleen nog een redirect naar /.
+   --force-device-scale-factor=2 --virtual-time-budget=9000`
+   (klassement = /demo/#/k/KIJKJE, home = /demo/, kaart = de ECHTE
+   NPHV-dieptekaart via /nphv/#/w/499QWP, testwedstrijd "Voorjaarswedstrijd";
+   die screenshot onderaan bijsnijden tot boven "Loting & volgorde" zodat er
+   GEEN deelnemersnamen op de publieke site komen, huidige crop 860x1440).
+   `docs/info.html` is alleen nog een redirect naar /.
 2. `docs/inloggen/index.html` | inlogpagina met de organisatie-keuze
    (nieuwe tenants komen hier als kaart bij; nieuwe_tenant.py doet dat)
 3. `docs/nphv/index.html` + `docs/demo/index.html` | meta descriptions
