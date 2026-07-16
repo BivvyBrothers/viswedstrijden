@@ -5,26 +5,83 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Wat kan de Viswedstrijd app? · voor verenigingen, viswaters en vriendengroepen</title>
 <meta name="description" content="De complete app voor viswedstrijden: digitale loting, stekkeuze op een eigen waterkaart, vangstregistratie met foto, live klassement en seizoensklassement. Uitslagen en vangsten deel je direct op social media. Voor verenigingen, viswaters en vriendengroepen.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Viswedstrijdapp">
+<meta property="og:title" content="Wat kan de Viswedstrijd app? · voor verenigingen, viswaters en vriendengroepen">
+<meta property="og:description" content="De complete app voor viswedstrijden: digitale loting, stekkeuze op een eigen waterkaart, vangstregistratie met foto, live klassement en seizoensklassement. Uitslagen en vangsten deel je direct op social media. Voor verenigingen, viswaters en vriendengroepen.">
+<meta property="og:url" content="https://viswedstrijdapp.nl/info.html">
+<meta property="og:image" content="https://viswedstrijdapp.nl/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="nl_NL">
+<meta name="twitter:card" content="summary_large_image">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
 <meta name="theme-color" content="#353d2a">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="stylesheet" href="styles.css">
 <link rel="icon" href="icon-192.png">
 <style>
-  .info-hero { display: flex; align-items: center; gap: 16px; }
-  .info-hero img { width: 72px; height: 72px; border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.25); flex: 0 0 auto; }
-  .info-hero .sub { margin-top: 4px; }
-  .feature { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--zand); }
-  .feature:last-child { border-bottom: none; }
-  .feature .icoon { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px; background: var(--zand);
-    display: flex; align-items: center; justify-content: center; font-size: 21px; }
-  .feature b { display: block; color: var(--blauw-donker); margin-bottom: 2px; }
-  .feature p { margin: 0; font-size: 14px; color: var(--grijs); line-height: 1.5; }
+  /* landing-opmaak: meer rust en grotere koppen dan de app zelf */
+  .eyebrow {
+    display: block; font-size: 13px; font-weight: 800; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--oranje); margin-bottom: 8px;
+  }
+  .landing-hero {
+    background: linear-gradient(150deg, #2c331f, #4d5839 60%, #6d7355);
+    color: #fff; border-radius: 18px; padding: clamp(28px, 5vw, 52px);
+    margin: 12px 0;
+  }
+  .landing-hero .eyebrow { color: #f0a04b; }
+  .landing-hero h1 {
+    font-size: clamp(38px, 7vw, 60px); font-weight: 800;
+    letter-spacing: -.5px; line-height: 1.05; margin: 0 0 14px;
+  }
+  .landing-hero h1 .accent { color: #f0a04b; }
+  .landing-hero .sub {
+    font-size: clamp(16px, 2.4vw, 19px); line-height: 1.55;
+    opacity: .92; margin: 0 0 22px; max-width: 46ch;
+  }
+  .duo { display: flex; gap: clamp(20px, 4vw, 44px); align-items: center; flex-wrap: wrap; }
+  .duo > .tekstkolom { flex: 1 1 320px; min-width: 0; }
+  .duo > .telefoon { margin: 0 auto; }
+  .telefoon {
+    flex: 0 0 auto; width: min(250px, 68vw);
+    border: 9px solid #23281a; border-radius: 34px; background: #23281a;
+    box-shadow: 0 16px 38px rgba(35, 40, 26, .3); overflow: hidden;
+  }
+  .telefoon img { display: block; width: 100%; height: auto; }
+  .sectie { padding: clamp(20px, 4vw, 36px); }
+  .sectie h2 {
+    font-size: clamp(23px, 3.6vw, 30px); line-height: 1.15;
+    margin: 0 0 12px; letter-spacing: -.3px;
+  }
+  .sectie p { font-size: 15.5px; line-height: 1.65; color: var(--tekst); margin: 0 0 10px; }
+  .sectie p:last-child { margin-bottom: 0; }
+  .sectie ul { margin: 0; padding-left: 20px; font-size: 15.5px; line-height: 1.65; }
+  .sectie li { margin: 4px 0; }
+  .cta-knoppen { display: flex; gap: 10px; flex-wrap: wrap; }
+  .cta-knoppen .btn { text-decoration: none; display: inline-flex; align-items: center; }
+  .btn.hero-primair { background: #f0a04b; color: #2c331f; }
+  .btn.hero-secundair { background: rgba(255,255,255,.14); color: #fff; }
+  .privacy-blok { background: var(--blauw-donker); color: #fff; }
+  .privacy-blok h2 { color: #fff; }
+  .privacy-blok p, .privacy-blok li { color: #e7e9d8; }
+  .privacy-blok ul { padding-left: 20px; }
+  .faq details {
+    border-bottom: 1px solid var(--zand); padding: 4px 0;
+  }
+  .faq details:last-child { border-bottom: none; }
+  .faq summary {
+    cursor: pointer; font-weight: 700; color: var(--blauw-donker);
+    font-size: 15.5px; padding: 10px 0; list-style-position: outside;
+  }
+  .faq summary:hover { color: var(--blauw); }
+  .faq details p { margin: 0 0 12px; padding-left: 2px; }
   .stappen { counter-reset: stap; }
   .stap-rij { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; }
   .stap-rij .nr { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: var(--blauw);
     color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
-  .stap-rij p { margin: 2px 0 0; font-size: 14.5px; color: var(--tekst); line-height: 1.5; }
+  .stap-rij p { margin: 2px 0 0; font-size: 15px; color: var(--tekst); line-height: 1.55; }
   .cta { text-align: center; }
   .cta .btn { display: inline-block; text-decoration: none; margin-top: 6px; }
   .terug-link { display: inline-block; margin: 4px 0 0; color: var(--blauw); font-weight: 600; text-decoration: none; }
@@ -38,77 +95,96 @@
 </header>
 
 <main class="container">
-  <section class="hero card info-hero">
-    <img src="icon-192.png" alt="">
-    <div>
-      <h1>De complete app voor viswedstrijden</h1>
-      <p class="sub">Loting, stekkeuze, vangstregistratie, live klassement en seizoenscompetitie. Alles op de telefoon van de visser, niets op papier.</p>
+  <section class="landing-hero">
+    <div class="duo">
+      <div class="tekstkolom">
+        <span class="eyebrow">De wedstrijd-app voor aan het water</span>
+        <h1>Loot. Vis. <span class="accent">Win.</span></h1>
+        <p class="sub">Digitale loting, stekkeuze op de eigen waterkaart, vangsten
+        met foto en een live klassement. Alles op de telefoon van de visser,
+        niets op papier. Voor verenigingen, viswaters en vriendengroepen.</p>
+        <div class="cta-knoppen">
+          <a class="btn hero-primair" href="/demo/">🎣 Probeer de demo</a>
+          <a class="btn hero-secundair" href="mailto:info@kemblinck.nl?subject=Wedstrijd-app%20voor%20onze%20wedstrijden">Neem contact op</a>
+        </div>
+      </div>
+      <div class="telefoon"><img src="schermen/scherm-klassement.png" alt="Het live klassement in de app, met de opbouw per gevangen vis" width="860" height="1720"></div>
     </div>
   </section>
 
-  <section class="card">
-    <h2>Wat kan de app?</h2>
-    <div class="feature"><span class="icoon">🎲</span><div>
-      <b>Digitale loting</b>
-      <p>Eén druk op de knop bepaalt willekeurig de kiesvolgorde. Iedereen ziet direct zijn
-      lotnummer en kiest om de beurt zijn plek, gewoon op de eigen telefoon. Geen briefjes,
-      geen discussie.</p>
-    </div></div>
-    <div class="feature"><span class="icoon">🗺️</span><div>
-      <b>Eigen waterkaart met stekken en zones</b>
-      <p>Jullie water wordt nagetekend als interactieve kaart: steknummers, dieptes en
-      herkenningspunten. Het water kan in vaste zones verdeeld worden; één tik op een
-      zoneletter kiest de hele zone. Vrij is wit, bezet is rood, jouw plek is groen.</p>
-    </div></div>
-    <div class="feature"><span class="icoon">👥</span><div>
-      <b>Individueel of in koppels</b>
-      <p>Per wedstrijd te kiezen: één stek per visser, of koppels op twee aangrenzende
-      stekken met een gezamenlijke score en een eigen teamnaam.</p>
-    </div></div>
-    <div class="feature"><span class="icoon">⚖️</span><div>
-      <b>Vangst registreren in 20 seconden</b>
-      <p>Gewicht invullen, foto als bewijs erbij, klaar. De vangst telt direct mee in het
-      klassement en iedereen krijgt een pushmelding. Alleen de organisator kan corrigeren.</p>
-    </div></div>
-    <div class="feature"><span class="icoon">🏆</span><div>
-      <b>Live klassement</b>
-      <p>Totaalgewicht en grootste vis, met de opbouw per gevangen vis. Het thuisfront
-      volgt live mee met een aparte kijkcode, zonder te kunnen deelnemen.</p>
-    </div></div>
-    <div class="feature"><span class="icoon">🏅</span><div>
-      <b>Seizoensklassement</b>
-      <p>Koppel wedstrijden aan een seizoen en de app telt de competitie automatisch op,
-      volgens de Sportvisunie-reglementen: plaatspunten (of totaalgewicht), aftrekwedstrijden
-      en nette regels voor niet-vangers en gemiste wedstrijden. Per seizoen én per wedstrijd
-      instelbaar; deelnemers en thuisblijvers zien de tussenstand in de app.</p>
-    </div></div>
-    <div class="feature"><span class="icoon">📤</span><div>
-      <b>Delen op social media</b>
-      <p>De einduitslag, de seizoensstand en elke gevangen vis deel je met één tik als
-      strakke afbeelding op WhatsApp, Instagram of Facebook, met foto, gewicht en
-      wedstrijdnaam erop.</p>
-    </div></div>
-    <div class="feature"><span class="icoon">⏱️</span><div>
-      <b>De klok is de baas</b>
-      <p>De aftelklok loopt op servertijd en na de eindtijd blokkeert de server elke
-      registratie. Een discussie over "net op tijd" bestaat niet meer.</p>
-    </div></div>
-    <div class="feature"><span class="icoon">📲</span><div>
-      <b>Geen accounts, geen App Store</b>
-      <p>Deelnemers loggen in met een wedstrijdcode en hun naam. De app werkt op iPhone en
-      Android, komt als icoon op het beginscherm en blijft werken bij slecht bereik aan
-      het water.</p>
-    </div></div>
-    <div class="feature"><span class="icoon">🛠️</span><div>
-      <b>Gereedschap voor de organisator</b>
-      <p>Wedstrijd aanmaken in een minuut en de uitnodiging (code + directe link) met één
-      tik de groepsapp in, wedstrijdregels delen, aanmeldingen live volgen,
-      een plek toewijzen aan wie niet reageert, vangsten corrigeren of handmatig invoeren
-      (ook na de eindtijd), en een archief van eerdere wedstrijden.</p>
-    </div></div>
+  <section class="card sectie">
+    <span class="eyebrow">Loting</span>
+    <h2>Loten zonder briefjes, kiezen zonder discussie</h2>
+    <p>Eén druk op de knop bepaalt willekeurig de kiesvolgorde. Iedereen ziet direct
+    zijn lotnummer op de eigen telefoon en kiest om de beurt een plek. Per wedstrijd
+    kies je individueel (één stek per visser) of koppels: twee aangrenzende stekken,
+    een gezamenlijke score en een eigen teamnaam.</p>
   </section>
 
-  <section class="card">
+  <section class="card sectie">
+    <div class="duo">
+      <div class="tekstkolom">
+        <span class="eyebrow">Kaart &amp; zones</span>
+        <h2>Jullie water als interactieve kaart</h2>
+        <p>Jullie eigen waterkaart wordt gedigitaliseerd voor de app: steknummers,
+        herkenningspunten en een vaste zone-indeling. Eén tik op een zoneletter kiest
+        de hele zone. Vrij is wit, bezet is rood, jouw plek is groen. Geen eigen
+        kaart? Dan start je met een standaardkaart die direct werkt.</p>
+      </div>
+      <div class="telefoon"><img src="schermen/scherm-kaart.png" alt="De interactieve waterkaart met vrije en bezette stekken" width="860" height="1720" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section class="card sectie">
+    <span class="eyebrow">Live klassement</span>
+    <h2>Vangst erin, klassement bijgewerkt</h2>
+    <p>Vangst registreren duurt 20 seconden: gewicht invullen, foto als bewijs erbij,
+    klaar. De vangst telt direct mee en iedereen krijgt een pushmelding. Het klassement
+    toont totaalgewicht en grootste vis, met de opbouw per gevangen vis. Het thuisfront
+    volgt live mee met een aparte kijkcode, zonder te kunnen deelnemen.</p>
+    <p>En de klok is de baas: de aftelklok loopt op servertijd en na de eindtijd
+    blokkeert de server elke registratie. Een discussie over "net op tijd" bestaat
+    niet meer.</p>
+  </section>
+
+  <section class="card sectie">
+    <span class="eyebrow">Seizoenscompetitie</span>
+    <h2>De competitie telt zichzelf op</h2>
+    <p>Koppel wedstrijden aan een seizoen en de app rekent het seizoensklassement
+    automatisch uit, volgens de landelijke wedstrijdreglementen (Sportvisunie):
+    plaatspunten of totaalgewicht, aftrekwedstrijden en nette regels voor niet-vangers
+    en gemiste wedstrijden. Per seizoen én per wedstrijd instelbaar; deelnemers en
+    thuisblijvers zien de tussenstand gewoon in de app.</p>
+  </section>
+
+  <section class="card sectie">
+    <span class="eyebrow">Delen</span>
+    <h2>Eén tik naar de groepsapp of Instagram</h2>
+    <p>De einduitslag, de seizoensstand en elke gevangen vis deel je met één tik als
+    strakke afbeelding op WhatsApp, Instagram of Facebook, met foto, gewicht en
+    wedstrijdnaam erop. En direct na het aanmaken van een wedstrijd staat de
+    uitnodiging (code + directe link) klaar om de groepsapp in te sturen.</p>
+  </section>
+
+  <section class="card sectie">
+    <div class="duo">
+      <div class="tekstkolom">
+        <span class="eyebrow">Zonder gedoe</span>
+        <h2>Geen accounts, geen App Store</h2>
+        <p>Deelnemers loggen in met een wedstrijdcode en hun naam. Meer niet. De app
+        werkt op iPhone en Android, komt als icoon op het beginscherm en blijft werken
+        bij slecht bereik aan het water.</p>
+        <p>De organisator heeft eigen gereedschap: een wedstrijd staat in een minuut
+        klaar, aanmeldingen zijn live te volgen, een plek toewijzen aan wie niet
+        reageert kan met één tik, en vangsten zijn te corrigeren of handmatig in te
+        voeren (ook na de eindtijd). Eerdere wedstrijden blijven in het archief staan.</p>
+      </div>
+      <div class="telefoon"><img src="schermen/scherm-home.png" alt="Het startscherm: inloggen als deelnemer, kijker of organisator" width="860" height="1720" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section class="card sectie">
+    <span class="eyebrow">De wedstrijddag</span>
     <h2>Zo werkt een wedstrijddag</h2>
     <div class="stappen">
       <div class="stap-rij"><span class="nr">1</span><p><b>Vooraf:</b> de organisator maakt de
@@ -124,7 +200,57 @@
     </div>
   </section>
 
-  <section class="card cta">
+  <section class="card sectie privacy-blok">
+    <span class="eyebrow">Privacy</span>
+    <h2>Geen registratie buiten de wedstrijd</h2>
+    <p>Vissers zijn terecht zuinig op hun stekken en hun vangsten. Daarom is deze app
+    bewust alleen een wedstrijd-app:</p>
+    <ul>
+      <li>Geen accounts, geen profielen, geen vangstenlogboek dat je bijhoudt.</li>
+      <li>Geen locatie-tracking; de kaart toont alleen de stekken van de wedstrijd.</li>
+      <li>Vangsten zijn alleen zichtbaar voor wie de wedstrijd- of kijkcode heeft.</li>
+      <li>De gegevens blijven van de club; geen doorverkoop, geen advertenties.</li>
+    </ul>
+  </section>
+
+  <section class="card sectie faq">
+    <span class="eyebrow">Vragen</span>
+    <h2>Veelgestelde vragen</h2>
+    <details>
+      <summary>Moeten deelnemers een app installeren?</summary>
+      <p>Nee. De app werkt direct in de browser via een link of code. Wie wil, zet hem
+      als icoon op het beginscherm (dat raden we aan voor pushmeldingen), maar een
+      App Store of Play Store komt er niet aan te pas.</p>
+    </details>
+    <details>
+      <summary>Werkt het ook bij slecht bereik aan het water?</summary>
+      <p>Ja. De app is bewust licht gehouden en verbruikt weinig data. Bij een korte
+      onderbreking loopt de klok gewoon door en haalt de app de tussenstand daarna
+      vanzelf weer op.</p>
+    </details>
+    <details>
+      <summary>Kunnen we onze eigen wedstrijdregels gebruiken?</summary>
+      <p>Ja. Per wedstrijd stel je de regels in en die zijn voor iedereen zichtbaar in
+      de app. Voor de seizoenscompetitie kies je per seizoen de telling (plaatspunten
+      of totaalgewicht), aftrekwedstrijden en de regels voor niet-vangers en gemiste
+      wedstrijden.</p>
+    </details>
+    <details>
+      <summary>Wat kost een eigen omgeving?</summary>
+      <p>Iedere organisatie krijgt een eigen omgeving op viswedstrijdapp.nl, met eigen
+      waterkaart en zone-indeling. De prijs hangt af van de kaart (standaardkaart of
+      jullie eigen water gedigitaliseerd). Mail naar
+      <a href="mailto:info@kemblinck.nl">info@kemblinck.nl</a> voor het prijzenblad.</p>
+    </details>
+    <details>
+      <summary>Voor welke wedstrijden is de app geschikt?</summary>
+      <p>Voor viswedstrijden op gewicht: karper, witvis, individueel of in koppels,
+      losse wedstrijden of een hele seizoenscompetitie. Van verenigingswedstrijd tot
+      een onderlinge wedstrijd met vrienden.</p>
+    </details>
+  </section>
+
+  <section class="card sectie cta">
     <h2>Ook voor jullie wedstrijden?</h2>
     <p class="merk-tekst">Voor hengelsportverenigingen en viswaterbeheerders, maar net zo goed
     voor een groep vrienden die zelf een wedstrijd organiseert. Iedere organisatie krijgt een

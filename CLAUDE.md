@@ -137,12 +137,14 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
 - Volledige tenant (eerste product van nieuwe_tenant.py) met standaardkaart
   (40 stekken, 8 zones) en een geseede AFGELOPEN voorbeeldwedstrijd
   "Voorjaarswedstrijd (demo)": 12 vissers, 20 vangsten zonder foto.
-- Publieke codes: kijkcode `KIJKJE` (knop op /demo/), persoonlijke
-  deelnemercode `DEMOJA` (meekijken als visser Jan, deelnemer-scherm + kaart).
-  De wedstrijd is afgelopen dus registreren/aanmelden is server-side dicht.
+- Publieke codes: kijkcode `KIJKJE` (knop op /demo/) en deelnemerscode
+  `DEMOJA` (= `wedstrijden.code` van de demo-wedstrijd; opent het
+  deelnemer-scherm met de kaart). De wedstrijd is afgelopen dus
+  registreren/aanmelden is server-side dicht.
 - Demo vernieuwen: seed-SQL opnieuw draaien (delete op kijk_code KIJKJE +
-  insert; zie sessie 12 jul of schrijf hem opnieuw), daarna Jan's code weer
-  op DEMOJA zetten.
+  insert), daarna VERPLICHT de codes terugzetten, anders kloppen de
+  geadverteerde codes op /demo/ niet meer (gebeurde 16 jul):
+  `update wedstrijd.wedstrijden set code='DEMOJA' where kijk_code='KIJKJE';`
 
 ## Vangst delen op social media (v45, 14 jul 2026)
 
@@ -224,7 +226,13 @@ Bij ELKE nieuwe feature of gedragswijziging die gebruikers raakt worden ALLE
 documentatie-oppervlakken in dezelfde sessie bijgewerkt (afspraak Patrick;
 zie ook feedback_docs_consequent.md in de memory). De lijst:
 
-1. `docs/info.html` | klantenpagina "Wat kan de app?" (features + wedstrijddag)
+1. `docs/info.html` | landingspagina in marketing-stijl (sinds v49): hero
+   "Loot. Vis. Win.", eyebrow-secties, telefoon-mockups met demo-screenshots
+   uit `docs/schermen/`, privacy-blok, FAQ. Bij zichtbare UI-wijzigingen de
+   screenshots verversen: headless Chrome `--screenshot --window-size=430,860
+   --force-device-scale-factor=2 --virtual-time-budget=9000` op de
+   demo-omgeving (klassement = /demo/#/k/KIJKJE, kaart = /demo/#/w/DEMOJA,
+   home = /demo/).
 2. `docs/index.html` | root-keuzepagina (hero-sub + meta description)
 3. `docs/nphv/index.html` + `docs/demo/index.html` | meta descriptions
 4. `docs/instructies.html` + `docs/nphv/instructies.html` +
@@ -238,6 +246,13 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
 9. **kemblinck.nl** (repo `KemblincK/Bedrijf/site/`): Viswedstrijden-productkaart
    (product__desc + product__info); na akkoord direct pushen (vaste afspraak)
 10. Deze CLAUDE.md + de project-memory
+11. **og/social-meta (sinds v49):** elke statische HTML-pagina heeft
+    og:title/og:description (spiegelen title + meta description: bij
+    tekstwijziging BEIDE bijwerken), og:url (absolute URL), og:image
+    (https://viswedstrijdapp.nl/og.png, 1200x630) en twitter:card.
+    Nieuwe pagina = zelfde blok toevoegen; `docs/og.png` staat in de
+    huisstijl (bron: og-image.html-patroon, headless screenshot 1200x630).
+    nieuwe_tenant.py vervangt de og-tags automatisch mee (asserts).
 
 De demo-omgeving is zelf ook documentatie: nieuwe zichtbare features waar
 mogelijk in de demo laten zien (zoals de demo-competitie).

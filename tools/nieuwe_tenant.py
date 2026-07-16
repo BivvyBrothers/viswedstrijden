@@ -65,11 +65,20 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     t = lees(os.path.join(BRON, 'index.html'))
     t = vervang(t, '<title>Viswedstrijden NPHV · Plas van der Ende</title>',
                 f'<title>Viswedstrijden {kh}</title>', 1, 'index.html titel')
-    t = vervang(t, '<meta name="description" content="Viswedstrijden van de NPHV (Nootdorps '
-                   'Pijnackerse Hengelsportvereniging) op de Plas van der Ende: loting, stekkeuze, '
-                   'vangstregistratie en live klassement.">',
-                f'<meta name="description" content="Viswedstrijden van {kh}: loting, stekkeuze, '
-                f'vangstregistratie en live klassement.">', 1, 'index.html description')
+    nphv_desc = ('Viswedstrijden van de NPHV (Nootdorps Pijnackerse Hengelsportvereniging) '
+                 'op de Plas van der Ende: loting, stekkeuze, vangstregistratie, '
+                 'live klassement en seizoenscompetitie.')
+    nieuwe_desc = (f'Viswedstrijden van {kh}: loting, stekkeuze, vangstregistratie, '
+                   'live klassement en seizoenscompetitie.')
+    t = vervang(t, f'<meta name="description" content="{nphv_desc}">',
+                f'<meta name="description" content="{nieuwe_desc}">', 1, 'index.html description')
+    # og-tags (titel/description spiegelen de gewone meta, url krijgt de slug)
+    t = vervang(t, '<meta property="og:title" content="Viswedstrijden NPHV · Plas van der Ende">',
+                f'<meta property="og:title" content="Viswedstrijden {kh}">', 1, 'index.html og:title')
+    t = vervang(t, f'<meta property="og:description" content="{nphv_desc}">',
+                f'<meta property="og:description" content="{nieuwe_desc}">', 1, 'index.html og:description')
+    t = vervang(t, '<meta property="og:url" content="https://viswedstrijdapp.nl/nphv/">',
+                f'<meta property="og:url" content="https://viswedstrijdapp.nl/{slug}/">', 1, 'index.html og:url')
     t = vervang(t, '<meta name="apple-mobile-web-app-title" content="NPHV">',
                 f'<meta name="apple-mobile-web-app-title" content="{kh}">', 1, 'index.html app-title')
     t = vervang(t, 'class="brand-logo"> NPHV Viswedstrijden</a>',
@@ -83,6 +92,12 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     t = lees(os.path.join(BRON, 'instructies.html'))
     t = vervang(t, '<title>Zet de app op je beginscherm · NPHV Viswedstrijden</title>',
                 f'<title>Zet de app op je beginscherm · {kh} Viswedstrijden</title>', 1, 'instructies titel')
+    t = vervang(t, '<meta property="og:title" content="Zet de app op je beginscherm · NPHV Viswedstrijden">',
+                f'<meta property="og:title" content="Zet de app op je beginscherm · {kh} Viswedstrijden">',
+                1, 'instructies og:title')
+    t = vervang(t, '<meta property="og:url" content="https://viswedstrijdapp.nl/nphv/instructies.html">',
+                f'<meta property="og:url" content="https://viswedstrijdapp.nl/{slug}/instructies.html">',
+                1, 'instructies og:url')
     t = vervang(t, 'class="brand-logo"> NPHV Viswedstrijden</a>',
                 f'class="brand-logo"> {kh} Viswedstrijden</a>', 1, 'instructies brand')
     t = vervang(t, 'en kies daar <b style="color:#E8871E">NPHV</b>',

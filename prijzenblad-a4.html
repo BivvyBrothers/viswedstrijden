@@ -7,8 +7,11 @@
          background: #edeadb; color: #29271e; position: relative; }
   .kop { background: #353d2a; color: #fff; padding: 10mm 14mm 8mm; display: flex; align-items: center; gap: 8mm; }
   .kop img { width: 26mm; height: 26mm; border-radius: 5.5mm; }
-  .kop h1 { font-size: 24pt; line-height: 1.15; font-weight: 800; }
-  .kop .sub { color: #E8871E; font-size: 12.5pt; font-weight: 700; margin-top: 1.5mm; }
+  .kop .eyebrow { font-size: 8.5pt; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+                  color: #E8871E; margin-bottom: 1.2mm; }
+  .kop h1 { font-size: 26pt; line-height: 1.1; font-weight: 800; letter-spacing: -.3pt; }
+  .kop h1 .accent { color: #E8871E; }
+  .kop .sub { color: #d9dcc2; font-size: 11pt; font-weight: 600; margin-top: 1.5mm; }
   .body { padding: 7mm 14mm 0; }
   .intro { font-size: 10.5pt; line-height: 1.45; color: #3c392c; }
   .features { display: flex; flex-wrap: wrap; gap: 2mm 3mm; margin: 4mm 0 6mm; }
@@ -54,7 +57,8 @@
   <div class="kop">
     <img src="docs/icon-512.png" alt="logo">
     <div>
-      <h1>Viswedstrijd app · prijzen</h1>
+      <div class="eyebrow">Viswedstrijdapp.nl · prijzen</div>
+      <h1>Loot. Vis. <span class="accent">Win.</span></h1>
       <div class="sub">Digitale loting, stekkeuze op de kaart, vangsten met foto en live klassement</div>
     </div>
   </div>
