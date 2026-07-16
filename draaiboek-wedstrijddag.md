@@ -1,4 +1,4 @@
-# Draaiboek wedstrijddag | viswedstrijdapp.nl (kies NPHV)
+# Draaiboek wedstrijddag | viswedstrijdapp.nl (Inloggen, kies NPHV)
 
 Praktische checklist voor de organisator, van voorbereiding tot prijsuitreiking.
 Alles werkt vanaf je telefoon; het organisatie-wachtwoord heb je uit je hoofd of
@@ -18,8 +18,9 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
    met **📤 Deel de uitnodiging** zet je alles in één bericht in de
    groepsapp. Later opnieuw delen kan altijd: de codes staan op de
    wedstrijdkaart in de organisatie-omgeving en de directe link in Beheer.
-   (Handmatig: vissers gaan naar **viswedstrijdapp.nl** en kiezen **NPHV**,
-   direct kan ook viswedstrijdapp.nl/nphv; kijkcode is voor het thuisfront.)
+   (Handmatig: vissers gaan naar **viswedstrijdapp.nl**, tikken op **Inloggen**
+   en kiezen **NPHV**; direct kan ook viswedstrijdapp.nl/nphv; kijkcode is
+   voor het thuisfront.)
 3. **Vraag iedereen alvast aan te melden** en de app op het beginscherm te
    zetten (nodig voor pushmeldingen op iPhone). Bij het aanmelden krijgt
    iedereen een **persoonlijke inlogcode**: laat ze die bewaren.

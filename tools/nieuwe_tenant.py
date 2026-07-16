@@ -100,8 +100,9 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
                 1, 'instructies og:url')
     t = vervang(t, 'class="brand-logo"> NPHV Viswedstrijden</a>',
                 f'class="brand-logo"> {kh} Viswedstrijden</a>', 1, 'instructies brand')
-    t = vervang(t, 'en kies daar <b style="color:#E8871E">NPHV</b>',
-                f'en kies daar <b style="color:#E8871E">{kh}</b>', 1, 'instructies kies-daar')
+    t = vervang(t, 'tik op <b style="color:#fff">Inloggen</b> en kies daar <b style="color:#E8871E">NPHV</b>',
+                f'tik op <b style="color:#fff">Inloggen</b> en kies daar <b style="color:#E8871E">{kh}</b>',
+                1, 'instructies kies-daar')
     t = vervang(t, 'direct kan ook: <b style="color:#E8871E">viswedstrijdapp.nl/nphv</b>',
                 f'direct kan ook: <b style="color:#E8871E">viswedstrijdapp.nl/{slug}</b>', 1, 'instructies adres')
     t = vervang(t, '<p class="muted klein">Liever op papier? <a href="instructies-print.pdf">'
@@ -173,15 +174,16 @@ def bouw_tenant(slug, kort, volledig, water, stekken, zones, kaart_van):
         raise
     os.rename(tmp, doel)
 
-    # keuzeregel op de rootpagina (na de rename; faalt dit, dan meldt het
-    # script dat de tenant-map WEL bestaat en alleen de rootregel mist)
-    root = os.path.join(DOCS, 'index.html')
+    # keuzeregel op de inlogpagina (sinds v50: de root is een landingspagina,
+    # de organisatie-keuze staat op docs/inloggen/index.html; faalt dit, dan
+    # meldt het script dat de tenant-map WEL bestaat en alleen de regel mist)
+    root = os.path.join(DOCS, 'inloggen', 'index.html')
     t = lees(root)
-    if f'href="{slug}/"' in t:
-        raise SystemExit(f'LET OP: docs/{slug}/ is aangemaakt; de rootpagina had al een regel voor {slug}.')
+    if f'href="/{slug}/"' in t:
+        raise SystemExit(f'LET OP: docs/{slug}/ is aangemaakt; de inlogpagina had al een regel voor {slug}.')
     anker = '    <p class="muted klein installeer-tip"'
-    kaartje = (f'    <a class="water-kaart" href="{slug}/">\n'
-               f'      <img src="icon-192.png" alt="">\n'
+    kaartje = (f'    <a class="water-kaart" href="/{slug}/">\n'
+               f'      <img src="/icon-192.png" alt="">\n'
                f'      <div>\n'
                f'        <b>{html.escape(kort, quote=True)}</b>\n'
                f'        <span>{sub}</span>\n'
@@ -189,12 +191,12 @@ def bouw_tenant(slug, kort, volledig, water, stekken, zones, kaart_van):
                f'      <span class="pijl" aria-hidden="true">›</span>\n'
                f'    </a>\n')
     try:
-        t = vervang(t, anker, kaartje + anker, 1, 'root-keuzepagina')
+        t = vervang(t, anker, kaartje + anker, 1, 'inlogpagina-keuzeregel')
     except SystemExit as e:
-        raise SystemExit(f'{e}\nLET OP: docs/{slug}/ is WEL aangemaakt; voeg de rootregel handmatig toe.')
+        raise SystemExit(f'{e}\nLET OP: docs/{slug}/ is WEL aangemaakt; voeg de regel op /inloggen/ handmatig toe.')
     schrijf(root, t)
 
-    print(f'\nTenant docs/{slug}/ aangemaakt en toegevoegd aan de keuzepagina. Nog doen:')
+    print(f'\nTenant docs/{slug}/ aangemaakt en toegevoegd aan de inlogpagina (/inloggen/). Nog doen:')
     print(f'  1. Controleer docs/{slug}/index.html (teksten) en de kaart in de browser.')
     print(f'  2. instructies-print.pdf voor deze tenant maken (link is weggelaten).')
     print(f'  3. Release-checklist in CLAUDE.md nalopen (versies, SHELL-paden, CSP).')

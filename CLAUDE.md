@@ -29,8 +29,13 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
   Nieuwe tenant = ook een klant-rij inserten (nieuwe_tenant.py print de SQL).
 - **Multi-tenant (sinds 11 jul 2026):** elke organisatie krijgt een eigen pad,
   bijv. `/nphv/` (NPHV, Nootdorps Pijnackerse Hengelsportvereniging, Plas van
-  der Ende). De root is een keuzepagina (`docs/index.html` + `docs/landing.js`;
-  stuurt oude `#/w`- en `#/k`-links door naar /nphv/). GEDEELD op de root:
+  der Ende). De root (`docs/index.html` + `docs/landing.js`) is sinds v50 een
+  LANDINGSPAGINA in marketing-stijl met een Inloggen-knop; de organisatie-keuze
+  staat op `docs/inloggen/index.html` (/inloggen/). landing.js blijft op de
+  root staan en stuurt oude `#/w`- en `#/k`-links door naar /nphv/ (/demo/
+  voor KIJKJE). `docs/info.html` is een meta-refresh-redirect naar / (oude
+  links + kemblinck.nl-kaart); de slug `inloggen` is daarmee gereserveerd,
+  nooit als tenant-slug gebruiken. GEDEELD op de root:
   app.js, styles.css, iconen, kemblinck-logo. PER TENANT in de eigen map:
   index.html (naam/branding), config.js, kaart.js, manifest.webmanifest
   (start_url/scope ./), sw.js (eigen scope), version.json, instructies.html
@@ -226,14 +231,16 @@ Bij ELKE nieuwe feature of gedragswijziging die gebruikers raakt worden ALLE
 documentatie-oppervlakken in dezelfde sessie bijgewerkt (afspraak Patrick;
 zie ook feedback_docs_consequent.md in de memory). De lijst:
 
-1. `docs/info.html` | landingspagina in marketing-stijl (sinds v49): hero
-   "Loot. Vis. Win.", eyebrow-secties, telefoon-mockups met demo-screenshots
-   uit `docs/schermen/`, privacy-blok, FAQ. Bij zichtbare UI-wijzigingen de
+1. `docs/index.html` | DE landingspagina in marketing-stijl (root, sinds v50;
+   was v49 nog info.html): hero "Loot. Vis. Win." met Inloggen-knop,
+   eyebrow-secties, telefoon-mockups met demo-screenshots uit
+   `docs/schermen/`, privacy-blok, FAQ. Bij zichtbare UI-wijzigingen de
    screenshots verversen: headless Chrome `--screenshot --window-size=430,860
    --force-device-scale-factor=2 --virtual-time-budget=9000` op de
    demo-omgeving (klassement = /demo/#/k/KIJKJE, kaart = /demo/#/w/DEMOJA,
-   home = /demo/).
-2. `docs/index.html` | root-keuzepagina (hero-sub + meta description)
+   home = /demo/). `docs/info.html` is alleen nog een redirect naar /.
+2. `docs/inloggen/index.html` | inlogpagina met de organisatie-keuze
+   (nieuwe tenants komen hier als kaart bij; nieuwe_tenant.py doet dat)
 3. `docs/nphv/index.html` + `docs/demo/index.html` | meta descriptions
 4. `docs/instructies.html` + `docs/nphv/instructies.html` +
    `docs/demo/instructies.html` | intro-zin met de mogelijkheden
