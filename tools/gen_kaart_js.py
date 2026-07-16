@@ -144,15 +144,18 @@ lake_d = smooth_closed(LAKE, tension=0.9)
 parts.append(f'<path d="{lake_d}" fill="#1d4e79" opacity="0.18" transform="translate(2.5,3.5)"/>')
 parts.append(f'<path d="{lake_d}" fill="#b9dcf2"/>')
 parts.append(f'<clipPath id="lake"><path d="{lake_d}"/></clipPath>')
-parts.append('<g clip-path="url(#lake)">')
-parts.append(f'<path d="{smooth_closed(C10)}" fill="#7cbde4"/>')
-parts.append(f'<path d="{smooth_closed(C15_W)}" fill="#3f8dc6"/>')
-parts.append(f'<path d="{smooth_closed(C15_E)}" fill="#3f8dc6"/>')
-parts.append(f'<path d="{smooth_closed(C18_W)}" fill="#1f639c"/>')
-parts.append(f'<path d="{smooth_closed(C18_E)}" fill="#1f639c"/>')
-for poly in (C10, C15_W, C15_E, C18_W, C18_E):
-    parts.append(f'<path d="{smooth_closed(poly)}" fill="none" stroke="#ffffff" stroke-opacity=".75" stroke-width="1.2" stroke-dasharray="5 4"/>')
-parts.append('</g>')
+# Sinds 17 jul 2026: de echte dieptekaart (sonar-scan NPHV, bron
+# "Bodemstructuur kaart 1.png" in de Karperplas-klantmap) als onderlaag,
+# geclipt op de oevercontour zodat de fotorand exact samenvalt met de
+# vector-oever. De matrix (beeld 2250x1177 -> viewBox) komt uit de
+# contour-fit in KemblincK/Viswedstrijdapp/kaart-proef-tools/ (IoU 0.93);
+# bij een nieuwe scan de fit opnieuw draaien (fit_kaart.py) en de zes
+# getallen hier bijwerken. De oude vector-dieptelagen (C10/C15/C18
+# hierboven) blijven bewaard als terugval maar worden niet meer getekend.
+parts.append('<g clip-path="url(#lake)">'
+             '<image href="dieptekaart.jpg" width="2250" height="1177" '
+             'transform="matrix(0.42250 -0.05100 0.05100 0.42250 21.241 63.470)" '
+             'preserveAspectRatio="none"/></g>')
 
 # vaste zone-indeling (getekend door de organisatie, getraceerd via tools/zonelaag.json);
 # app.js toont deze laag alleen als de wedstrijd-zones overeenkomen met de standaard
@@ -175,12 +178,14 @@ parts.append('</g>')
 
 parts.append(f'<path d="{lake_d}" fill="none" stroke="#2b6a99" stroke-width="2.2"/>')
 
-for txt, pt, licht in [("10m", (1180, 990), True), ("15m", (1600, 1750), True), ("18m", (1330, 1430), True),
-                       ("18m", (3295, 1512), True), ("15m", (3390, 1660), True), ("10m", (2690, 2015), True),
-                       ("± 5 m", (3800, 1980), False), ("± 5 m", (900, 1800), False)]:
+# dieptelabels: donker met witte halo, leesbaar op elke tint van de fotokaart
+for txt, pt, _licht in [("10m", (1180, 990), True), ("15m", (1600, 1750), True), ("18m", (1330, 1430), True),
+                        ("18m", (3295, 1512), True), ("15m", (3390, 1660), True), ("10m", (2690, 2015), True),
+                        ("± 5 m", (3800, 1980), False), ("± 5 m", (900, 1800), False)]:
     x, y = T(pt)
-    fill = '#ffffff' if licht else '#2b6a99'
-    parts.append(f'<text x="{fmt(x)}" y="{fmt(y)}" fill="{fill}" font-size="11" font-weight="600" opacity=".95" text-anchor="middle">{txt}</text>')
+    parts.append(f'<text x="{fmt(x)}" y="{fmt(y)}" fill="#123c5e" stroke="#ffffff" stroke-width="2.6" '
+                 f'stroke-opacity=".8" paint-order="stroke" font-size="11" font-weight="600" '
+                 f'opacity=".95" text-anchor="middle">{txt}</text>')
 
 # herkenningspunten (aangewezen door Patrick op satellietfoto's, 6-7 jul 2026)
 parts.append('<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#8a3d2f"/></marker></defs>')

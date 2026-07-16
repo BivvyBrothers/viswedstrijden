@@ -4,7 +4,8 @@
    Let op de paden: deze worker draait onder /nphv/; gedeelde assets staan op
    de root en MOETEN hier absoluut staan, tenant-bestanden relatief. */
 const CACHE = 'nphv-shell-v1';
-const SHELL = ['./', 'index.html', 'instructies.html', 'kaart.js', 'config.js', 'manifest.webmanifest',
+const SHELL = ['./', 'index.html', 'instructies.html', 'kaart.js', 'config.js', 'dieptekaart.jpg',
+  'manifest.webmanifest',
   '/styles.css', '/app.js', '/icon-180.png', '/icon-192.png', '/icon-512.png', '/kemblinck-logo.png'];
 
 self.addEventListener('install', (e) => {

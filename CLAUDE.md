@@ -105,7 +105,20 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
 
 ## Kaart
 
-De dieptekaart is nagetekend van de originele NPHV-scan (`Dieptekaart plas.pdf`):
+**Fotokaart-onderlaag (v51, 17 jul 2026):** de NPHV-kaart toont sinds v51 de
+ECHTE sonar-dieptekaart als onderlaag: `docs/nphv/dieptekaart.jpg` (2250x1177,
+bron "Bodemstructuur kaart 1.png" in de Karperplas-klantmap, zwart ->
+#b9dcf2 vervangen op volle resolutie vóór verkleinen). gen_kaart_js.py zet
+hem als `<image>` in de SVG, GECLIPT op de vector-oevercontour (fotorand =
+vectorrand, fit-restfout onzichtbaar); transform-matrix komt uit de
+contour-fit in `KemblincK/Viswedstrijdapp/kaart-proef-tools/` (fit_kaart.py,
+IoU 0.93). Bij een nieuwe scan: fit opnieuw draaien en de zes matrix-getallen
+in gen_kaart_js.py bijwerken. De oude vector-dieptelagen (C10/C15/C18) staan
+nog in de generator als terugval maar worden niet getekend.
+`dieptekaart.jpg` zit in de nphv-sw.js SHELL; nieuwe_tenant.py
+`--kaart-van nphv` kopieert hem mee.
+
+De vector-oevercontour is nagetekend van de originele NPHV-scan (`Dieptekaart plas.pdf`):
 - `tools/shape.py` = oevercontour in 4800px-scanruimte (bron van waarheid)
 - `tools/gen_svg.py` = standalone kaart (`plas-van-der-ende-dieptekaart.svg`)
 - `tools/gen_kaart_js.py` = interactieve app-kaart, schrijft `docs/kaart.js`

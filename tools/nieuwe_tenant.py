@@ -139,6 +139,11 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     if kaart_van:
         shutil.copy(os.path.join(DOCS, kaart_van, 'kaart.js'), os.path.join(doel, 'kaart.js'))
         print(f'kaart.js gekopieerd van docs/{kaart_van}/')
+        # fotokaart-onderlaag (sinds v51): hoort bij kaart.js, anders 404 in de SVG
+        bronfoto = os.path.join(DOCS, kaart_van, 'dieptekaart.jpg')
+        if os.path.isfile(bronfoto):
+            shutil.copy(bronfoto, os.path.join(doel, 'dieptekaart.jpg'))
+            print(f'dieptekaart.jpg meegekopieerd van docs/{kaart_van}/ (zet hem ook in de sw.js SHELL)')
     else:
         gen_standaardkaart.bouw(slug, stekken, zones, os.path.join(doel, 'kaart.js'))
 
