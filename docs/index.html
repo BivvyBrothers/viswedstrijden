@@ -57,6 +57,12 @@
   }
   .telefoon img { display: block; width: 100%; height: auto; }
   .sectie { padding: clamp(20px, 4vw, 36px); }
+  .scan-figuur { margin: 20px 0 0; }
+  .scan-figuur img {
+    display: block; width: 100%; height: auto;
+    border-radius: 12px; box-shadow: 0 4px 14px rgba(35, 40, 26, .18);
+  }
+  .scan-figuur figcaption { margin-top: 8px; line-height: 1.5; }
   .sectie h2 {
     font-size: clamp(23px, 3.6vw, 30px); line-height: 1.15;
     margin: 0 0 12px; letter-spacing: -.3px;
@@ -136,11 +142,17 @@
         zoneletter kiest de hele zone. Vrij is wit, bezet is rood, jouw plek is
         groen. Geen eigen kaart? Dan start je met een standaardkaart die direct
         werkt.</p>
-        <p class="muted klein">In beeld: een echt voorbeeld, de dieptekaart van de
-        Plas van der Ende zoals die voor de NPHV is gedigitaliseerd.</p>
+        <p class="muted klein">In de telefoon: een echt voorbeeld, de dieptekaart
+        van de Plas van der Ende zoals die voor de NPHV is gedigitaliseerd.</p>
       </div>
       <div class="telefoon"><img src="schermen/scherm-kaart-nphv.png" alt="De gedigitaliseerde dieptekaart van de Plas van der Ende met zones, dieptelijnen en vrije en bezette stekken" width="860" height="1440" loading="lazy"></div>
     </div>
+    <figure class="scan-figuur">
+      <img src="schermen/dieptescan-plas.jpg" alt="De 3D-dieptescan van de Plas van der Ende, met dieptelijnen tot 17,5 meter" width="1290" height="680" loading="lazy">
+      <figcaption class="muted klein">Waar het mee begint: de dieptescan van de Plas
+      van der Ende. Zo'n scan, een oude papieren kaart of een tekening; wij maken er
+      de interactieve kaart van.</figcaption>
+    </figure>
   </section>
 
   <section class="card sectie">
