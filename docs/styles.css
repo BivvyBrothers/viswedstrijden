@@ -230,7 +230,9 @@ table.klassement th.r { text-align: right; }
 }
 .lightbox[hidden] { display: none; }
 .lightbox img { max-width: 95vw; max-height: 90vh; border-radius: 8px; }
-.lightbox .sluit { position: absolute; top: 14px; right: 20px; color: #fff; font-size: 26px; cursor: pointer; }
+.lightbox .sluit { position: absolute; top: 14px; right: 20px; color: #fff; font-size: 26px; cursor: pointer;
+  background: none; border: none; padding: 6px 10px; line-height: 1; }
+.lightbox .sluit:focus-visible { outline: 2px solid #fff; border-radius: 8px; }
 
 .codegroot { font-family: ui-monospace, Menlo, monospace; font-size: 20px; letter-spacing: 3px; color: var(--blauw-donker); }
 

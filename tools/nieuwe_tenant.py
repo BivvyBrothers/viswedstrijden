@@ -88,7 +88,8 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
                 f'<p class="sub">{sub}</p>', 1, 'index.html sub')
     # 3D-knop alleen behouden als de bronkaart ook een kaart-3d.jpg heeft
     knop_3d = ('      <p class="kaart-3d-rij"><button type="button" class="btn klein-btn" '
-               'data-groot="kaart-3d.jpg">⛰️ Bekijk de dieptekaart in 3D</button></p>\n')
+               'data-groot="kaart-3d.jpg" data-groot-alt="3D-dieptekaart van de Plas van der Ende '
+               'met stekken en zones">⛰️ Bekijk de dieptekaart in 3D</button></p>\n')
     heeft_3d = kaart_van and os.path.isfile(os.path.join(DOCS, kaart_van, 'kaart-3d.jpg'))
     if not heeft_3d:
         t = vervang(t, knop_3d, '', 1, 'index.html 3d-knop (geen kaart-3d.jpg voor deze tenant)')
@@ -122,6 +123,10 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     t = vervang(t, 'deze worker draait onder /nphv/', f'deze worker draait onder /{slug}/', 1, 'sw pad-comment')
     t = vervang(t, "const CACHE = 'nphv-shell-v1';", f"const CACHE = '{slug}-shell-v1';", 1, 'sw cache-naam')
     t = vervang(t, "k.startsWith('nphv-shell')", f"k.startsWith('{slug}-shell')", 1, 'sw cleanup')
+    # Codex v7 P2-2: de fotokaart alleen in de SHELL als deze tenant hem echt krijgt
+    heeft_foto = bool(kaart_van) and os.path.isfile(os.path.join(DOCS, kaart_van, 'dieptekaart.jpg'))
+    if not heeft_foto:
+        t = vervang(t, "'config.js', 'dieptekaart.jpg',", "'config.js',", 1, 'sw SHELL dieptekaart')
     schrijf(os.path.join(doel, 'sw.js'), t)
 
     # --- manifest.webmanifest: via json, nooit tekst-plakken ---
@@ -168,6 +173,19 @@ def controleer(doel):
             raise SystemExit(f'FOUT post-check: {naam} ontbreekt of is leeg')
     with open(os.path.join(doel, 'manifest.webmanifest'), encoding='utf-8') as f:
         json.load(f)  # geldige JSON of een luide fout
+    # Codex v7 P2-2: kaart-assets consistent met kaart.js, sw-SHELL en index.html
+    kaart = lees(os.path.join(doel, 'kaart.js'))
+    sw = lees(os.path.join(doel, 'sw.js'))
+    if 'dieptekaart.jpg' in kaart:
+        if not os.path.isfile(os.path.join(doel, 'dieptekaart.jpg')):
+            raise SystemExit('FOUT post-check: kaart.js verwijst naar dieptekaart.jpg maar die ontbreekt')
+        if 'dieptekaart.jpg' not in sw:
+            raise SystemExit('FOUT post-check: dieptekaart.jpg hoort in de sw.js SHELL van deze tenant')
+    elif 'dieptekaart.jpg' in sw:
+        raise SystemExit('FOUT post-check: sw.js SHELL noemt dieptekaart.jpg maar kaart.js gebruikt hem niet')
+    idx = lees(os.path.join(doel, 'index.html'))
+    if 'data-groot="kaart-3d.jpg"' in idx and not os.path.isfile(os.path.join(doel, 'kaart-3d.jpg')):
+        raise SystemExit('FOUT post-check: index.html heeft de 3D-knop maar kaart-3d.jpg ontbreekt')
 
 
 def bouw_tenant(slug, kort, volledig, water, stekken, zones, kaart_van):

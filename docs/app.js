@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 52; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 53; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -1865,14 +1865,42 @@ function initWedstrijd() {
   initBeheerKnoppen();
 
   document.body.addEventListener('click', (e) => {
-    const groot = e.target.dataset?.groot;
-    if (groot) {
-      $('#foto-groot img').src = groot;
-      $('#foto-groot').hidden = false;
+    const el = e.target.closest('[data-groot]');
+    if (el) {
+      openFotoGroot(el.dataset.groot, el.dataset.grootAlt);
     } else if (e.target.closest('#foto-groot')) {
-      $('#foto-groot').hidden = true;
+      sluitFotoGroot();
     }
   });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') sluitFotoGroot();
+  });
+  // mislukte load (bijv. 3D-kaart offline zonder cache): nette melding i.p.v. kapotte afbeelding
+  $('#foto-groot img').addEventListener('error', () => {
+    if ($('#foto-groot').hidden) return;
+    sluitFotoGroot();
+    toast('De afbeelding kon niet geladen worden. Controleer je verbinding en probeer het opnieuw.');
+  });
+}
+
+// lightbox voor vangstfoto's en de 3D-dieptekaart: focus naar de sluitknop
+// bij openen (toetsenbord), terug naar de aanroeper bij sluiten, Escape sluit
+let FOTO_GROOT_OPENER = null;
+function openFotoGroot(src, alt) {
+  const lb = $('#foto-groot');
+  const img = lb.querySelector('img');
+  img.alt = alt || 'vangstfoto';
+  img.src = src;
+  lb.hidden = false;
+  FOTO_GROOT_OPENER = document.activeElement;
+  lb.querySelector('.sluit')?.focus();
+}
+function sluitFotoGroot() {
+  const lb = $('#foto-groot');
+  if (!lb || lb.hidden) return;
+  lb.hidden = true;
+  if (FOTO_GROOT_OPENER && document.contains(FOTO_GROOT_OPENER)) FOTO_GROOT_OPENER.focus();
+  FOTO_GROOT_OPENER = null;
 }
 
 function renderTeamTab() {
