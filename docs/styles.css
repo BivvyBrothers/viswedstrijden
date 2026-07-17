@@ -96,6 +96,7 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 .btn.primary { background: var(--blauw); color: #fff; }
 .btn.gevaar { background: #f3ded9; color: var(--rood); }
 .btn.breed { width: 100%; padding: 14px; font-size: 17px; }
+.knop-logo { width: 20px; height: 20px; border-radius: 5px; vertical-align: -4px; margin-right: 4px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .klein-btn { padding: 4px 10px; font-size: 12px; }
 
