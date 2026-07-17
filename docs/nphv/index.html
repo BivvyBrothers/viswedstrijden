@@ -39,6 +39,7 @@
   <section class="hero card">
     <img src="/icon-192.png" alt="" class="hero-logo">
     <div>
+      <span class="hero-eyebrow">De wedstrijd-app voor aan het water</span>
       <h1>Viswedstrijden NPHV</h1>
       <p class="sub">Nootdorps Pijnackerse Hengelsportvereniging · Plas van der Ende</p>
     </div>
@@ -47,9 +48,9 @@
   <section class="card">
     <h2>Inloggen</h2>
     <div class="rolknoppen">
-      <button class="rolknop" data-rol="deelnemer">🎣 <b>Deelnemer</b><span>meedoen met een wedstrijd</span></button>
-      <button class="rolknop" data-rol="kijker">📺 <b>Kijker</b><span>klassement live volgen</span></button>
-      <button class="rolknop" data-rol="org">🛠️ <b>Organisator</b><span>wedstrijden beheren</span></button>
+      <button class="rolknop" data-rol="deelnemer"><span class="rol-icoon" aria-hidden="true">🎣</span><span class="rol-tekst"><b>Deelnemer</b><small>meedoen met een wedstrijd</small></span><span class="rol-pijl" aria-hidden="true">›</span></button>
+      <button class="rolknop" data-rol="kijker"><span class="rol-icoon" aria-hidden="true">📺</span><span class="rol-tekst"><b>Kijker</b><small>klassement live volgen</small></span><span class="rol-pijl" aria-hidden="true">›</span></button>
+      <button class="rolknop" data-rol="org"><span class="rol-icoon" aria-hidden="true">🛠️</span><span class="rol-tekst"><b>Organisator</b><small>wedstrijden beheren</small></span><span class="rol-pijl" aria-hidden="true">›</span></button>
     </div>
 
     <form id="form-deelnemer" class="rolform" hidden>
@@ -294,6 +295,7 @@
         <span><i class="dot mijn"></i> mijn stek</span>
         <span><i class="dot keuze"></i> selectie</span>
       </div>
+      <p class="kaart-3d-rij"><button type="button" class="btn klein-btn" data-groot="kaart-3d.jpg">⛰️ Bekijk de dieptekaart in 3D</button></p>
       <div id="stek-actie" hidden>
         <button id="btn-kies" class="btn primary breed" disabled></button>
         <button id="btn-kies-annuleer" class="btn breed" hidden>Annuleer (terug naar Beheer)</button>

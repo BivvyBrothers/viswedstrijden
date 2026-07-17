@@ -118,6 +118,19 @@ nog in de generator als terugval maar worden niet getekend.
 `dieptekaart.jpg` zit in de nphv-sw.js SHELL; nieuwe_tenant.py
 `--kaart-van nphv` kopieert hem mee.
 
+**3D-weergave (v52):** knop "⛰️ Bekijk de dieptekaart in 3D" onder de
+kaart-legenda in docs/nphv/index.html opent `docs/nphv/kaart-3d.jpg`
+(3D-render met stekken/zones, uit kaart-proef-tools) via het bestaande
+data-groot-lightboxmechanisme in app.js (geen JS-wijziging). Bewust NIET in
+de sw-SHELL (laadt on demand). nieuwe_tenant.py stript de knop voor tenants
+zonder kaart-3d.jpg en kopieert hem mee bij --kaart-van.
+
+**Startscherm-restyle (v52):** tenant-home in landing-stijl: hero met
+eyebrow ("De wedstrijd-app voor aan het water", generiek = scaffold-veilig),
+groter logo, rolknoppen als kaarten met icoon-chip (.rol-icoon), titel +
+subtekst (.rol-tekst) en chevron (.rol-pijl); markup in BEIDE tenant-indexen
+identiek, CSS in styles.css.
+
 De vector-oevercontour is nagetekend van de originele NPHV-scan (`Dieptekaart plas.pdf`):
 - `tools/shape.py` = oevercontour in 4800px-scanruimte (bron van waarheid)
 - `tools/gen_svg.py` = standalone kaart (`plas-van-der-ende-dieptekaart.svg`)

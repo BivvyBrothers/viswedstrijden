@@ -86,6 +86,12 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     t = vervang(t, '<h1>Viswedstrijden NPHV</h1>', f'<h1>Viswedstrijden {kh}</h1>', 1, 'index.html h1')
     t = vervang(t, '<p class="sub">Nootdorps Pijnackerse Hengelsportvereniging · Plas van der Ende</p>',
                 f'<p class="sub">{sub}</p>', 1, 'index.html sub')
+    # 3D-knop alleen behouden als de bronkaart ook een kaart-3d.jpg heeft
+    knop_3d = ('      <p class="kaart-3d-rij"><button type="button" class="btn klein-btn" '
+               'data-groot="kaart-3d.jpg">⛰️ Bekijk de dieptekaart in 3D</button></p>\n')
+    heeft_3d = kaart_van and os.path.isfile(os.path.join(DOCS, kaart_van, 'kaart-3d.jpg'))
+    if not heeft_3d:
+        t = vervang(t, knop_3d, '', 1, 'index.html 3d-knop (geen kaart-3d.jpg voor deze tenant)')
     schrijf(os.path.join(doel, 'index.html'), t)
 
     # --- instructies.html ---
@@ -139,11 +145,13 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     if kaart_van:
         shutil.copy(os.path.join(DOCS, kaart_van, 'kaart.js'), os.path.join(doel, 'kaart.js'))
         print(f'kaart.js gekopieerd van docs/{kaart_van}/')
-        # fotokaart-onderlaag (sinds v51): hoort bij kaart.js, anders 404 in de SVG
-        bronfoto = os.path.join(DOCS, kaart_van, 'dieptekaart.jpg')
-        if os.path.isfile(bronfoto):
-            shutil.copy(bronfoto, os.path.join(doel, 'dieptekaart.jpg'))
-            print(f'dieptekaart.jpg meegekopieerd van docs/{kaart_van}/ (zet hem ook in de sw.js SHELL)')
+        # fotokaart-onderlaag (v51) + 3D-weergave (v52): horen bij kaart.js
+        for extra in ('dieptekaart.jpg', 'kaart-3d.jpg'):
+            bronfoto = os.path.join(DOCS, kaart_van, extra)
+            if os.path.isfile(bronfoto):
+                shutil.copy(bronfoto, os.path.join(doel, extra))
+                print(f'{extra} meegekopieerd van docs/{kaart_van}/'
+                      + (' (zet hem ook in de sw.js SHELL)' if extra == 'dieptekaart.jpg' else ''))
     else:
         gen_standaardkaart.bouw(slug, stekken, zones, os.path.join(doel, 'kaart.js'))
 

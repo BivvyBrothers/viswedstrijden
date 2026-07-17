@@ -44,10 +44,12 @@ input, select { font-size: 16px; }
   margin: 12px 0; box-shadow: 0 1px 4px rgba(42,39,33,.08);
 }
 .hero { background: linear-gradient(150deg, #2c331f, #4d5839 55%, #6d7355); color: #fff;
-  display: flex; align-items: center; gap: 16px; }
-.hero-logo { width: 64px; height: 64px; border-radius: 14px; flex: 0 0 auto;
-  box-shadow: 0 2px 6px rgba(0,0,0,.25); }
-.hero h1 { margin: 4px 0 8px; font-size: 26px; line-height: 1.2; }
+  display: flex; align-items: center; gap: 16px; padding: 22px 18px; }
+.hero-logo { width: 72px; height: 72px; border-radius: 16px; flex: 0 0 auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+.hero-eyebrow { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .13em;
+  text-transform: uppercase; color: #f0a04b; margin-bottom: 3px; }
+.hero h1 { margin: 0 0 6px; font-size: 28px; line-height: 1.15; letter-spacing: -.4px; }
 .hero .sub { margin: 0; opacity: .9; }
 
 h1 { font-size: 22px; margin: 0 0 6px; color: inherit; }
@@ -131,6 +133,8 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 .kaart-houder { width: 100%; overflow-x: auto; border-radius: 10px; -webkit-overflow-scrolling: touch; }
 .kaart-houder svg { min-width: 700px; width: 100%; height: auto; display: block; }
 .kaart-legenda { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--grijs); }
+.kaart-3d-rij { margin: 10px 0 0; }
+.kaart-3d-rij .btn { font-size: 14px; }
 .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--kaart-blauw); vertical-align: -1px; }
 .dot.vrij { background: #fff; }
 .dot.bezet { background: var(--rood); border-color: var(--rood); }
@@ -259,13 +263,23 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 /* rolkeuze op de homepagina */
 .rolknoppen { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .rolknop {
-  display: flex; align-items: center; gap: 12px; width: 100%;
-  padding: 16px 18px; border: 2px solid var(--zand-donker); border-radius: 14px;
-  background: #fff; cursor: pointer; font-size: 17px; text-align: left;
+  display: flex; align-items: center; gap: 13px; width: 100%;
+  padding: 12px 14px; border: 1.5px solid var(--zand-donker); border-radius: 14px;
+  background: #fff; cursor: pointer; text-align: left;
+  box-shadow: 0 1px 3px rgba(42, 39, 33, .06);
 }
-.rolknop b { color: var(--blauw-donker); }
-.rolknop span { margin-left: auto; color: var(--grijs); font-size: 13px; text-align: right; }
+.rolknop:hover { border-color: var(--blauw-mid); }
+.rol-icoon {
+  flex: 0 0 auto; width: 46px; height: 46px; border-radius: 13px;
+  background: var(--zand); display: flex; align-items: center; justify-content: center;
+  font-size: 23px;
+}
+.rol-tekst { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.rol-tekst b { color: var(--blauw-donker); font-size: 17px; }
+.rol-tekst small { color: var(--grijs); font-size: 13px; }
+.rol-pijl { margin-left: auto; color: var(--blauw); font-size: 24px; font-weight: 700; }
 .rolknop.actief { border-color: var(--blauw); background: var(--blauw-licht); }
+.rolknop.actief .rol-icoon { background: #ffffff; }
 .rolform { margin-top: 4px; }
 
 /* organisatie-omgeving */
