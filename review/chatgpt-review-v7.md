@@ -1,4 +1,4 @@
-# Reviewverzoek v7 · viswedstrijdapp (v48 t/m v52, 15-18 jul 2026)
+# Reviewverzoek v7 · viswedstrijdapp (v48 t/m v52, 15-17 jul 2026)
 
 Je bent een kritische senior reviewer. Review de onderstaande wijzigingen op
 bugs, security, robuustheid, consistentie en gemiste randgevallen. Meld

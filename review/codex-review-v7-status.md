@@ -1,9 +1,9 @@
-# Status Codex-review v7 (verwerkt 18 jul 2026, v53)
+# Status Codex-review v7 (verwerkt 17 jul 2026, v53)
 
 Bron: `codex-review-v7-bevindingen.md` (review van v48 t/m v52).
 Uitkomst review: geen P0/P1; twee P2's, beide verwerkt in v53.
 
-## 1. P2 · 3D-lightbox: toetsenbord + mislukte image-loads — VERWERKT
+## 1. P2 · 3D-lightbox: toetsenbord + mislukte image-loads | VERWERKT
 
 Alle vijf de voorstellen doorgevoerd (`docs/app.js`, beide tenant-indexen,
 `docs/styles.css`):
@@ -33,7 +33,7 @@ offline gewoon beschikbaar. Precachen zou 233 KB toevoegen aan elke
 installatie, ook voor gebruikers die de knop nooit aanraken. Het
 foutmelding-pad hierboven dekt het geval "offline en nog nooit bekeken".
 
-## 2. P2 · Scaffold: `dieptekaart.jpg` in de SHELL van standaardtenants — VERWERKT
+## 2. P2 · Scaffold: `dieptekaart.jpg` in de SHELL van standaardtenants | VERWERKT
 
 `tools/nieuwe_tenant.py`:
 
