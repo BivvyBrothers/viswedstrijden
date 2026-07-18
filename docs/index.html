@@ -56,6 +56,10 @@
     box-shadow: 0 16px 38px rgba(35, 40, 26, .3); overflow: hidden;
   }
   .telefoon img { display: block; width: 100%; height: auto; }
+  .hero-bewijs { margin: 14px 0 0; font-size: 13px; font-weight: 600; color: #d9dcc2; }
+  @media (max-width: 520px) {
+    .landing-hero .telefoon { width: min(185px, 60vw); }
+  }
   .sectie { padding: clamp(20px, 4vw, 36px); }
   .scan-figuur { margin: 20px 0 0; }
   .scan-figuur img {
@@ -118,6 +122,7 @@
           <a class="btn hero-primair" href="inloggen/"><img src="icon-192.png" alt="" class="knop-logo" width="20" height="20"> Inloggen</a>
           <a class="btn hero-secundair" href="demo/">Probeer de demo</a>
         </div>
+        <p class="hero-bewijs">Geen deelnemersaccounts · geen vangstenlogboek · geen locatie-tracking</p>
       </div>
       <div class="telefoon"><img src="schermen/scherm-klassement.png" alt="Het live klassement in de app, met de opbouw per gevangen vis" width="860" height="1720"></div>
     </div>
@@ -140,8 +145,8 @@
         <p>Jullie eigen waterkaart wordt gedigitaliseerd voor de app: de echte
         dieptekaart als ondergrond, met steknummers, herkenningspunten en een vaste
         zone-indeling eroverheen. Eén tik op een zoneletter kiest de hele zone.
-        Vrij is wit, bezet is rood, jouw plek is groen. Geen eigen kaart? Dan start
-        je met een standaardkaart die direct werkt.</p>
+        Vrij is wit, bezet is rood, jouw plek is groen. Geen eigen kaart? Dan
+        richten we bij de start een standaardkaart met zones voor jullie in.</p>
         <p class="muted klein">In de telefoon: een echt voorbeeld, de dieptekaart
         van de Plas van der Ende zoals die in de app van de NPHV staat.</p>
       </div>
@@ -245,9 +250,11 @@
     </details>
     <details>
       <summary>Werkt het ook bij slecht bereik aan het water?</summary>
-      <p>Ja. De app is bewust licht gehouden en verbruikt weinig data. Bij een korte
-      onderbreking loopt de klok gewoon door en haalt de app de tussenstand daarna
-      vanzelf weer op.</p>
+      <p>De app is bewust licht gehouden en verbruikt weinig data. Bij een korte
+      onderbreking lopen de klok en het klassement gewoon door en haalt de app de
+      tussenstand daarna vanzelf weer op. Voor het registreren van een vangst is
+      wel even verbinding nodig; lukt het niet direct, dan blijven je gewicht en
+      foto staan en probeer je het gewoon opnieuw.</p>
     </details>
     <details>
       <summary>Kunnen we onze eigen wedstrijdregels gebruiken?</summary>
@@ -259,9 +266,10 @@
     <details>
       <summary>Wat kost een eigen omgeving?</summary>
       <p>Iedere organisatie krijgt een eigen omgeving op viswedstrijdapp.nl, met eigen
-      waterkaart en zone-indeling. De prijs hangt af van de kaart (standaardkaart of
-      jullie eigen water gedigitaliseerd). Mail naar
-      <a href="mailto:info@kemblinck.nl">info@kemblinck.nl</a> voor het prijzenblad.</p>
+      waterkaart en zone-indeling. De prijs hangt af van twee dingen: de kaart
+      (standaardkaart of jullie eigen water gedigitaliseerd) en de gewenste inrichting
+      en ondersteuning.</p>
+      <p><a class="btn primary" style="text-decoration:none; display:inline-block" href="mailto:info@kemblinck.nl?subject=Prijzenblad%20viswedstrijdapp&body=Hallo%2C%0A%0AWij%20ontvangen%20graag%20het%20prijzenblad.%0A%0AOrganisatie%3A%20%0AViswater%3A%20%0AVerwacht%20aantal%20deelnemers%20per%20wedstrijd%3A%20%0A%0AGroeten%2C">Vraag het prijzenblad aan</a></p>
     </details>
     <details>
       <summary>Voor welke wedstrijden is de app geschikt?</summary>

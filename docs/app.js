@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 55; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 56; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -58,7 +58,10 @@ const FOUTEN = {
   team_heeft_vangsten: 'Dit team heeft (of had) vangsten en kan daarom niet verwijderd worden. Laat het team staan; vangsten corrigeren kan hieronder.',
   foto_al_gebruikt: 'Deze foto hoort al bij een andere vangst. Maak een nieuwe foto.',
 };
-const foutTekst = (e) => FOUTEN[e.message] || ('Er ging iets mis: ' + e.message);
+const foutTekst = (e) => FOUTEN[e.message]
+  || (e instanceof TypeError || /fetch/i.test(e.message || '')
+    ? 'Geen verbinding met de server. Controleer je bereik en probeer het opnieuw; je invoer blijft staan.'
+    : 'Er ging iets mis: ' + e.message);
 
 async function rpc(fn, args) {
   const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
@@ -79,13 +82,16 @@ async function rpc(fn, args) {
   return tekst ? JSON.parse(tekst) : null;
 }
 
-async function uploadFoto(code, blob) {
-  const pad = `${code}/${crypto.randomUUID()}.jpg`;
+async function uploadFoto(pad, blob) {
+  // pad wordt door de aanroeper per POGING vastgehouden: bij een retry na een
+  // netwerkfout uploaden we naar hetzelfde pad, zodat de server-idempotentie
+  // (unieke foto_path) een dubbele registratie kan herkennen (Codex v8 P1-2)
   const r = await fetch(`${SB_URL}/storage/v1/object/${FOTO_BUCKET}/${pad}`, {
     method: 'POST',
     headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'image/jpeg' },
     body: blob,
   });
+  if (r.status === 409) return pad; // bestond al: eerdere upload-poging was gelukt
   if (!r.ok) throw new Error('ongeldige_foto');
   return pad;
 }
@@ -1819,6 +1825,9 @@ function initWedstrijd() {
     } else { img.hidden = true; }
   });
 
+  // vast fotopad per poging (bestand+gewicht): een retry na een netwerkfout
+  // hergebruikt het pad en kan daardoor niet dubbel registreren
+  let VANGST_POGING = null;
   $('#form-vangst').addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#v-fout'), okEl = $('#v-ok'), knop = $('#v-submit');
@@ -1834,9 +1843,14 @@ function initWedstrijd() {
     }
     knop.disabled = true; knop.textContent = 'Bezig met uploaden…';
     try {
+      const pogingKey = [bestand.name, bestand.size, bestand.lastModified, gram].join('|');
+      if (!VANGST_POGING || VANGST_POGING.key !== pogingKey) {
+        VANGST_POGING = { key: pogingKey, pad: `${CODE}/${crypto.randomUUID()}.jpg` };
+      }
       const blob = await compressFoto(bestand);
-      const pad = await uploadFoto(CODE, blob);
-      await rpc('w_registreer_vangst', { p_code: CODE, p_token: t.token, p_gewicht_gram: gram, p_foto_path: pad });
+      await uploadFoto(VANGST_POGING.pad, blob);
+      await rpc('w_registreer_vangst', { p_code: CODE, p_token: t.token, p_gewicht_gram: gram, p_foto_path: VANGST_POGING.pad });
+      VANGST_POGING = null;
       okEl.textContent = `Vangst van ${fmtKg(gram)} geregistreerd! 🎉`;
       okEl.hidden = false;
       $('#form-vangst').reset();
@@ -1874,6 +1888,10 @@ function initWedstrijd() {
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') sluitFotoGroot();
+    if (e.key === 'Tab' && !$('#foto-groot').hidden) {
+      e.preventDefault(); // simpele focuslus: de sluitknop is het enige bedienbare element
+      $('#foto-groot .sluit')?.focus();
+    }
   });
   // mislukte load (bijv. 3D-kaart offline zonder cache): nette melding i.p.v. kapotte afbeelding
   $('#foto-groot img').addEventListener('error', () => {
@@ -2006,6 +2024,7 @@ function initBeheerKnoppen() {
     const f = bvFoto.files[0];
     $('#bv-foto-label').textContent = f ? '📷 ' + (f.name.length > 30 ? f.name.slice(0, 30) + '…' : f.name) : '📷 Foto (optioneel)';
   });
+  let BV_POGING = null; // vast fotopad per poging, zie VANGST_POGING
   $('#form-b-vangst').addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#bv-fout'), okEl = $('#bv-ok'), knop = $('#bv-submit');
@@ -2018,13 +2037,18 @@ function initBeheerKnoppen() {
       let pad = null;
       const f = bvFoto.files[0];
       if (f) {
+        const pogingKey = [f.name, f.size, f.lastModified, gram, $('#bv-team').value].join('|');
+        if (!BV_POGING || BV_POGING.key !== pogingKey) {
+          BV_POGING = { key: pogingKey, pad: `${CODE}/${crypto.randomUUID()}.jpg` };
+        }
         const blob = await compressFoto(f);
-        pad = await uploadFoto(CODE, blob);
+        pad = await uploadFoto(BV_POGING.pad, blob);
       }
       await rpc('w_admin_voeg_vangst', {
         p_code: CODE, p_pin: sessie.pin(CODE),
         p_team_id: $('#bv-team').value, p_gewicht_gram: gram, p_foto_path: pad,
       });
+      BV_POGING = null;
       okEl.textContent = `Vangst van ${fmtKg(gram)} toegevoegd.`;
       okEl.hidden = false;
       $('#form-b-vangst').reset();
