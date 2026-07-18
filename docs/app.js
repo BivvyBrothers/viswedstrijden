@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 56; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 57; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -25,6 +25,10 @@ const FOUTEN = {
   meldingen_gesloten: 'Deze wedstrijd is afgelopen; meldingen aanzetten kan niet meer.',
   seizoen_niet_gevonden: 'Seizoen niet gevonden.',
   beheerder_wachtwoord_onjuist: 'Beheerderswachtwoord onjuist.',
+  beheerder_wachtwoord_te_kort: 'Beheerderswachtwoord moet minimaal 12 tekens zijn (spaties aan de randen tellen niet mee).',
+  org_wachtwoord_te_kort: 'Organisatie-wachtwoord moet minimaal 6 tekens zijn (spaties aan de randen tellen niet mee).',
+  wachtwoord_gelijk_aan_org: 'Kies een ander wachtwoord: dit is al het organisatie-wachtwoord.',
+  wachtwoord_gelijk_aan_beheerder: 'Kies een ander wachtwoord: dit is al het beheerderswachtwoord.',
   klant_niet_gevonden: 'Deze omgeving is nog niet gekoppeld aan een klant. Neem contact op via info@kemblinck.nl.',
   ongeldige_regels: 'Ongeldige seizoensinstellingen.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
@@ -296,7 +300,7 @@ function route() {
     history.replaceState(null, '', location.pathname + '#/w/' + mW[1].toUpperCase());
   }
   clearInterval(POLL); clearInterval(KLOKTIK); clearInterval(ORG_POLL);
-  if (location.hash !== '#/beheerder' && SU_DATA) wisSuScherm();
+  if (location.hash !== '#/beheerder') wisSuScherm();
   if (mW || mK) {
     KIJKER = !!mK;
     CODE = (mW || mK)[1].toUpperCase();
@@ -653,7 +657,7 @@ function wisSuScherm() {
   SU_KLANT = null;
   ['#su-stats'].forEach((s) => { const el = $(s); if (el) el.textContent = ''; });
   ['#su-instellingen', '#su-wedstrijden'].forEach((s) => { const el = $(s); if (el) el.innerHTML = ''; });
-  ['#su-ww', '#su-ww-nieuw', '#su-orgww-nieuw'].forEach((s) => { const el = $(s); if (el) el.value = ''; });
+  ['#su-ww', '#su-ww-nieuw', '#su-ww-nieuw2', '#su-orgww-nieuw'].forEach((s) => { const el = $(s); if (el) el.value = ''; });
 }
 
 function initSu() {
@@ -662,16 +666,49 @@ function initSu() {
   if (sessie.suWw()) laadSu();
 }
 
+let SU_REQ = 0;          // generatieteller: laat een laat antwoord nooit een verlaten scherm vullen (Codex v9 P2-4)
+let SU_LAATST = 0;       // laatste su-activiteit voor de inactiviteitslimiet (Codex v9 P2-5)
+const SU_MAX_INACTIEF = 15 * 60 * 1000;
+let SU_WAKER = null;
+
+function suActiviteit() { SU_LAATST = Date.now(); }
+
+function startSuWaker() {
+  if (SU_WAKER) return;
+  SU_WAKER = setInterval(() => {
+    if (!sessie.suWw()) return;
+    if (Date.now() - SU_LAATST > SU_MAX_INACTIEF) {
+      sessionStorage.removeItem('suww');
+      wisSuScherm();
+      if (location.hash === '#/beheerder') {
+        initSu();
+        toast('Beheerdersessie verlopen na 15 minuten zonder activiteit. Log opnieuw in.');
+      }
+    }
+  }, 60000);
+}
+
 async function laadSu() {
+  const mijnReq = ++SU_REQ;
   try {
-    SU_DATA = await rpc('w_su_overzicht', { p_wachtwoord: sessie.suWw() || '' });
+    const data = await rpc('w_su_overzicht', { p_wachtwoord: sessie.suWw() || '' });
+    if (mijnReq !== SU_REQ || location.hash !== '#/beheerder') return; // verlaten: niets vullen
+    SU_DATA = data;
+    suActiviteit();
+    startSuWaker();
     renderSu();
   } catch (err) {
-    sessionStorage.removeItem('suww');
-    SU_DATA = null;
-    initSu();
+    if (mijnReq !== SU_REQ || location.hash !== '#/beheerder') return;
     const foutEl = $('#su-fout');
-    if (foutEl) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+    if (err && err.message === 'beheerder_wachtwoord_onjuist') {
+      sessionStorage.removeItem('suww');
+      wisSuScherm();
+      initSu();
+      if (foutEl) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+    } else {
+      // netwerkfout: sessie behouden, melding tonen (Codex v9 P2-4)
+      toast(foutTekst(err));
+    }
   }
 }
 
@@ -686,10 +723,11 @@ function suKaart(w, nuMs) {
       ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'} \u00b7 ${w.push_subs} push${w.seizoen_naam ? ' \u00b7 seizoen: ' + esc(w.seizoen_naam) : ''}</div>
     <div class="org-codes muted klein">deelnemer <b class="codegroot klein-code">${esc(w.code)}</b>
       \u00b7 kijk <b class="codegroot klein-code">${esc(w.kijk_code)}</b>
-      \u00b7 pin <b class="codegroot klein-code">${esc(w.admin_pin)}</b></div>
+      \u00b7 pin <b class="codegroot klein-code" data-su-pinveld="${esc(w.code)}">\u2022\u2022\u2022\u2022</b></div>
     <div class="row org-acties">
-      <button class="btn primary" data-su-open="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">Openen &amp; beheren</button>
-      <button class="btn" data-su-kopieer="${esc(w.admin_pin)}">\ud83d\udd11 kopieer pin</button>
+      <button class="btn primary" data-su-open="${esc(w.code)}">Openen &amp; beheren</button>
+      <button class="btn klein-btn" data-su-pin-toon="${esc(w.code)}">\ud83d\udc41 toon pin</button>
+      <button class="btn klein-btn" data-su-kopieer="${esc(w.code)}">\ud83d\udd11 kopieer pin</button>
     </div>
   </div>`;
 }
@@ -702,11 +740,13 @@ function renderSu() {
   $('#su-stats').textContent = `${s.klanten} klanten \u00b7 ${s.wedstrijden} wedstrijden \u00b7 ${s.teams} teams \u00b7 ` +
     `${s.vangsten} vangsten \u00b7 ${s.push_subs} push-abonnementen \u00b7 ${s.seizoenen} seizoenen`;
   $('#su-instellingen').innerHTML = `
+    <p class="fout klein" style="margin-top:0">\u26a0\ufe0f Deze instellingen zijn GLOBAAL: ze gelden voor alle
+      omgevingen tegelijk (klant-apart komt met de tenancy-migratie).</p>
     <p class="muted klein">alleen-lezen: <b>${i.alleen_lezen ? 'AAN (nieuwe wedstrijden geblokkeerd)' : 'uit'}</b>
       \u00b7 vaste zones: ${i.heeft_standaard_zones ? 'ja' : 'nee'}
       \u00b7 push-sleutels: ${i.heeft_vapid && i.heeft_push_secret ? 'ok' : 'ONTBREKEN'}</p>
     <button id="su-alleen-lezen" class="btn${i.alleen_lezen ? '' : ' gevaar'}">${i.alleen_lezen
-      ? 'Zet alleen-lezen UIT (weer activeren)' : 'Zet alleen-lezen AAN (abonnement verlopen)'}</button>`;
+      ? 'Zet alleen-lezen UIT voor ALLE omgevingen' : 'Zet alleen-lezen AAN voor ALLE omgevingen'}</button>`;
   const nuMs = new Date(SU_DATA.server_now).getTime();
   const klanten = SU_DATA.klanten || [];
   if (!klanten.some((k) => k.slug === SU_KLANT)) SU_KLANT = klanten.length ? klanten[0].slug : null;
@@ -732,11 +772,41 @@ function renderSu() {
       laadSu();
     } catch (err) { toast(foutTekst(err)); }
   });
+  const suPinVan = (code) => {
+    for (const k of (SU_DATA?.klanten || [])) {
+      const w = (k.wedstrijden || []).find((x) => x.code === code);
+      if (w) return w.admin_pin;
+    }
+    return (SU_DATA?.zonder_klant || []).find((x) => x.code === code)?.admin_pin || null;
+  };
   document.querySelectorAll('[data-su-open]').forEach((b) => {
-    b.onclick = () => { sessie.zetPin(b.dataset.suOpen, b.dataset.pin); location.hash = '#/w/' + b.dataset.suOpen; };
+    b.onclick = () => {
+      const pin = suPinVan(b.dataset.suOpen);
+      if (!pin) return;
+      suActiviteit();
+      sessie.zetPin(b.dataset.suOpen, pin);
+      location.hash = '#/w/' + b.dataset.suOpen;
+    };
+  });
+  document.querySelectorAll('[data-su-pin-toon]').forEach((b) => {
+    b.onclick = () => {
+      const veld = document.querySelector(`[data-su-pinveld="${CSS.escape(b.dataset.suPinToon)}"]`);
+      const pin = suPinVan(b.dataset.suPinToon);
+      if (!veld || !pin) return;
+      suActiviteit();
+      const verborgen = veld.textContent.startsWith('\u2022');
+      veld.textContent = verborgen ? pin : '\u2022\u2022\u2022\u2022';
+      b.textContent = verborgen ? '\ud83d\ude48 verberg pin' : '\ud83d\udc41 toon pin';
+    };
   });
   document.querySelectorAll('[data-su-kopieer]').forEach((b) => {
-    b.onclick = async () => { await kopieerTekst(b.dataset.suKopieer); toast('Pin gekopieerd.'); };
+    b.onclick = async () => {
+      const pin = suPinVan(b.dataset.suKopieer);
+      if (!pin) return;
+      suActiviteit();
+      await kopieerTekst(pin);
+      toast('Pin gekopieerd.');
+    };
   });
 }
 
@@ -1701,11 +1771,25 @@ function initWedstrijd() {
     const foutEl = $('#su-fout');
     foutEl.hidden = true;
     try {
-      SU_DATA = await rpc('w_su_overzicht', { p_wachtwoord: $('#su-ww').value });
-      sessie.zetSuWw($('#su-ww').value);
+      const ww = $('#su-ww').value;
+      const data = await rpc('w_su_overzicht', { p_wachtwoord: ww });
+      if (location.hash !== '#/beheerder') return; // route verlaten tijdens login: niets bewaren
+      SU_DATA = data;
+      sessie.zetSuWw(ww);
+      suActiviteit();
+      startSuWaker();
       $('#su-ww').value = '';
       renderSu();
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+  });
+  document.querySelectorAll('[data-toon-ww]').forEach((k) => {
+    k.addEventListener('click', () => {
+      const veld = $(k.dataset.toonWw);
+      if (!veld) return;
+      const verborgen = veld.type === 'password';
+      veld.type = verborgen ? 'text' : 'password';
+      k.textContent = verborgen ? '\ud83d\ude48' : '\ud83d\udc41';
+    });
   });
   $('#su-uitloggen')?.addEventListener('click', () => {
     sessionStorage.removeItem('suww');
@@ -1716,21 +1800,53 @@ function initWedstrijd() {
   $('#form-su-orgww')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#su-instel-fout'); foutEl.hidden = true;
+    const knop = e.target.querySelector('button[type="submit"]');
+    if (!e.target.dataset.bevestigd) {
+      e.target.dataset.bevestigd = '1';
+      knop.textContent = '\u26a0\ufe0f Nogmaals: geldt voor ALLE omgevingen';
+      setTimeout(() => { delete e.target.dataset.bevestigd; knop.textContent = 'Reset'; }, 5000);
+      return;
+    }
+    delete e.target.dataset.bevestigd;
+    knop.textContent = 'Reset';
+    knop.disabled = true;
     try {
+      suActiviteit();
       await rpc('w_su_org_wachtwoord', { p_wachtwoord: sessie.suWw() || '', p_nieuw: $('#su-orgww-nieuw').value });
       $('#su-orgww-nieuw').value = '';
-      toast('Organisatie-wachtwoord aangepast. Geef het door aan de organisator.');
+      toast('Organisatie-wachtwoord aangepast (alle omgevingen). Geef het door aan de organisator.');
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+    knop.disabled = false;
   });
   $('#form-su-ww')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#su-instel-fout'); foutEl.hidden = true;
+    const nieuw = $('#su-ww-nieuw').value;
+    if (nieuw !== $('#su-ww-nieuw2').value) {
+      foutEl.textContent = 'De twee wachtwoordvelden zijn niet gelijk.';
+      foutEl.hidden = false;
+      return;
+    }
+    const knop = e.target.querySelector('button[type="submit"]');
+    knop.disabled = true;
     try {
-      await rpc('w_su_wachtwoord', { p_wachtwoord: sessie.suWw() || '', p_nieuw: $('#su-ww-nieuw').value });
-      sessie.zetSuWw($('#su-ww-nieuw').value.trim());
+      suActiviteit();
+      await rpc('w_su_wachtwoord', { p_wachtwoord: sessie.suWw() || '', p_nieuw: nieuw });
+      sessie.zetSuWw(nieuw.trim());
       $('#su-ww-nieuw').value = '';
-      toast('Beheerderswachtwoord gewijzigd.');
-    } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+      $('#su-ww-nieuw2').value = '';
+      toast('Beheerderswachtwoord gewijzigd. Dit is de enige beheerderstoegang: bewaar het direct in je wachtwoordmanager.');
+    } catch (err) {
+      if (err instanceof TypeError || /fetch/i.test(err.message || '')) {
+        // de server kan de wijziging WEL doorgevoerd hebben; de retry is idempotent (server v9)
+        foutEl.textContent = 'Geen verbinding: de wijziging is mogelijk al doorgevoerd. '
+          + 'Probeer dezelfde wijziging zo nog eens (dat is veilig), of log opnieuw in met het nieuwe wachtwoord.';
+      } else {
+        foutEl.textContent = foutTekst(err);
+      }
+      foutEl.hidden = false;
+    }
+    knop.disabled = false;
   });
   $('#form-seizoen')?.addEventListener('submit', async (e) => {
     e.preventDefault();

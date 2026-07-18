@@ -229,7 +229,7 @@
     <p class="muted klein">Alleen voor de app-beheerder.</p>
     <form id="form-sulogin" class="rolform">
       <div class="row">
-        <input id="su-ww" type="password" placeholder="beheerderswachtwoord" autocomplete="off" required>
+        <input id="su-ww" type="password" placeholder="beheerderswachtwoord" autocomplete="current-password" maxlength="64" required>
         <button type="submit" class="btn primary">Inloggen</button>
       </div>
       <p id="su-fout" class="fout" hidden></p>
@@ -245,19 +245,26 @@
       <div id="su-stats" class="muted klein"></div>
     </section>
     <section class="card">
-      <h2>Instellingen</h2>
+      <h2>Instellingen (globaal)</h2>
       <div id="su-instellingen"></div>
       <form id="form-su-orgww" class="rolform" style="margin-top:12px">
-        <p class="muted klein">Organisatie-wachtwoord resetten (als de organisator het kwijt is):</p>
+        <p class="muted klein">Organisatie-wachtwoord resetten (als de organisator het kwijt is).
+        Let op: dit geldt voor ALLE omgevingen tot de tenancy-migratie.</p>
         <div class="row">
-          <input id="su-orgww-nieuw" type="text" minlength="6" placeholder="nieuw organisatie-wachtwoord" autocomplete="off" required>
+          <input id="su-orgww-nieuw" type="password" minlength="6" maxlength="64" placeholder="nieuw organisatie-wachtwoord" autocomplete="new-password" required>
+          <button type="button" class="btn klein-btn" data-toon-ww="#su-orgww-nieuw" aria-label="Toon of verberg wachtwoord">👁</button>
           <button type="submit" class="btn">Reset</button>
         </div>
       </form>
       <form id="form-su-ww" class="rolform" style="margin-top:12px">
-        <p class="muted klein">Eigen beheerderswachtwoord wijzigen (min. 12 tekens):</p>
+        <p class="muted klein">Eigen beheerderswachtwoord wijzigen (min. 12 tekens). Dit is de enige
+        beheerderstoegang: bewaar het nieuwe wachtwoord direct in je wachtwoordmanager.</p>
         <div class="row">
-          <input id="su-ww-nieuw" type="password" minlength="12" placeholder="nieuw beheerderswachtwoord" autocomplete="off" required>
+          <input id="su-ww-nieuw" type="password" minlength="12" maxlength="64" placeholder="nieuw beheerderswachtwoord" autocomplete="new-password" required>
+          <button type="button" class="btn klein-btn" data-toon-ww="#su-ww-nieuw" aria-label="Toon of verberg wachtwoord">👁</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <input id="su-ww-nieuw2" type="password" minlength="12" maxlength="64" placeholder="herhaal nieuw beheerderswachtwoord" autocomplete="new-password" required>
           <button type="submit" class="btn">Wijzig</button>
         </div>
       </form>

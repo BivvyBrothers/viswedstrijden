@@ -1453,7 +1453,13 @@ CREATE OR REPLACE FUNCTION public.w_su_org_wachtwoord(p_wachtwoord text, p_nieuw
 AS $function$
 begin
   perform wedstrijd.su_check(p_wachtwoord);
-  if coalesce(length(trim(p_nieuw)), 0) < 6 then raise exception 'wachtwoord_te_kort'; end if;
+  if coalesce(length(trim(p_nieuw)), 0) < 6 then
+    raise exception 'org_wachtwoord_te_kort';
+  end if;
+  if exists (select 1 from wedstrijd.instellingen
+             where id = 1 and beheerder_wachtwoord = trim(p_nieuw)) then
+    raise exception 'wachtwoord_gelijk_aan_beheerder';
+  end if;
   update wedstrijd.instellingen set organisator_wachtwoord = trim(p_nieuw) where id = 1;
   return json_build_object('ok', true);
 end $function$;
@@ -1465,8 +1471,23 @@ CREATE OR REPLACE FUNCTION public.w_su_wachtwoord(p_wachtwoord text, p_nieuw tex
  SET search_path TO ''
 AS $function$
 begin
+  -- idempotente retry (Codex v9 P1-3): als het nieuwe wachtwoord al het
+  -- huidige is, was een eerdere poging (waarvan het antwoord verloren ging)
+  -- al geslaagd. Raden via dit pad is niet goedkoper dan via su_check:
+  -- een fout kandidaat-wachtwoord valt door naar su_check met pg_sleep.
+  if exists (select 1 from wedstrijd.instellingen
+             where id = 1 and beheerder_wachtwoord is not null
+               and beheerder_wachtwoord = trim(p_nieuw)) then
+    return json_build_object('ok', true, 'al_gewijzigd', true);
+  end if;
   perform wedstrijd.su_check(p_wachtwoord);
-  if coalesce(length(trim(p_nieuw)), 0) < 12 then raise exception 'wachtwoord_te_kort'; end if;
+  if coalesce(length(trim(p_nieuw)), 0) < 12 then
+    raise exception 'beheerder_wachtwoord_te_kort';
+  end if;
+  if exists (select 1 from wedstrijd.instellingen
+             where id = 1 and organisator_wachtwoord = trim(p_nieuw)) then
+    raise exception 'wachtwoord_gelijk_aan_org';
+  end if;
   update wedstrijd.instellingen set beheerder_wachtwoord = trim(p_nieuw) where id = 1;
   return json_build_object('ok', true);
 end $function$;
