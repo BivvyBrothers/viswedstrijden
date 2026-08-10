@@ -250,6 +250,18 @@ klant-tabs in de UI), `w_su_alleen_lezen`,
 wedstrijd.su_check met pg_sleep. Client: view-beheerder in beide
 tenant-indexen, sessionStorage `suww`, "Openen & beheren" gebruikt de
 bestaande pin-flow.
+**Hardening + UI-ronde (v57/v58, Codex-review v9):** globaal-banner boven de
+instellingen (alleen-lezen en org-wachtwoord gelden voor ALLE omgevingen tot
+de tenancy-migratie), idempotente `w_su_wachtwoord` (migratie
+`wedstrijd_su_hardening_v9`) met herhaalveld + toon/verberg, aparte
+foutcodes org/beheerder, 15 minuten inactiviteitslimiet, generatieteller +
+routechecks tegen late antwoorden, admin-pins standaard gemaskeerd
+(waarde uit de state, niet uit data-attributen). Layout: statkaartjes,
+klantkiezer (tabs tot 5 klanten, anders een select), zoekveld + filters
+(alle/live & komend/afgelopen), compacte wedstrijdrijen met uitklapbare
+detailregel, gevaarlijke acties in een apart blok "Toegang en blokkades"
+onderaan. Nog open (hardening-ronde bij klant 2): rate-limit vóór de DB op
+`w_su_*`, su-login-token, `w_su_klant` met paginering.
 
 ## Documentatie-oppervlakken (WERKAFSPRAAK sinds 15 jul 2026)
 

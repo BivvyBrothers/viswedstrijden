@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 57; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 58; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -649,12 +649,18 @@ function renderOrgSeizoenen() {
 
 /* ---------- beheerdersomgeving (KemblincK support, route #/beheerder) ---------- */
 let SU_DATA = null;
-let SU_KLANT = null;  // geselecteerde klant-tab in het beheeroverzicht
+let SU_KLANT = null;   // geselecteerde klant in het beheeroverzicht
+let SU_ZOEK = '';      // zoekterm op wedstrijdnaam/code
+let SU_FILTER = 'alle'; // alle | actief | afgelopen
+let SU_OPEN_CODE = null; // wedstrijd met uitgeklapte details
 
 // pins en overzicht horen niet in memory/DOM achter te blijven (Codex v6 P2-2)
 function wisSuScherm() {
   SU_DATA = null;
   SU_KLANT = null;
+  SU_ZOEK = '';
+  SU_FILTER = 'alle';
+  SU_OPEN_CODE = null;
   ['#su-stats'].forEach((s) => { const el = $(s); if (el) el.textContent = ''; });
   ['#su-instellingen', '#su-wedstrijden'].forEach((s) => { const el = $(s); if (el) el.innerHTML = ''; });
   ['#su-ww', '#su-ww-nieuw', '#su-ww-nieuw2', '#su-orgww-nieuw'].forEach((s) => { const el = $(s); if (el) el.value = ''; });
@@ -712,23 +718,36 @@ async function laadSu() {
   }
 }
 
+// compacte rij per wedstrijd; codes en pin zitten in een uitklapbare
+// detailregel zodat de lijst scanbaar blijft (Codex v9 UI-5)
 function suKaart(w, nuMs) {
   const actief = new Date(w.eind_ts).getTime() >= nuMs;
   const live = actief && new Date(w.start_ts).getTime() <= nuMs;
-  return `<div class="org-w">
-    <div class="org-w-kop"><b>${esc(w.naam)}</b>
-      <span class="chip${live ? ' live' : ''}${!actief ? ' voorbij' : ''}">${!actief ? 'afgelopen' : live ? '\u25cf LIVE' : esc(w.status)}</span></div>
-    <div class="muted klein">${fmtDatumTijd(w.start_ts)} tot ${fmtDatumTijd(w.eind_ts)} \u00b7
-      ${w.mode === 'koppel' ? 'koppels' : 'individueel'} \u00b7 ${w.teams} team${w.teams === 1 ? '' : 's'} \u00b7
-      ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'} \u00b7 ${w.push_subs} push${w.seizoen_naam ? ' \u00b7 seizoen: ' + esc(w.seizoen_naam) : ''}</div>
-    <div class="org-codes muted klein">deelnemer <b class="codegroot klein-code">${esc(w.code)}</b>
-      \u00b7 kijk <b class="codegroot klein-code">${esc(w.kijk_code)}</b>
-      \u00b7 pin <b class="codegroot klein-code" data-su-pinveld="${esc(w.code)}">\u2022\u2022\u2022\u2022</b></div>
-    <div class="row org-acties">
-      <button class="btn primary" data-su-open="${esc(w.code)}">Openen &amp; beheren</button>
-      <button class="btn klein-btn" data-su-pin-toon="${esc(w.code)}">\ud83d\udc41 toon pin</button>
-      <button class="btn klein-btn" data-su-kopieer="${esc(w.code)}">\ud83d\udd11 kopieer pin</button>
-    </div>
+  const open = SU_OPEN_CODE === w.code;
+  return `<div class="su-rij${open ? ' su-rij-open' : ''}">
+    <button class="su-rij-kop" data-su-detail="${esc(w.code)}" aria-expanded="${open}">
+      <span class="su-rij-naam">
+        <b>${esc(w.naam)}</b>
+        <span class="muted klein">${fmtDatumTijd(w.start_ts)} \u00b7 ${w.mode === 'koppel' ? 'koppels' : 'individueel'}
+          \u00b7 ${w.teams} team${w.teams === 1 ? '' : 's'} \u00b7 ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'}${
+          w.seizoen_naam ? ' \u00b7 ' + esc(w.seizoen_naam) : ''}</span>
+      </span>
+      <span class="chip${live ? ' live' : ''}${!actief ? ' voorbij' : ''}">${
+        !actief ? 'afgelopen' : live ? '\u25cf LIVE' : esc(w.status)}</span>
+      <span class="su-rij-pijl" aria-hidden="true">${open ? '\u2304' : '\u203a'}</span>
+    </button>
+    ${open ? `<div class="su-rij-detail">
+      <div class="muted klein">${fmtDatumTijd(w.start_ts)} tot ${fmtDatumTijd(w.eind_ts)} \u00b7
+        ${w.push_subs} push-abonnement${w.push_subs === 1 ? '' : 'en'}</div>
+      <div class="org-codes muted klein">deelnemer <b class="codegroot klein-code">${esc(w.code)}</b>
+        \u00b7 kijk <b class="codegroot klein-code">${esc(w.kijk_code)}</b>
+        \u00b7 pin <b class="codegroot klein-code" data-su-pinveld="${esc(w.code)}">\u2022\u2022\u2022\u2022</b></div>
+      <div class="row org-acties">
+        <button class="btn primary" data-su-open="${esc(w.code)}">Openen &amp; beheren</button>
+        <button class="btn klein-btn" data-su-pin-toon="${esc(w.code)}">\ud83d\udc41 toon pin</button>
+        <button class="btn klein-btn" data-su-kopieer="${esc(w.code)}">\ud83d\udd11 kopieer pin</button>
+      </div>
+    </div>` : ''}
   </div>`;
 }
 
@@ -737,8 +756,10 @@ function renderSu() {
   $('#su-login').hidden = true;
   $('#su-omgeving').hidden = false;
   const s = SU_DATA.stats, i = SU_DATA.instellingen;
-  $('#su-stats').textContent = `${s.klanten} klanten \u00b7 ${s.wedstrijden} wedstrijden \u00b7 ${s.teams} teams \u00b7 ` +
-    `${s.vangsten} vangsten \u00b7 ${s.push_subs} push-abonnementen \u00b7 ${s.seizoenen} seizoenen`;
+  $('#su-stats').innerHTML = [
+    ['klanten', s.klanten], ['wedstrijden', s.wedstrijden], ['teams', s.teams],
+    ['vangsten', s.vangsten], ['push', s.push_subs], ['seizoenen', s.seizoenen],
+  ].map(([naam, waarde]) => `<div class="su-stat"><b>${waarde}</b><span>${naam}</span></div>`).join('');
   $('#su-instellingen').innerHTML = `
     <p class="fout klein" style="margin-top:0">\u26a0\ufe0f Deze instellingen zijn GLOBAAL: ze gelden voor alle
       omgevingen tegelijk (klant-apart komt met de tenancy-migratie).</p>
@@ -752,19 +773,71 @@ function renderSu() {
   if (!klanten.some((k) => k.slug === SU_KLANT)) SU_KLANT = klanten.length ? klanten[0].slug : null;
   const actieve = klanten.find((k) => k.slug === SU_KLANT);
   const zonder = SU_DATA.zonder_klant || [];
+  // klant-keuze: tabs zolang het overzichtelijk is, keuzelijst bij veel klanten (Codex v9 UI-2)
+  const veelKlanten = klanten.length > 5;
+  const klantKiezer = veelKlanten
+    ? `<label class="su-kiezer">Klant
+        <select id="su-klant-select">${klanten.map((k) =>
+          `<option value="${esc(k.slug)}"${k.slug === SU_KLANT ? ' selected' : ''}>${esc(k.naam)} (${k.stats.wedstrijden})</option>`).join('')}</select>
+      </label>`
+    : `<div class="schakel" style="flex-wrap:wrap">${klanten.map((k) =>
+        `<button data-su-klant="${esc(k.slug)}" class="${k.slug === SU_KLANT ? 'actief' : ''}">${esc(k.naam)}
+          <span class="muted klein">(${k.stats.wedstrijden})</span></button>`).join('')}</div>`;
+  // filteren + zoeken binnen de gekozen klant
+  const alle = actieve ? (actieve.wedstrijden || []) : [];
+  const zoek = SU_ZOEK.trim().toLowerCase();
+  const zichtbaar = alle.filter((w) => {
+    const afgelopen = new Date(w.eind_ts).getTime() < nuMs;
+    if (SU_FILTER === 'actief' && afgelopen) return false;
+    if (SU_FILTER === 'afgelopen' && !afgelopen) return false;
+    if (!zoek) return true;
+    return (w.naam || '').toLowerCase().includes(zoek)
+      || (w.code || '').toLowerCase().includes(zoek)
+      || (w.kijk_code || '').toLowerCase().includes(zoek);
+  });
+  const filters = [['alle', 'Alle'], ['actief', 'Live & komend'], ['afgelopen', 'Afgelopen']];
   $('#su-wedstrijden').innerHTML = `
-    <div class="schakel" style="flex-wrap:wrap">${klanten.map((k) =>
-      `<button data-su-klant="${esc(k.slug)}" class="${k.slug === SU_KLANT ? 'actief' : ''}">${esc(k.naam)}
-        <span class="muted klein">(${k.stats.wedstrijden})</span></button>`).join('')}</div>
-    ${actieve ? `<p class="muted klein" style="margin-top:10px">/${esc(actieve.slug)} \u00b7
+    ${klantKiezer}
+    ${actieve ? `<p class="muted klein su-klant-info">/${esc(actieve.slug)} \u00b7
       ${actieve.stats.wedstrijden} wedstrijd${actieve.stats.wedstrijden === 1 ? '' : 'en'} \u00b7
       ${actieve.stats.teams} teams \u00b7 ${actieve.stats.vangsten} vangsten</p>` : ''}
-    ${actieve && actieve.wedstrijden.length
-      ? actieve.wedstrijden.map((w) => suKaart(w, nuMs)).join('')
-      : '<p class="muted">Geen wedstrijden bij deze klant.</p>'}
+    <div class="su-zoekrij">
+      <input id="su-zoek" type="search" placeholder="zoek op naam of code" value="${esc(SU_ZOEK)}"
+        autocomplete="off" enterkeyhint="search">
+      <div class="schakel su-filters">${filters.map(([k, label]) =>
+        `<button data-su-filter="${k}" class="${SU_FILTER === k ? 'actief' : ''}">${label}</button>`).join('')}</div>
+    </div>
+    ${zichtbaar.length
+      ? zichtbaar.map((w) => suKaart(w, nuMs)).join('')
+      : `<p class="muted">${alle.length ? 'Geen wedstrijden voor dit filter of deze zoekterm.' : 'Geen wedstrijden bij deze klant.'}</p>`}
+    ${zichtbaar.length && zichtbaar.length !== alle.length
+      ? `<p class="muted klein">${zichtbaar.length} van ${alle.length} wedstrijden getoond.</p>` : ''}
     ${zonder.length ? `<p class="fout">LET OP: ${zonder.length} wedstrijd(en) zonder klant: ${zonder.map((w) => esc(w.naam)).join(', ')}</p>` : ''}`;
   document.querySelectorAll('[data-su-klant]').forEach((b) => {
-    b.onclick = () => { SU_KLANT = b.dataset.suKlant; renderSu(); };
+    b.onclick = () => { SU_KLANT = b.dataset.suKlant; SU_OPEN_CODE = null; suActiviteit(); renderSu(); };
+  });
+  $('#su-klant-select')?.addEventListener('change', (e) => {
+    SU_KLANT = e.target.value; SU_OPEN_CODE = null; suActiviteit(); renderSu();
+  });
+  document.querySelectorAll('[data-su-filter]').forEach((b) => {
+    b.onclick = () => { SU_FILTER = b.dataset.suFilter; suActiviteit(); renderSu(); };
+  });
+  const zoekVeld = $('#su-zoek');
+  if (zoekVeld) {
+    zoekVeld.addEventListener('input', () => {
+      SU_ZOEK = zoekVeld.value;
+      suActiviteit();
+      renderSu();
+      const nieuw = $('#su-zoek');
+      if (nieuw) { nieuw.focus(); nieuw.setSelectionRange(nieuw.value.length, nieuw.value.length); }
+    });
+  }
+  document.querySelectorAll('[data-su-detail]').forEach((b) => {
+    b.onclick = () => {
+      SU_OPEN_CODE = SU_OPEN_CODE === b.dataset.suDetail ? null : b.dataset.suDetail;
+      suActiviteit();
+      renderSu();
+    };
   });
   $('#su-alleen-lezen').onclick = () => tikNogmaals($('#su-alleen-lezen'), '\u26a0\ufe0f Tik nogmaals', async () => {
     try {
