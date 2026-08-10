@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 59; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 60; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -651,11 +651,16 @@ function renderOrgSeizoenen() {
 let SU_DATA = null;
 let SU_KLANT = null;   // geselecteerde klant in het beheeroverzicht
 let SU_ZOEK = '';      // zoekterm op wedstrijdnaam/code
+let SU_REQ = 0;        // generatieteller: laat een laat antwoord nooit een verlaten scherm vullen (Codex v9 P2-4)
+let SU_LAATST = 0;     // laatste su-activiteit voor de inactiviteitslimiet (Codex v9 P2-5)
+let SU_WAKER = null;
+const SU_MAX_INACTIEF = 15 * 60 * 1000;
 let SU_FILTER = 'alle'; // alle | actief | afgelopen
 let SU_OPEN_CODE = null; // wedstrijd met uitgeklapte details
 
 // pins en overzicht horen niet in memory/DOM achter te blijven (Codex v6 P2-2)
 function wisSuScherm() {
+  if (SU_WAKER) { clearInterval(SU_WAKER); SU_WAKER = null; }
   SU_DATA = null;
   SU_KLANT = null;
   SU_ZOEK = '';
@@ -671,11 +676,6 @@ function initSu() {
   $('#su-omgeving').hidden = !sessie.suWw();
   if (sessie.suWw()) laadSu();
 }
-
-let SU_REQ = 0;          // generatieteller: laat een laat antwoord nooit een verlaten scherm vullen (Codex v9 P2-4)
-let SU_LAATST = 0;       // laatste su-activiteit voor de inactiviteitslimiet (Codex v9 P2-5)
-const SU_MAX_INACTIEF = 15 * 60 * 1000;
-let SU_WAKER = null;
 
 function suActiviteit() { SU_LAATST = Date.now(); }
 
@@ -724,15 +724,15 @@ async function laadSu() {
 function wedstrijdFase(w, nuMs) {
   const afgelopen = new Date(w.eind_ts).getTime() < nuMs;
   const begonnen = new Date(w.start_ts).getTime() <= nuMs;
-  if (afgelopen) return { icoon: '\ud83c\udfc1', klasse: 'fase-klaar', label: 'afgelopen' };
+  if (afgelopen) return { sleutel: 'afgelopen', icoon: '\ud83c\udfc1', klasse: 'fase-klaar', label: 'afgelopen' };
   if (begonnen) {
     return w.status === 'aanmelden'
-      ? { icoon: '\u26a0\ufe0f', klasse: 'fase-let-op', label: 'LIVE \u00b7 nog niet geloot' }
-      : { icoon: '\ud83d\udd34', klasse: 'fase-live', label: 'LIVE' };
+      ? { sleutel: 'live-ongeloot', icoon: '\u26a0\ufe0f', klasse: 'fase-let-op', label: 'LIVE \u00b7 nog niet geloot' }
+      : { sleutel: 'live', icoon: '\ud83d\udd34', klasse: 'fase-live', label: 'LIVE' };
   }
-  if (w.status === 'aanmelden') return { icoon: '\ud83d\udccb', klasse: 'fase-aanmelden', label: 'aanmelden open' };
-  if (w.status === 'stekkeuze') return { icoon: '\ud83c\udfb2', klasse: 'fase-loting', label: 'loting bezig' };
-  return { icoon: '\u23f3', klasse: 'fase-wacht', label: 'wacht op start' };
+  if (w.status === 'aanmelden') return { sleutel: 'aanmelden', icoon: '\ud83d\udccb', klasse: 'fase-aanmelden', label: 'aanmelden open' };
+  if (w.status === 'stekkeuze') return { sleutel: 'loting', icoon: '\ud83c\udfb2', klasse: 'fase-loting', label: 'loting bezig' };
+  return { sleutel: 'wacht', icoon: '\u23f3', klasse: 'fase-wacht', label: 'wacht op start' };
 }
 
 // kleine kenmerk-iconen: speltype en extra's, met titel voor de uitleg
@@ -853,10 +853,11 @@ function renderSu() {
   if (zoekVeld) {
     zoekVeld.addEventListener('input', () => {
       SU_ZOEK = zoekVeld.value;
+      const cursor = zoekVeld.selectionStart;
       suActiviteit();
       renderSu();
       const nieuw = $('#su-zoek');
-      if (nieuw) { nieuw.focus(); nieuw.setSelectionRange(nieuw.value.length, nieuw.value.length); }
+      if (nieuw) { nieuw.focus(); nieuw.setSelectionRange(cursor, cursor); }
     });
   }
   document.querySelectorAll('[data-su-detail]').forEach((b) => {
@@ -916,7 +917,7 @@ function orgWedstrijdKaart(w, nuMs) {
   const teller = w.max_teams ? `${w.teams}/${w.max_teams}` : `${w.teams}`;
   const fase = wedstrijdFase(w, nuMs);
   // de organisator ziet iets meer detail dan de beheerder: bezetting erbij
-  const statusTekst = fase.label === 'aanmelden open'
+  const statusTekst = fase.sleutel === 'aanmelden'
     ? (vol ? `✅ compleet (${teller}) · klaar voor loting` : `aanmelden open · ${teller} aangemeld`)
     : fase.label;
   const gekoppeld = SEIZOEN_PER_CODE[w.code];
