@@ -342,6 +342,8 @@ begin
   select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code)) for update;
   if not found then raise exception 'wedstrijd_niet_gevonden'; end if;
   if v_w.status <> 'aanmelden' then raise exception 'aanmelden_gesloten'; end if;
+  -- Codex v10: ook een nooit-gelote wedstrijd sluit bij de eindtijd
+  if pg_catalog.now() >= v_w.eind_ts then raise exception 'wedstrijd_afgelopen'; end if;
   if v_w.max_teams is not null and
      (select count(*) from wedstrijd.teams where wedstrijd_id = v_w.id) >= v_w.max_teams then
     raise exception 'wedstrijd_vol';
@@ -359,8 +361,6 @@ begin
   returning * into v_team;
   return json_build_object('team_id', v_team.id, 'token', v_team.token,
                            'deelnemer_code', v_team.deelnemer_code);
-exception when unique_violation then
-  raise exception 'naam_bestaat_al';
 end $function$;
 
 CREATE OR REPLACE FUNCTION public.w_login_deelnemer(p_code text)
@@ -570,6 +570,19 @@ begin
   return json_build_object('ok', true);
 end $function$;
 
+CREATE OR REPLACE FUNCTION wedstrijd.max_koppels()
+ RETURNS integer
+ LANGUAGE sql
+ STABLE
+AS $function$
+  with segmenten as (
+    select positie - row_number() over (order by positie) as groep
+    from wedstrijd.stek_ring
+  )
+  select coalesce(sum(floor(aantal / 2))::int, 0)
+  from (select count(*) as aantal from segmenten group by groep) s;
+$function$;
+
 CREATE OR REPLACE FUNCTION public.w_start_stekkeuze(p_code text, p_pin text)
  RETURNS json
  LANGUAGE plpgsql
@@ -591,8 +604,14 @@ begin
     v_capaciteit := jsonb_array_length(v_w.zones);
     if v_teams > v_capaciteit then raise exception 'te_veel_teams_voor_zones'; end if;
   else
-    select count(*) into v_capaciteit from wedstrijd.stek_ring;
-    if v_teams * (case when v_w.mode = 'koppel' then 2 else 1 end) > v_capaciteit then
+    if v_w.mode = 'koppel' then
+      -- Codex v10: niet stekken/2, maar het aantal paren dat fysiek naast
+      -- elkaar KAN liggen (de ring heeft een onderbreking)
+      v_capaciteit := wedstrijd.max_koppels();
+    else
+      select count(*) into v_capaciteit from wedstrijd.stek_ring;
+    end if;
+    if v_teams > v_capaciteit then
       raise exception 'te_veel_teams_voor_stekken';
     end if;
   end if;
@@ -1451,13 +1470,16 @@ CREATE OR REPLACE FUNCTION public.w_su_org_wachtwoord(p_wachtwoord text, p_nieuw
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
+declare
+  v_beheerder text;
 begin
+  select beheerder_wachtwoord into v_beheerder
+  from wedstrijd.instellingen where id = 1 for update;
   perform wedstrijd.su_check(p_wachtwoord);
   if coalesce(length(trim(p_nieuw)), 0) < 6 then
     raise exception 'org_wachtwoord_te_kort';
   end if;
-  if exists (select 1 from wedstrijd.instellingen
-             where id = 1 and beheerder_wachtwoord = trim(p_nieuw)) then
+  if v_beheerder = trim(p_nieuw) then
     raise exception 'wachtwoord_gelijk_aan_beheerder';
   end if;
   update wedstrijd.instellingen set organisator_wachtwoord = trim(p_nieuw) where id = 1;
@@ -1470,22 +1492,24 @@ CREATE OR REPLACE FUNCTION public.w_su_wachtwoord(p_wachtwoord text, p_nieuw tex
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
+declare
+  v_huidig text;
+  v_org text;
 begin
-  -- idempotente retry (Codex v9 P1-3): als het nieuwe wachtwoord al het
-  -- huidige is, was een eerdere poging (waarvan het antwoord verloren ging)
-  -- al geslaagd. Raden via dit pad is niet goedkoper dan via su_check:
-  -- een fout kandidaat-wachtwoord valt door naar su_check met pg_sleep.
-  if exists (select 1 from wedstrijd.instellingen
-             where id = 1 and beheerder_wachtwoord is not null
-               and beheerder_wachtwoord = trim(p_nieuw)) then
+  -- Codex v10: eerst locken, dan pas lezen en schrijven, anders kunnen twee
+  -- gelijktijdige wijzigingen elkaar overschrijven (lock-out van de enige beheerder)
+  select beheerder_wachtwoord, organisator_wachtwoord into v_huidig, v_org
+  from wedstrijd.instellingen where id = 1 for update;
+  -- idempotente retry (v9): het antwoord van een geslaagde poging kan verloren
+  -- zijn gegaan; opnieuw dezelfde wijziging sturen mag dan geen fout geven
+  if v_huidig is not null and v_huidig = trim(p_nieuw) then
     return json_build_object('ok', true, 'al_gewijzigd', true);
   end if;
   perform wedstrijd.su_check(p_wachtwoord);
   if coalesce(length(trim(p_nieuw)), 0) < 12 then
     raise exception 'beheerder_wachtwoord_te_kort';
   end if;
-  if exists (select 1 from wedstrijd.instellingen
-             where id = 1 and organisator_wachtwoord = trim(p_nieuw)) then
+  if v_org = trim(p_nieuw) then
     raise exception 'wachtwoord_gelijk_aan_org';
   end if;
   update wedstrijd.instellingen set beheerder_wachtwoord = trim(p_nieuw) where id = 1;

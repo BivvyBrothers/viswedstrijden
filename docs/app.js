@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 60; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 61; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -447,6 +447,7 @@ function initHome() {
     }
     ADMIN_OPEN = false;
     ROL = 'deelnemer';
+    wisOrgScherm();
     location.hash = '';
   });
 
@@ -653,12 +654,26 @@ let SU_KLANT = null;   // geselecteerde klant in het beheeroverzicht
 let SU_ZOEK = '';      // zoekterm op wedstrijdnaam/code
 let SU_REQ = 0;        // generatieteller: laat een laat antwoord nooit een verlaten scherm vullen (Codex v9 P2-4)
 let SU_LAATST = 0;     // laatste su-activiteit voor de inactiviteitslimiet (Codex v9 P2-5)
+let SU_OPGEHAALD = 0;  // Date.now() bij het ophalen van SU_DATA, voor een lopende klok
 let SU_WAKER = null;
 const SU_MAX_INACTIEF = 15 * 60 * 1000;
 let SU_FILTER = 'alle'; // alle | actief | afgelopen
 let SU_OPEN_CODE = null; // wedstrijd met uitgeklapte details
 
 // pins en overzicht horen niet in memory/DOM achter te blijven (Codex v6 P2-2)
+// spiegelbeeld van wisSuScherm: organisator-state en gevoelige DOM leegmaken
+// bij uitloggen (Codex v10)
+function wisOrgScherm() {
+  ORG_DATA = null;
+  ORG_SEIZOENEN = [];
+  SEIZOEN_PER_CODE = {};
+  ['#org-actief', '#org-verleden', '#org-seizoenen', '#org-zones'].forEach((s) => {
+    const el = $(s);
+    if (!el) return;
+    if ('value' in el) el.value = ''; else el.innerHTML = '';
+  });
+}
+
 function wisSuScherm() {
   if (SU_WAKER) { clearInterval(SU_WAKER); SU_WAKER = null; }
   SU_DATA = null;
@@ -700,6 +715,7 @@ async function laadSu() {
     const data = await rpc('w_su_overzicht', { p_wachtwoord: sessie.suWw() || '' });
     if (mijnReq !== SU_REQ || location.hash !== '#/beheerder') return; // verlaten: niets vullen
     SU_DATA = data;
+    SU_OPGEHAALD = Date.now();
     suActiviteit();
     startSuWaker();
     renderSu();
@@ -795,7 +811,9 @@ function renderSu() {
       \u00b7 push-sleutels: ${i.heeft_vapid && i.heeft_push_secret ? 'ok' : 'ONTBREKEN'}</p>
     <button id="su-alleen-lezen" class="btn${i.alleen_lezen ? '' : ' gevaar'}">${i.alleen_lezen
       ? 'Zet alleen-lezen UIT voor ALLE omgevingen' : 'Zet alleen-lezen AAN voor ALLE omgevingen'}</button>`;
-  const nuMs = new Date(SU_DATA.server_now).getTime();
+  // servertijd + verstreken tijd sinds het ophalen, anders blijft een wedstrijd
+  // "aanmelden open" heten terwijl hij allang begonnen is (Codex v10)
+  const nuMs = new Date(SU_DATA.server_now).getTime() + (Date.now() - SU_OPGEHAALD);
   const klanten = SU_DATA.klanten || [];
   if (!klanten.some((k) => k.slug === SU_KLANT)) SU_KLANT = klanten.length ? klanten[0].slug : null;
   const actieve = klanten.find((k) => k.slug === SU_KLANT);
@@ -945,8 +963,8 @@ function orgWedstrijdKaart(w, nuMs) {
       · kijkcode <b class="codegroot klein-code">${esc(w.kijk_code)}</b></div>
     ${seizoenRegel}
     <div class="row org-acties">
-      <button class="btn primary" data-org-open="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">Openen &amp; beheren</button>
-      ${w.status === 'aanmelden' && actief ? `<button class="btn" data-org-loting="${esc(w.code)}" data-pin="${esc(w.admin_pin)}">🎲 Start loting</button>` : ''}
+      <button class="btn primary" data-org-open="${esc(w.code)}">Openen &amp; beheren</button>
+      ${w.status === 'aanmelden' && actief ? `<button class="btn" data-org-loting="${esc(w.code)}">🎲 Start loting</button>` : ''}
       <button class="btn gevaar" data-org-verwijder="${esc(w.code)}" data-naam="${esc(w.naam)}">🗑️</button>
     </div>
   </div>`;
@@ -969,17 +987,22 @@ function renderOrg() {
     ? voorbij.map((w) => orgWedstrijdKaart(w, nuMs)).join('')
     : '<p class="muted">Nog geen afgeronde wedstrijden.</p>';
 
+  const orgPinVan = (code) => (ORG_DATA?.wedstrijden || []).find((w) => w.code === code)?.admin_pin || null;
   document.querySelectorAll('[data-org-open]').forEach((b) => {
     b.onclick = () => {
-      sessie.zetPin(b.dataset.orgOpen, b.dataset.pin);
+      const pin = orgPinVan(b.dataset.orgOpen);
+      if (!pin) return;
+      sessie.zetPin(b.dataset.orgOpen, pin);
       location.hash = '#/w/' + b.dataset.orgOpen;
     };
   });
   document.querySelectorAll('[data-org-loting]').forEach((b) => {
     b.onclick = () => tikNogmaals(b, '⚠️ Tik nogmaals: loting starten', async () => {
+      const pin = orgPinVan(b.dataset.orgLoting);
+      if (!pin) return;
       try {
-        await rpc('w_start_stekkeuze', { p_code: b.dataset.orgLoting, p_pin: b.dataset.pin });
-        sessie.zetPin(b.dataset.orgLoting, b.dataset.pin);
+        await rpc('w_start_stekkeuze', { p_code: b.dataset.orgLoting, p_pin: pin });
+        sessie.zetPin(b.dataset.orgLoting, pin);
         location.hash = '#/w/' + b.dataset.orgLoting;
       } catch (err) { toast(foutTekst(err)); }
     });
@@ -1286,7 +1309,11 @@ function klassementRijen() {
     if (!r) continue;
     r.totaal += v.gewicht_gram;
     r.aantal += 1;
-    if (!r.grootste || v.gewicht_gram > r.grootste.gewicht_gram) r.grootste = v;
+    // bij exact gelijk gewicht wint de VROEGSTE vangst: dat is ook de tiebreak
+    // waarop het klassement sorteert (Codex v10)
+    if (!r.grootste || v.gewicht_gram > r.grootste.gewicht_gram
+        || (v.gewicht_gram === r.grootste.gewicht_gram
+            && new Date(v.created_at) < new Date(r.grootste.created_at))) r.grootste = v;
   }
   return [...perTeam.values()].filter((r) => r.aantal > 0);
 }
@@ -1876,6 +1903,7 @@ function initWedstrijd() {
       const data = await rpc('w_su_overzicht', { p_wachtwoord: ww });
       if (location.hash !== '#/beheerder') return; // route verlaten tijdens login: niets bewaren
       SU_DATA = data;
+      SU_OPGEHAALD = Date.now();
       sessie.zetSuWw(ww);
       suActiviteit();
       startSuWaker();
