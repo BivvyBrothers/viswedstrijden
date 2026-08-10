@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 58; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 59; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -590,14 +590,14 @@ async function laadOrg(eerste) {
 
 /* ---------- seizoenenbeheer (organisatie) ---------- */
 let ORG_SEIZOENEN = null;      // lijst uit w_org_seizoenen
-let SEIZOEN_PER_CODE = {};     // wedstrijdcode -> { id, ex }
+let SEIZOEN_PER_CODE = {};     // wedstrijdcode -> { id, naam, ex }
 
 async function laadOrgSeizoenen() {
   try {
     ORG_SEIZOENEN = await rpc('w_org_seizoenen', { p_wachtwoord: sessie.orgWw() || '' });
     SEIZOEN_PER_CODE = {};
     for (const z of ORG_SEIZOENEN) {
-      for (const w of z.wedstrijden) SEIZOEN_PER_CODE[w.code] = { id: z.id, ex: w.ex_aequo || '' };
+      for (const w of z.wedstrijden) SEIZOEN_PER_CODE[w.code] = { id: z.id, naam: z.naam, ex: w.ex_aequo || '' };
     }
     renderOrgSeizoenen();
     renderOrg();
@@ -718,22 +718,49 @@ async function laadSu() {
   }
 }
 
+// Fase van een wedstrijd als icoon + label + kleur. Eén bron voor de
+// organisator- en beheerderslijst, zodat een lange lijst in één oogopslag
+// te scannen is (idee van Patrick, geinspireerd op VISDEX-competitietypes).
+function wedstrijdFase(w, nuMs) {
+  const afgelopen = new Date(w.eind_ts).getTime() < nuMs;
+  const begonnen = new Date(w.start_ts).getTime() <= nuMs;
+  if (afgelopen) return { icoon: '\ud83c\udfc1', klasse: 'fase-klaar', label: 'afgelopen' };
+  if (begonnen) {
+    return w.status === 'aanmelden'
+      ? { icoon: '\u26a0\ufe0f', klasse: 'fase-let-op', label: 'LIVE \u00b7 nog niet geloot' }
+      : { icoon: '\ud83d\udd34', klasse: 'fase-live', label: 'LIVE' };
+  }
+  if (w.status === 'aanmelden') return { icoon: '\ud83d\udccb', klasse: 'fase-aanmelden', label: 'aanmelden open' };
+  if (w.status === 'stekkeuze') return { icoon: '\ud83c\udfb2', klasse: 'fase-loting', label: 'loting bezig' };
+  return { icoon: '\u23f3', klasse: 'fase-wacht', label: 'wacht op start' };
+}
+
+// kleine kenmerk-iconen: speltype en extra's, met titel voor de uitleg
+function wedstrijdKenmerken(w, seizoenNaam) {
+  const uit = [w.mode === 'koppel'
+    ? '<span class="w-kenmerk" title="Koppels: twee stekken naast elkaar">\ud83d\udc65 koppels</span>'
+    : '<span class="w-kenmerk" title="Individueel: een stek per visser">\ud83c\udfa3 individueel</span>'];
+  if (w.heeft_zones) uit.push('<span class="w-kenmerk" title="Loting per zone">\ud83d\uddfa\ufe0f zones</span>');
+  if (seizoenNaam) uit.push(`<span class="w-kenmerk" title="Telt mee voor een seizoenscompetitie">\ud83c\udfc5 ${esc(seizoenNaam)}</span>`);
+  return uit.join('');
+}
+
 // compacte rij per wedstrijd; codes en pin zitten in een uitklapbare
 // detailregel zodat de lijst scanbaar blijft (Codex v9 UI-5)
 function suKaart(w, nuMs) {
-  const actief = new Date(w.eind_ts).getTime() >= nuMs;
-  const live = actief && new Date(w.start_ts).getTime() <= nuMs;
   const open = SU_OPEN_CODE === w.code;
+  const fase = wedstrijdFase(w, nuMs);
   return `<div class="su-rij${open ? ' su-rij-open' : ''}">
     <button class="su-rij-kop" data-su-detail="${esc(w.code)}" aria-expanded="${open}">
+      <span class="w-icoon ${fase.klasse}" aria-hidden="true">${fase.icoon}</span>
       <span class="su-rij-naam">
         <b>${esc(w.naam)}</b>
-        <span class="muted klein">${fmtDatumTijd(w.start_ts)} \u00b7 ${w.mode === 'koppel' ? 'koppels' : 'individueel'}
-          \u00b7 ${w.teams} team${w.teams === 1 ? '' : 's'} \u00b7 ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'}${
-          w.seizoen_naam ? ' \u00b7 ' + esc(w.seizoen_naam) : ''}</span>
+        <span class="muted klein">${fmtDatumTijd(w.start_ts)} \u00b7 ${w.teams} team${w.teams === 1 ? '' : 's'}
+          \u00b7 ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'}</span>
+        <span class="w-kenmerken">
+          <span class="chip klein-chip ${fase.klasse}">${esc(fase.label)}</span>
+          ${wedstrijdKenmerken(w, w.seizoen_naam)}</span>
       </span>
-      <span class="chip${live ? ' live' : ''}${!actief ? ' voorbij' : ''}">${
-        !actief ? 'afgelopen' : live ? '\u25cf LIVE' : esc(w.status)}</span>
       <span class="su-rij-pijl" aria-hidden="true">${open ? '\u2304' : '\u203a'}</span>
     </button>
     ${open ? `<div class="su-rij-detail">
@@ -885,14 +912,13 @@ function renderSu() {
 
 function orgWedstrijdKaart(w, nuMs) {
   const actief = new Date(w.eind_ts).getTime() >= nuMs;
-  const live = actief && new Date(w.start_ts).getTime() <= nuMs;
   const vol = w.max_teams && w.teams >= w.max_teams;
   const teller = w.max_teams ? `${w.teams}/${w.max_teams}` : `${w.teams}`;
-  const statusTekst = live ? (w.status === 'aanmelden' ? '● LIVE · nog niet geloot' : '● LIVE')
-    : !actief ? 'afgelopen'
-    : w.status === 'aanmelden' ? (vol ? `✅ compleet (${teller}) · klaar voor loting` : `aanmelden open · ${teller} aangemeld`)
-    : w.status === 'stekkeuze' ? 'loting/stekkeuze bezig'
-    : 'wacht op start';
+  const fase = wedstrijdFase(w, nuMs);
+  // de organisator ziet iets meer detail dan de beheerder: bezetting erbij
+  const statusTekst = fase.label === 'aanmelden open'
+    ? (vol ? `✅ compleet (${teller}) · klaar voor loting` : `aanmelden open · ${teller} aangemeld`)
+    : fase.label;
   const gekoppeld = SEIZOEN_PER_CODE[w.code];
   const seizoenRegel = (ORG_SEIZOENEN && ORG_SEIZOENEN.length) ? `<div class="row org-seizoen muted klein" style="align-items:center; gap:6px; margin-top:4px">seizoen
       <select data-org-seizoen="${esc(w.code)}"><option value="">geen</option>
@@ -907,11 +933,12 @@ function orgWedstrijdKaart(w, nuMs) {
     </div>` : '';
   return `<div class="org-w">
     <div class="org-w-kop">
+      <span class="w-icoon ${fase.klasse}" aria-hidden="true">${fase.icoon}</span>
       <b>${esc(w.naam)}</b>
-      <span class="chip${live ? ' live' : ''}${!actief ? ' voorbij' : ''}">${esc(statusTekst)}</span>
+      <span class="chip ${fase.klasse}">${esc(statusTekst)}</span>
     </div>
+    <div class="w-kenmerken">${wedstrijdKenmerken(w, gekoppeld ? gekoppeld.naam : null)}</div>
     <div class="muted klein">${fmtDatumTijd(w.start_ts)} tot ${fmtDatumTijd(w.eind_ts)} ·
-      ${w.mode === 'koppel' ? 'koppels' : 'individueel'}${w.heeft_zones ? ' · zones' : ''} ·
       ${w.max_teams ? `${w.teams}/${w.max_teams}` : w.teams} team${w.teams === 1 && !w.max_teams ? '' : 's'} · ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'}</div>
     <div class="org-codes muted klein">deelnemerscode <b class="codegroot klein-code">${esc(w.code)}</b>
       · kijkcode <b class="codegroot klein-code">${esc(w.kijk_code)}</b></div>

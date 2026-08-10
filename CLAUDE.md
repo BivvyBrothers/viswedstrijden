@@ -263,6 +263,23 @@ detailregel, gevaarlijke acties in een apart blok "Toegang en blokkades"
 onderaan. Nog open (hardening-ronde bij klant 2): rate-limit vóór de DB op
 `w_su_*`, su-login-token, `w_su_klant` met paginering.
 
+## Wedstrijd-iconen in de lijsten (v59, 18 jul 2026)
+
+Idee van Patrick (geinspireerd op de competitietypes van VISDEX): een lange
+wedstrijdlijst moet in één oogopslag te scannen zijn. Twee gedeelde helpers
+in app.js, gebruikt door ZOWEL `orgWedstrijdKaart` (organisator) als
+`suKaart` (beheerder), zodat beide lijsten dezelfde taal spreken:
+- `wedstrijdFase(w, nuMs)` geeft `{icoon, klasse, label}` per fase:
+  📋 aanmelden open, 🎲 loting bezig, ⏳ wacht op start, 🔴 LIVE,
+  ⚠️ LIVE maar nog niet geloot, 🏁 afgelopen. De klasse (`fase-*`) kleurt
+  zowel het ronde icoonvlak (`.w-icoon`) als de statuschip.
+- `wedstrijdKenmerken(w, seizoenNaam)` geeft chips voor het speltype en de
+  extra's: 🎣 individueel / 👥 koppels, 🗺️ zones, 🏅 <seizoensnaam>.
+  Elke chip heeft een `title` met de uitleg.
+Bij een nieuw speltype (bijv. witvis of lengte-modus) hier een icoon
+toevoegen, niet per lijst apart. `SEIZOEN_PER_CODE` bevat sindsdien ook
+`naam` (was alleen id + ex).
+
 ## Documentatie-oppervlakken (WERKAFSPRAAK sinds 15 jul 2026)
 
 Bij ELKE nieuwe feature of gedragswijziging die gebruikers raakt worden ALLE

@@ -285,6 +285,29 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .rolknop.actief .rol-icoon { background: #ffffff; }
 .rolform { margin-top: 4px; }
 
+/* wedstrijd-fase iconen: zelfde taal in de organisator- en beheerderslijst */
+.w-icoon {
+  flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px; background: var(--zand); line-height: 1;
+}
+.w-icoon.fase-live { background: #dcedc8; }
+.w-icoon.fase-let-op { background: #fdf3e3; }
+.w-icoon.fase-aanmelden { background: #e3ecf5; }
+.w-icoon.fase-loting { background: #ece4f2; }
+.w-icoon.fase-wacht { background: var(--zand); }
+.w-icoon.fase-klaar { background: var(--zand-donker); }
+.chip.fase-live { background: #dcedc8; color: var(--groen); }
+.chip.fase-let-op { background: #fdf3e3; color: #8a5313; }
+.chip.fase-klaar { background: var(--zand-donker); color: var(--grijs); }
+.w-kenmerken { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.w-kenmerk {
+  background: var(--zand); color: var(--grijs); border-radius: 999px;
+  padding: 2px 9px; font-size: 11.5px; font-weight: 600; white-space: nowrap;
+}
+.klein-chip { font-size: 11.5px; padding: 2px 9px; }
+.org-w-kop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
 /* beheerdersomgeving (KemblincK support) */
 .su-eyebrow { color: var(--oranje); }
 .su-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
