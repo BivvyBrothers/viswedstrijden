@@ -293,6 +293,21 @@ Bij een nieuw speltype (bijv. witvis of lengte-modus) hier een icoon
 toevoegen, niet per lijst apart. `SEIZOEN_PER_CODE` bevat sindsdien ook
 `naam` (was alleen id + ex).
 
+## UX aan de waterkant (v65, 18 jul 2026)
+
+Uit review v8 (UX-2/9/10), gericht op gebruik met natte handen en fel zonlicht:
+- **Kaart heeft twee standen**: "Overzicht" (het hele water past op het scherm,
+  `.kaart-houder.passend` zet `min-width` op 0) en "Inzoomen" (de oude 700px
+  voor leesbare steknummers). De keuze staat in `localStorage.kaartzoom`.
+- **Tabbalk wrapt onder 560px** in twee rijen in plaats van horizontaal
+  scrollen; geen half zichtbare tab meer.
+- **Zwevende hoofdactie** `#snel-vangst`: alleen voor een deelnemer met een
+  team, tijdens een LOPENDE wedstrijd (`fase() === 'live'`), en niet op de
+  vangsten-tab zelf. `renderSnelVangst()` draait bij elke render en bij elke
+  tabwissel.
+- **Landing**: directe demo-links per rol (kijker `/demo/#/k/KIJKJE`,
+  deelnemer `/demo/#/w/DEMOJA`).
+
 ## Documentatie-oppervlakken (WERKAFSPRAAK sinds 15 jul 2026)
 
 Bij ELKE nieuwe feature of gedragswijziging die gebruikers raakt worden ALLE

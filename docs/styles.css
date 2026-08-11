@@ -122,6 +122,11 @@ label input, label select { margin-top: 5px; font-weight: 400; }
   display: flex; gap: 4px; overflow-x: auto;
   background: var(--zand); padding: 8px 0;
 }
+@media (max-width: 560px) {
+  /* liever twee nette rijen dan een half zichtbare tab achter een scrollbalk */
+  .tabs { flex-wrap: wrap; overflow-x: visible; }
+  .tabs button { flex: 1 1 30%; font-size: 13px; padding: 8px 6px; min-height: 40px; }
+}
 .tabs button {
   flex: 1; white-space: nowrap; border: none; border-radius: 999px;
   padding: 9px 12px; background: #fff; color: var(--grijs); font-weight: 700; cursor: pointer;
@@ -133,6 +138,12 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 /* kaart */
 .kaart-houder { width: 100%; overflow-x: auto; border-radius: 10px; -webkit-overflow-scrolling: touch; }
 .kaart-houder svg { min-width: 700px; width: 100%; height: auto; display: block; }
+/* overzichtstand: het hele water past op het scherm (zoeken zonder vegen),
+   inzoomstand houdt de oude minimale breedte voor de losse steknummers */
+.kaart-houder.passend { overflow-x: hidden; }
+.kaart-houder.passend svg { min-width: 0; }
+.kaart-knoppen { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.kaart-zoom button { font-size: 13px; padding: 7px 12px; }
 .kaart-legenda { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--grijs); }
 .kaart-3d-rij { margin: 10px 0 0; }
 .kaart-3d-rij .btn { font-size: 14px; }
@@ -286,6 +297,20 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .rolform { margin-top: 4px; }
 
 .regel-uitleg { margin: 0 0 8px; }
+
+/* snelknop tijdens een lopende wedstrijd: aan de waterkant is 'vangst
+   registreren' de enige handeling die er echt toe doet */
+.snel-vangst {
+  position: fixed; z-index: 18;
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  background: var(--oranje); color: #fff; border: none;
+  border-radius: 999px; padding: 14px 22px; font-size: 16px; font-weight: 800;
+  box-shadow: 0 6px 18px rgba(42, 39, 33, .32); cursor: pointer;
+  min-height: 52px;
+}
+.snel-vangst[hidden] { display: none; }
+.snel-vangst:active { transform: translateX(-50%) scale(.97); }
 
 /* wedstrijd-fase iconen: zelfde taal in de organisator- en beheerderslijst */
 .w-icoon {

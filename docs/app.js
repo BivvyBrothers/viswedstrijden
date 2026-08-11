@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 64; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 65; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -628,6 +628,18 @@ function renderAlles(eerste) {
   renderVangsten();
   if (ROL === 'deelnemer') renderTeamTab();
   if (ROL === 'organisator') renderBeheer(eerste);
+  renderSnelVangst();
+}
+
+// Zwevende hoofdactie voor de deelnemer zolang de wedstrijd loopt: registreren
+// is dan de enige handeling die telt, en je hebt vaak natte handen of felle zon.
+// Verdwijnt zodra je op de vangsten-tab staat (daar staat het formulier al).
+function renderSnelVangst() {
+  const knop = $('#snel-vangst');
+  if (!knop) return;
+  const opVangstenTab = !$('#tab-vangsten')?.hidden;
+  knop.hidden = !(ROL === 'deelnemer' && fase() === 'live'
+    && !!sessie.team(CODE) && !opVangstenTab);
 }
 
 /* ---------- organisatie-omgeving ---------- */
@@ -1976,6 +1988,7 @@ function initWedstrijd() {
     if (!b) return;
     document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('actief', x === b));
     document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-' + b.dataset.tab; });
+    renderSnelVangst();  // knop hoort weg te zijn op de vangsten-tab zelf
   });
 
   $('#kl-totaal').addEventListener('click', () => { KLASSEMENT_MODE = 'totaal'; renderKlassement(); });
@@ -2238,6 +2251,29 @@ function initWedstrijd() {
       toast('Uitgelogd bij dit team. Met je persoonlijke code log je weer in.');
       laadState(false);
     }));
+
+  // kaart: overzicht (alles past) of inzoomen (steknummers goed leesbaar)
+  const kaartHouder = $('#kaart-houder');
+  const zetKaartZoom = (stand) => {
+    if (!kaartHouder) return;
+    kaartHouder.classList.toggle('passend', stand === 'passend');
+    document.querySelectorAll('[data-kaartzoom]').forEach((b) =>
+      b.classList.toggle('actief', b.dataset.kaartzoom === stand));
+    try { localStorage.setItem('kaartzoom', stand); } catch { /* privémodus */ }
+  };
+  document.querySelectorAll('[data-kaartzoom]').forEach((b) => {
+    b.addEventListener('click', () => zetKaartZoom(b.dataset.kaartzoom));
+  });
+  try {
+    const bewaard = localStorage.getItem('kaartzoom');
+    if (bewaard) zetKaartZoom(bewaard);
+  } catch { /* privémodus */ }
+
+  $('#snel-vangst')?.addEventListener('click', () => {
+    activateTab('vangsten');
+    renderSnelVangst();
+    $('#v-gewicht')?.focus();
+  });
 
   initBeheerKnoppen();
 

@@ -315,7 +315,13 @@
   <section id="tab-kaart" class="tab">
     <div class="card">
       <div id="kaart-melding" class="melding" hidden></div>
-      <div id="kaart-houder" class="kaart-houder"></div>
+      <div class="kaart-knoppen">
+        <div class="schakel kaart-zoom">
+          <button type="button" data-kaartzoom="passend" class="actief">Overzicht</button>
+          <button type="button" data-kaartzoom="groot">Inzoomen</button>
+        </div>
+      </div>
+      <div id="kaart-houder" class="kaart-houder passend"></div>
       <div class="kaart-legenda">
         <span><i class="dot vrij"></i> vrij</span>
         <span><i class="dot bezet"></i> bezet</span>
@@ -484,6 +490,8 @@
     </div>
   </section>
 </main>
+
+<button id="snel-vangst" class="snel-vangst" hidden>⚖️ Vangst registreren</button>
 
 <div id="foto-groot" class="lightbox" role="dialog" aria-modal="true" aria-label="Afbeelding vergroot" hidden><img alt="vangstfoto"><button type="button" class="sluit" aria-label="Sluiten">✕</button></div>
 
