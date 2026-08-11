@@ -8,6 +8,10 @@
 // admin-pin (organisator) en uploadt pas daarna met de service-role sleutel,
 // naar een pad dat de SERVER kiest.
 //
+// Sinds 11 aug 2026 is dit de ENIGE schrijfroute: de anon-INSERT-policy op de
+// bucket is ingetrokken, er staat geen enkele policy meer op wedstrijd-fotos.
+// Valt deze functie uit, dan kan er dus ook niets meer geüpload worden.
+//
 // Aanroep: POST met headers
 //   x-w-code   wedstrijdcode
 //   x-w-token  teamtoken (deelnemer)   OF   x-w-pin  admin-pin (organisator)

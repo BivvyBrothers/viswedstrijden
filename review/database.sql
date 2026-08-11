@@ -153,7 +153,12 @@ alter table wedstrijd.push_subs enable row level security;
 alter table wedstrijd.stek_ring enable row level security;
 
 -- Storage: publieke bucket 'wedstrijd-fotos' (public read, geen listing;
--- upload met anon key; paden 'CODE/uuid.jpg'; max 5MB, alleen afbeeldingen).
+-- paden 'CODE/uuid.jpg', max 5MB, alleen JPEG). Sinds 11 aug 2026 staat er
+-- GEEN policy meer op storage.objects voor deze bucket: schrijven kan alleen
+-- de edge function 'upload-vangstfoto' (service-role, omzeilt RLS) na controle
+-- van teamtoken of admin-pin. De oude policy "wedstrijd fotos upload"
+-- (INSERT voor anon+authenticated) is gedropt in migratie
+-- wedstrijd_fotos_anon_insert_intrekken.
 
 -- =====================================================================
 -- Hulpfuncties (schema wedstrijd + extensions)

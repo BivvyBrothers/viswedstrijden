@@ -58,9 +58,12 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
   **Upload loopt sinds v64 via de edge function `upload-vangstfoto`**
   (kopie in `review/upload-vangstfoto.ts`): die controleert eerst het teamtoken
   of de admin-pin, kiest zelf het pad en uploadt met de service-role sleutel.
-  Rate-limit 20 uploads per IP per minuut. OPEN: de anon-INSERT-policy op de
-  bucket staat nog aan zodat PWA's met oude code blijven werken; intrekken zodra
-  de client-versie overal is opgehaald (dan pas is hoog-2 helemaal dicht).
+  Rate-limit 20 uploads per IP per minuut. **De anon-INSERT-policy op de bucket
+  is ingetrokken op 11 aug 2026** (migratie `wedstrijd_fotos_anon_insert_intrekken`),
+  ruim drie weken na v64: er staat nu GEEN enkele policy meer op `wedstrijd-fotos`,
+  dus schrijven kan alleen nog de edge function (service-role omzeilt RLS) en
+  lezen loopt via de public-bucket-URL. Een directe upload met de publieke sleutel
+  geeft nu 403 "new row violates row-level security policy". Codex v10 hoog-2 dicht.
 - **API-model:** tabellen hebben RLS aan zonder policies; ALLE toegang loopt via
   security-definer RPC's `w_*` in het public schema. Elke wijziging aan spelregels
   hoort dus in een RPC-migratie, niet in de frontend. Frontend praat via kale
@@ -318,12 +321,18 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
    was v49 nog info.html): hero "Loot. Vis. Win." met Inloggen-knop,
    eyebrow-secties, telefoon-mockups met demo-screenshots uit
    `docs/schermen/`, privacy-blok, FAQ. Bij zichtbare UI-wijzigingen de
-   screenshots verversen: headless Chrome `--screenshot --window-size=430,860
-   --force-device-scale-factor=2 --virtual-time-budget=9000`
-   (klassement = /demo/#/k/KIJKJE, home = /demo/, kaart = de ECHTE
-   NPHV-dieptekaart via /nphv/#/w/499QWP, testwedstrijd "Voorjaarswedstrijd";
-   die screenshot onderaan bijsnijden tot boven "Loting & volgorde" zodat er
-   GEEN deelnemersnamen op de publieke site komen, huidige crop 860x1440).
+   screenshots verversen met **`tools/mobiel_screenshot.mjs`** (CDP +
+   `mobile: true`, 390x844 @2x = 780x1688, verhouding 1:2,16). NIET met
+   `chrome --headless --screenshot --window-size`: zonder mobiele emulatie
+   negeert Chrome de viewport-meta, rendert het de pagina op schermbreedte en
+   levert het een beeld met te grote tekst, een halve tabbalk en afgekapte
+   kolommen | precies daarom leken de eerste mockups (860x1440, 1:1,67) op
+   tablets. Bronnen: klassement = /demo/#/k/KIJKJE, home = /demo/, kaart = de
+   ECHTE NPHV-dieptekaart via `/nphv/#/w/499QWP?t=<teamtoken uit de DB>`
+   (testwedstrijd "Voorjaarswedstrijd", klik "Kaart" + "Inzoomen"). Op die
+   kaartopname `#topcode` leegmaken (de wedstrijdcode geeft toegang tot de
+   deelnemerslijst) en vanaf scrollTop 0 fotograferen, zodat "Loting & volgorde"
+   met de deelnemersnamen NIET in beeld komt.
    `docs/info.html` is alleen nog een redirect naar /.
 2. `docs/inloggen/index.html` | inlogpagina met de organisatie-keuze
    (nieuwe tenants komen hier als kaart bij; nieuwe_tenant.py doet dat)

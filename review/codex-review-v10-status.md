@@ -89,6 +89,12 @@ gekomen.
   horen bij dezelfde hardening-ronde; upload via een Edge Function met
   teamtoken-controle, rate-limit vóór de database, langere persoonlijke
   codes. Vandaag geen productie-risico bij één klant, wel vóór klant 2.
+  **AFGEROND: v64 (18 jul) bracht de edge function; op 11 aug is ook de
+  anon-INSERT-policy op de bucket ingetrokken** (migratie
+  `wedstrijd_fotos_anon_insert_intrekken`), nadat alle clients ruim drie weken
+  de tijd hadden om v64+ op te halen. Geverifieerd: directe upload met de
+  publieke sleutel geeft 403 RLS, upload via de edge function met een geldig
+  teamtoken geeft 200, publieke leesroute onveranderd 200.
 - **Levenscyclus strakker afdwingen (middel 4, deels)**: het aanmelden na
   de eindtijd is nu dicht. De rest (vangst alleen bij status 'klaar', reset
   alleen vóór de start en zonder vangsten) vraagt een expliciete
