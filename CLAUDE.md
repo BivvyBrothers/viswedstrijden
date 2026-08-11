@@ -41,10 +41,17 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
   (start_url/scope ./), sw.js (eigen scope), version.json, instructies.html
   (+ print-pdf). Tenant-index verwijst naar gedeelde assets met absolute paden
   (/app.js). De oude root-sw.js is een self-destruct (unregister + cache wissen).
-  DATABASE is nog single-tenant: bij de tweede organisatie krijgen
-  instellingen/wedstrijden een tenant-kolom (eigen org-wachtwoord en
-  standaard_zones per water) en gaan de w_*-RPC's een p_water-parameter
-  meekrijgen vanuit config.js; dat is bewust uitgesteld tot die er is.
+  **DATABASE-TENANCY IS AF (18 jul 2026, migraties `wedstrijd_tenancy_stap1`
+  t/m `stap4`).** Organisatiewachtwoord, standaardzones en de alleen-lezen-vlag
+  staan per klant in `wedstrijd.klant_instellingen`; seizoenen hebben een
+  `klant_id`. Elke `w_org_*`-RPC (inclusief verwijderen en seizoensbeheer)
+  krijgt `p_klant` uit `config.js` (`const KLANT()` in app.js) en bepaalt de
+  klant via `wedstrijd.klant_van_org(p_wachtwoord, p_klant)`. LET OP: p_klant
+  is een SELECTOR, geen bewijs; de helper eist dat het wachtwoord bij die klant
+  hoort. Zonder p_klant geldt het oude gedrag (terugval op nphv), zodat oude
+  PWA-clients blijven werken. Platformbreed blijven in `instellingen`: VAPID,
+  push-secret en het beheerderswachtwoord. Een nieuwe klant heeft dus ook een
+  rij in `klant_instellingen` nodig (zie release-checklist).
 - **Backend:** Supabase-project "Samen" (`xyfvkmhkwcjqskxrcfrj`), schema **`wedstrijd`**
   (gedeeld project, LET OP: raak de andere schema's/tabellen daar niet aan).
   Foto's in publieke storage-bucket `wedstrijd-fotos` (max 5 MB, alleen afbeeldingen).
@@ -335,9 +342,11 @@ Bij elke release controleren:
 4. Elke statische HTML-pagina heeft bewust een eigen meta-CSP
    (instructiepagina's: script-src 'none').
 5. Bij wijzigingen aan gedeelde teksten: root- én tenant-instructies bijwerken.
-6. Nieuwe tenant: de klant-rij MOET in wedstrijd.klanten staan voordat de
-   omgeving live gaat (w_maak_wedstrijd faalt anders met klant_niet_gevonden;
-   nieuwe_tenant.py print de insert-SQL).
+6. Nieuwe tenant: de klant-rij MOET in wedstrijd.klanten staan én een rij in
+   wedstrijd.klant_instellingen (eigen organisatiewachtwoord, eventueel
+   standaardzones) voordat de omgeving live gaat; anders faalt inloggen met
+   org_wachtwoord_onjuist en aanmaken met klant_niet_gevonden.
+   nieuwe_tenant.py print beide insert-statements.
 7. Root-hash-test: `/#/k/KIJKJE` moet in /demo/ landen, `/#/org` in /nphv/
    (landing.js: kale root-hashes zijn legacy-NPHV; nieuwe tenants delen
    ALTIJD links met tenantpad, alleen de demo-kijkcode heeft een mapping).

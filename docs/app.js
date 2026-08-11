@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 62; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 63; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -99,6 +99,9 @@ async function uploadFoto(pad, blob) {
   if (!r.ok) throw new Error('ongeldige_foto');
   return pad;
 }
+// de klant-slug van deze omgeving; de server controleert altijd of het
+// wachtwoord bij deze klant hoort (tenancy-migratie)
+const KLANT = () => (typeof TENANT !== 'undefined' ? TENANT : null);
 const fotoUrl = (pad) => `${SB_URL}/storage/v1/object/public/${FOTO_BUCKET}/${pad}`;
 
 function parseGewicht(txt) {
@@ -430,7 +433,7 @@ function initHome() {
     const foutEl = $('#org-fout'); foutEl.hidden = true;
     const ww = $('#org-ww').value.trim();
     try {
-      const check = await rpc('w_org_check', { p_wachtwoord: ww });
+      const check = await rpc('w_org_check', { p_wachtwoord: ww, p_klant: KLANT() });
       sessie.zetOrgWw(ww);
       if ($('#org-zones').value.trim() === '') {
         $('#org-zones').value = zonesNaarTekst(check.standaard_zones);
@@ -458,7 +461,7 @@ function initHome() {
     try { geparsed = parseZones($('#org-zones').value); }
     catch (err) { foutEl.textContent = err.message; foutEl.hidden = false; return; }
     try {
-      const res = await rpc('w_org_standaard_zones', { p_wachtwoord: sessie.orgWw() || '', p_zones: geparsed.zones });
+      const res = await rpc('w_org_standaard_zones', { p_wachtwoord: sessie.orgWw() || '', p_zones: geparsed.zones, p_klant: KLANT() });
       okEl.textContent = res.zones === 0
         ? 'Vaste indeling gewist: nieuwe wedstrijden loten per losse stek.'
         : `Vaste indeling opgeslagen: ${zonesPreview(geparsed)}. Elke nieuwe wedstrijd gebruikt deze automatisch.`;
@@ -615,7 +618,7 @@ let ORG_DATA = null;
 
 async function laadOrg(eerste) {
   try {
-    const res = await rpc('w_org_wedstrijden', { p_wachtwoord: sessie.orgWw() || '' });
+    const res = await rpc('w_org_wedstrijden', { p_wachtwoord: sessie.orgWw() || '', p_klant: KLANT() });
     if (!res) { sessionStorage.removeItem('orgww'); location.hash = ''; return; }
     ORG_DATA = res;
     renderOrg();
@@ -629,7 +632,7 @@ let SEIZOEN_PER_CODE = {};     // wedstrijdcode -> { id, naam, ex }
 
 async function laadOrgSeizoenen() {
   try {
-    ORG_SEIZOENEN = await rpc('w_org_seizoenen', { p_wachtwoord: sessie.orgWw() || '' });
+    ORG_SEIZOENEN = await rpc('w_org_seizoenen', { p_wachtwoord: sessie.orgWw() || '', p_klant: KLANT() });
     SEIZOEN_PER_CODE = {};
     for (const z of ORG_SEIZOENEN) {
       for (const w of z.wedstrijden) SEIZOEN_PER_CODE[w.code] = { id: z.id, naam: z.naam, ex: w.ex_aequo || '' };
@@ -674,7 +677,7 @@ function renderOrgSeizoenen() {
   document.querySelectorAll('[data-seizoen-verwijder]').forEach((b) => {
     b.onclick = () => tikNogmaals(b, '⚠️ Definitief weg', async () => {
       try {
-        await rpc('w_org_seizoen_verwijder', { p_wachtwoord: sessie.orgWw() || '', p_id: b.dataset.seizoenVerwijder });
+        await rpc('w_org_seizoen_verwijder', { p_wachtwoord: sessie.orgWw() || '', p_id: b.dataset.seizoenVerwijder, p_klant: KLANT() });
         toast(`Seizoen "${b.dataset.naam}" verwijderd; de wedstrijden zelf blijven bestaan.`);
         laadOrgSeizoenen();
       } catch (err) { toast(foutTekst(err)); }
@@ -828,6 +831,12 @@ function suKaart(w, nuMs) {
   </div>`;
 }
 
+// instellingen van de klant die in de beheerder-tab geselecteerd staat
+function suKlantInstellingen() {
+  const k = (SU_DATA?.klanten || []).find((x) => x.slug === SU_KLANT);
+  return (k && k.instellingen) || { alleen_lezen: false, heeft_standaard_zones: false };
+}
+
 function renderSu() {
   if (!SU_DATA) return;
   $('#su-login').hidden = true;
@@ -837,19 +846,22 @@ function renderSu() {
     ['klanten', s.klanten], ['wedstrijden', s.wedstrijden], ['teams', s.teams],
     ['vangsten', s.vangsten], ['push', s.push_subs], ['seizoenen', s.seizoenen],
   ].map(([naam, waarde]) => `<div class="su-stat"><b>${waarde}</b><span>${naam}</span></div>`).join('');
+  // eerst de klantkeuze vaststellen; de instellingen eronder horen bij die klant
+  const klanten = SU_DATA.klanten || [];
+  if (!klanten.some((k) => k.slug === SU_KLANT)) SU_KLANT = klanten.length ? klanten[0].slug : null;
+  const ki = suKlantInstellingen();
+  const klantNaam = (SU_DATA.klanten || []).find((x) => x.slug === SU_KLANT)?.naam || SU_KLANT || '?';
   $('#su-instellingen').innerHTML = `
-    <p class="fout klein" style="margin-top:0">\u26a0\ufe0f Deze instellingen zijn GLOBAAL: ze gelden voor alle
-      omgevingen tegelijk (klant-apart komt met de tenancy-migratie).</p>
-    <p class="muted klein">alleen-lezen: <b>${i.alleen_lezen ? 'AAN (nieuwe wedstrijden geblokkeerd)' : 'uit'}</b>
-      \u00b7 vaste zones: ${i.heeft_standaard_zones ? 'ja' : 'nee'}
-      \u00b7 push-sleutels: ${i.heeft_vapid && i.heeft_push_secret ? 'ok' : 'ONTBREKEN'}</p>
-    <button id="su-alleen-lezen" class="btn${i.alleen_lezen ? '' : ' gevaar'}">${i.alleen_lezen
-      ? 'Zet alleen-lezen UIT voor ALLE omgevingen' : 'Zet alleen-lezen AAN voor ALLE omgevingen'}</button>`;
+    <p class="muted klein" style="margin-top:0">Deze instellingen gelden voor
+      <b>${esc(klantNaam)}</b>. Kies hierboven een andere klant om die aan te passen.</p>
+    <p class="muted klein">alleen-lezen: <b>${ki.alleen_lezen ? 'AAN (nieuwe wedstrijden geblokkeerd)' : 'uit'}</b>
+      \u00b7 vaste zones: ${ki.heeft_standaard_zones ? 'ja' : 'nee'}
+      \u00b7 push-sleutels (platform): ${i.heeft_vapid && i.heeft_push_secret ? 'ok' : 'ONTBREKEN'}</p>
+    <button id="su-alleen-lezen" class="btn${ki.alleen_lezen ? '' : ' gevaar'}">${ki.alleen_lezen
+      ? `Zet alleen-lezen UIT voor ${esc(klantNaam)}` : `Zet alleen-lezen AAN voor ${esc(klantNaam)}`}</button>`;
   // servertijd + verstreken tijd sinds het ophalen, anders blijft een wedstrijd
   // "aanmelden open" heten terwijl hij allang begonnen is (Codex v10)
   const nuMs = new Date(SU_DATA.server_now).getTime() + (Date.now() - SU_OPGEHAALD);
-  const klanten = SU_DATA.klanten || [];
-  if (!klanten.some((k) => k.slug === SU_KLANT)) SU_KLANT = klanten.length ? klanten[0].slug : null;
   const actieve = klanten.find((k) => k.slug === SU_KLANT);
   const zonder = SU_DATA.zonder_klant || [];
   // klant-keuze: tabs zolang het overzichtelijk is, keuzelijst bij veel klanten (Codex v9 UI-2)
@@ -921,7 +933,11 @@ function renderSu() {
   });
   $('#su-alleen-lezen').onclick = () => tikNogmaals($('#su-alleen-lezen'), '\u26a0\ufe0f Tik nogmaals', async () => {
     try {
-      await rpc('w_su_alleen_lezen', { p_wachtwoord: sessie.suWw() || '', p_aan: !SU_DATA.instellingen.alleen_lezen });
+      await rpc('w_su_alleen_lezen', {
+        p_wachtwoord: sessie.suWw() || '',
+        p_aan: !suKlantInstellingen().alleen_lezen,
+        p_klant: SU_KLANT,
+      });
       laadSu();
     } catch (err) { toast(foutTekst(err)); }
   });
@@ -1047,6 +1063,7 @@ function renderOrg() {
         const res = await rpc('w_org_verwijder_wedstrijd', {
           p_wachtwoord: sessie.orgWw() || '',
           p_code: b.dataset.orgVerwijder,
+          p_klant: KLANT(),
         });
         toast(`"${res.naam}" verwijderd (${res.teams} team${res.teams === 1 ? '' : 's'}, ${res.vangsten} vangst${res.vangsten === 1 ? '' : 'en'}).`);
         laadOrg();
@@ -1061,6 +1078,7 @@ function renderOrg() {
           p_code: sel.dataset.orgSeizoen,
           p_seizoen_id: sel.value || null,
           p_ex_aequo: null,
+          p_klant: KLANT(),
         });
         await laadOrgSeizoenen();
       } catch (err) { toast(foutTekst(err)); laadOrgSeizoenen(); }
@@ -1075,6 +1093,7 @@ function renderOrg() {
           p_code: code,
           p_seizoen_id: (SEIZOEN_PER_CODE[code] || {}).id || null,
           p_ex_aequo: sel.value || null,
+          p_klant: KLANT(),
         });
         await laadOrgSeizoenen();
       } catch (err) { toast(foutTekst(err)); laadOrgSeizoenen(); }
@@ -2018,7 +2037,11 @@ function initWedstrijd() {
     knop.disabled = true;
     try {
       suActiviteit();
-      await rpc('w_su_org_wachtwoord', { p_wachtwoord: sessie.suWw() || '', p_nieuw: $('#su-orgww-nieuw').value });
+      await rpc('w_su_org_wachtwoord', {
+        p_wachtwoord: sessie.suWw() || '',
+        p_nieuw: $('#su-orgww-nieuw').value,
+        p_klant: SU_KLANT,
+      });
       $('#su-orgww-nieuw').value = '';
       toast('Organisatie-wachtwoord aangepast (alle omgevingen). Geef het door aan de organisator.');
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
@@ -2069,6 +2092,7 @@ function initWedstrijd() {
           gemist: $('#sz-gemist').value,
           ex_aequo: $('#sz-exaequo').value,
         },
+        p_klant: KLANT(),
       });
       $('#sz-naam').value = '';
       toast('Seizoen aangemaakt. Koppel nu wedstrijden via de wedstrijdkaarten hierboven.');

@@ -231,10 +231,13 @@ def bouw_tenant(slug, kort, volledig, water, stekken, zones, kaart_van):
     print(f'  1. Controleer docs/{slug}/index.html (teksten) en de kaart in de browser.')
     print(f'  2. instructies-print.pdf voor deze tenant maken (link is weggelaten).')
     print(f'  3. Release-checklist in CLAUDE.md nalopen (versies, SHELL-paden, CSP).')
-    print(f'  4. Klant-rij in de database aanmaken (voor het beheeroverzicht):')
+    print(f'  4. Klant-rijen in de database aanmaken (VERPLICHT voor livegang):')
     print(f"     insert into wedstrijd.klanten (slug, naam) values ('{slug}', '<volledige naam>');")
-    print(f'  5. LET OP: database is nog single-tenant (org-wachtwoord/zones/stek_ring')
-    print(f'     gedeeld met NPHV) tot de tenancy-migratie; zie CLAUDE.md.')
+    print(f"     insert into wedstrijd.klant_instellingen (klant_id, organisator_wachtwoord)")
+    print(f"       select id, '<eigen organisatie-wachtwoord>' from wedstrijd.klanten where slug = '{slug}';")
+    print(f'  5. LET OP: org-wachtwoord, zones en alleen-lezen zijn sinds 18 jul PER KLANT')
+    print(f'     (wedstrijd.klant_instellingen). De stek_ring is nog wel gedeeld met NPHV,')
+    print(f'     dus stekkeuze/koppelmode werkt alleen met de NPHV-nummering; zie CLAUDE.md.')
 
 
 if __name__ == '__main__':
