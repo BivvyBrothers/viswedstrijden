@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 61; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 62; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -466,9 +466,22 @@ function initHome() {
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
 
+  // vaste client_id per invoer: dubbel tikken of een retry na een verloren
+  // antwoord maakt geen tweede wedstrijd meer (Codex v10)
+  let NIEUW_POGING = null;
   $('#form-nieuw').addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#nieuw-fout'); foutEl.hidden = true;
+    const knop = e.target.querySelector('button[type="submit"]');
+    if (knop.disabled) return;
+    const pogingKey = [$('#nw-naam').value.trim(), $('#nw-mode').value,
+                       startVeld.value, eindVeld.value].join('|');
+    if (!NIEUW_POGING || NIEUW_POGING.key !== pogingKey) {
+      NIEUW_POGING = { key: pogingKey, id: crypto.randomUUID() };
+    }
+    knop.disabled = true;
+    const oudeTekst = knop.textContent;
+    knop.textContent = 'Bezig…';
     try {
       const res = await rpc('w_maak_wedstrijd', {
         p_naam: $('#nw-naam').value.trim(),
@@ -479,7 +492,9 @@ function initHome() {
         p_max_teams: $('#nw-max').value ? parseInt($('#nw-max').value, 10) : null,
         p_regels: $('#nw-regels').value.trim() || null,
         p_klant: typeof TENANT !== 'undefined' ? TENANT : null,
+        p_client_id: NIEUW_POGING.id,
       });
+      NIEUW_POGING = null;
       sessie.zetPin(res.code, res.pin);
       DEEL_NIEUW = {
         naam: $('#nw-naam').value.trim(),
@@ -496,45 +511,64 @@ function initHome() {
       $('#deel-nieuw').hidden = false;
       location.hash = '#/w/' + res.code;
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+    knop.disabled = false;
+    knop.textContent = oudeTekst;
   });
 }
 
 /* ---------- wedstrijd: state laden ---------- */
+let STATE_REQ = 0;  // generatieteller: een laat antwoord van een andere
+                    // wedstrijd of rol mag de huidige state nooit overschrijven
+
 async function laadState(eerste) {
   if (!CODE) return;
+  // vastleggen waarvoor DIT verzoek is; na elke await opnieuw vergelijken
+  const mijnReq = ++STATE_REQ;
+  const mijnCode = CODE;
+  const mijnKijker = KIJKER;
+  const verouderd = () => mijnReq !== STATE_REQ || mijnCode !== CODE || mijnKijker !== KIJKER;
   try {
-    const s = KIJKER
-      ? await rpc('w_get_state_kijker', { p_kijk_code: CODE })
-      : await rpc('w_get_state', { p_code: CODE });
+    const s = mijnKijker
+      ? await rpc('w_get_state_kijker', { p_kijk_code: mijnCode })
+      : await rpc('w_get_state', { p_code: mijnCode });
+    if (verouderd()) return;
     if (!s?.wedstrijd) { toonNietGevonden(); return; }
     STATE = s;
     TIJD_OFFSET = new Date(s.server_now).getTime() - Date.now();
-    if (eerste && !KIJKER && PENDING_TOKEN) {
+    if (eerste && !mijnKijker && PENDING_TOKEN) {
+      const token = PENDING_TOKEN;
       try {
-        const team = await rpc('w_mijn_team', { p_code: CODE, p_token: PENDING_TOKEN });
-        if (team) sessie.zetTeam(CODE, { id: team.id, token: PENDING_TOKEN, naam: team.naam });
+        const team = await rpc('w_mijn_team', { p_code: mijnCode, p_token: token });
+        if (verouderd()) return;
+        if (team) sessie.zetTeam(mijnCode, { id: team.id, token, naam: team.naam });
       } catch { /* ongeldige teamlink: negeren */ }
+      if (verouderd()) return;
       PENDING_TOKEN = null;
     }
-    if (eerste && !KIJKER) {
-      const pin = sessie.pin(CODE);
+    if (eerste && !mijnKijker) {
+      const pin = sessie.pin(mijnCode);
       if (pin) {
         try {
-          await rpc('w_admin_check', { p_code: CODE, p_pin: pin });
+          await rpc('w_admin_check', { p_code: mijnCode, p_pin: pin });
+          if (verouderd()) return;
           ROL = 'organisator'; ADMIN_OPEN = true;
-        } catch { sessionStorage.removeItem('pin:' + CODE); ROL = 'deelnemer'; }
+        } catch {
+          if (verouderd()) return;
+          sessionStorage.removeItem('pin:' + mijnCode); ROL = 'deelnemer';
+        }
       } else { ROL = 'deelnemer'; }
       renderTabs();
     }
     meldNieuweVangsten();
     renderAlles(eerste);
     INIT_KLAAR = true;
-    if (eerste && ROL === 'deelnemer' && !sessie.team(CODE) && s.wedstrijd.status === 'aanmelden') {
+    if (eerste && ROL === 'deelnemer' && !sessie.team(mijnCode) && s.wedstrijd.status === 'aanmelden') {
       // deelnemer met een gedeelde link start bij het invoeren van eigen gegevens
       activateTab('team');
     }
   } catch (err) {
     // hier komen we alleen bij netwerk-/serverfouten; "bestaat niet" loopt via toonNietGevonden
+    if (verouderd()) return;
     if (eerste && !STATE) {
       $('#w-naam').textContent = 'Geen verbinding';
       $('#klok').textContent = '--:--:--';
@@ -1300,6 +1334,46 @@ function renderLoting() {
 // tiebreaks: gelijk totaal -> grootste vis wint; gelijk grootste -> vroegst gevangen wint
 const klGrootsteVan = (r) => r.grootste ? r.grootste.gewicht_gram : 0;
 const klTijdGrootste = (r) => r.grootste ? new Date(r.grootste.created_at).getTime() : Infinity;
+
+// Welke ex-aequoregel geldt voor DEZE daguitslag? Per wedstrijd ingesteld gaat
+// voor, anders de seizoensregel, anders de app-standaard. De server stuurt
+// beide sinds Codex v10 mee in de state, zodat het live klassement, de
+// deelafbeelding en het seizoen dezelfde uitslag laten zien.
+function dagRegel() {
+  const w = STATE?.wedstrijd || {};
+  const perWedstrijd = w.dag_regels && w.dag_regels.ex_aequo;
+  const regel = perWedstrijd || w.seizoen_ex_aequo || 'app';
+  return ['app', 'sportvisunie', 'karper'].includes(regel) ? regel : 'app';
+}
+
+// sorteervolgorde en rangsleutel per regel; de sleutel bepaalt of teams een
+// plaats DELEN (zelfde sleutel = zelfde rangnummer)
+function klSorteer(rijen) {
+  const regel = dagRegel();
+  if (regel === 'sportvisunie') {
+    // alleen het gewicht telt; exact gelijk gewicht deelt de plaats
+    return rijen.sort((a, b) => b.totaal - a.totaal
+      || klGrootsteVan(b) - klGrootsteVan(a) || klTijdGrootste(a) - klTijdGrootste(b));
+  }
+  if (regel === 'karper') {
+    // gewicht, dan aantal vissen, dan grootste vis, dan tijd
+    return rijen.sort((a, b) => b.totaal - a.totaal || b.aantal - a.aantal
+      || klGrootsteVan(b) - klGrootsteVan(a) || klTijdGrootste(a) - klTijdGrootste(b));
+  }
+  return rijen.sort((a, b) => b.totaal - a.totaal
+    || klGrootsteVan(b) - klGrootsteVan(a) || klTijdGrootste(a) - klTijdGrootste(b));
+}
+function klRangSleutel(r) {
+  const regel = dagRegel();
+  if (regel === 'sportvisunie') return `${r.totaal}`;
+  if (regel === 'karper') return `${r.totaal}|${r.aantal}|${klGrootsteVan(r)}|${klTijdGrootste(r)}`;
+  return `${r.totaal}|${klGrootsteVan(r)}|${klTijdGrootste(r)}`;
+}
+const REGEL_UITLEG = {
+  app: '',
+  sportvisunie: 'Bij exact gelijk gewicht delen teams de plaats (Sportvisunie-regel).',
+  karper: 'Bij gelijk gewicht telt eerst het aantal vissen, dan de grootste vis (karperregel).',
+};
 // telt vangsten per team op; alleen teams met vangsten, nog ongesorteerd
 function klassementRijen() {
   const perTeam = new Map();
@@ -1344,7 +1418,7 @@ function renderKlassement() {
     });
   };
   if (KLASSEMENT_MODE === 'totaal') {
-    rijen.sort((a, b) => b.totaal - a.totaal || grootsteVan(b) - grootsteVan(a) || tijdGrootste(a) - tijdGrootste(b));
+    klSorteer(rijen);
     const vissenVan = (teamId) => {
       const alle = STATE.vangsten
         .filter((v) => v.team_id === teamId)
@@ -1354,9 +1428,11 @@ function renderKlassement() {
         ? `${alle.slice(0, 10).join(' + ')} kg + nog ${alle.length - 10} vissen`
         : `${alle.join(' + ')} kg`;
     };
-    el.innerHTML = `<table class="klassement">
+    const uitleg = REGEL_UITLEG[dagRegel()];
+    el.innerHTML = (uitleg ? `<p class="muted klein regel-uitleg">${esc(uitleg)}</p>` : '')
+      + `<table class="klassement">
       <tr><th>#</th><th>Team</th><th class="r">Vissen</th><th class="r">Totaal</th></tr>
-      ${metRang((r) => `${r.totaal}|${grootsteVan(r)}|${tijdGrootste(r)}`).map(({ r, rang }) => `<tr>
+      ${metRang(klRangSleutel).map(({ r, rang }) => `<tr>
         <td class="${rangKlas(rang)}">${rang}</td>
         <td>${teamNaamHtml(r.team)} <span class="muted klein">${esc(plek(r.team))}</span>
           <div class="opbouw">${vissenVan(r.team.id)}</div></td>
@@ -1384,9 +1460,7 @@ function renderKlassement() {
 // tekent de einduitslag (totaal-klassement) op een canvas in de app-huisstijl
 function tekenUitslag() {
   const w = STATE.wedstrijd;
-  const rijen = klassementRijen();
-  rijen.sort((a, b) => b.totaal - a.totaal
-    || klGrootsteVan(b) - klGrootsteVan(a) || klTijdGrootste(a) - klTijdGrootste(b));
+  const rijen = klSorteer(klassementRijen());
   const top = rijen.slice(0, 10);
   const rest = rijen.length - top.length;
   const kampioenVis = rijen.reduce((m, r) => (klGrootsteVan(r) > klGrootsteVan(m) ? r : m), rijen[0]);
@@ -1418,7 +1492,7 @@ function tekenUitslag() {
   // = zelfde rangnummer, doortellen)
   let rang = 0, vorigeSleutel = null;
   top.forEach((r, i) => {
-    const sleutel = `${r.totaal}|${klGrootsteVan(r)}|${klTijdGrootste(r)}`;
+    const sleutel = klRangSleutel(r);
     if (sleutel !== vorigeSleutel) { rang = i + 1; vorigeSleutel = sleutel; }
     ctx.fillStyle = '#ffffff';
     rond(40, y, B - 80, RIJ - 12, 16); ctx.fill();
@@ -1818,8 +1892,11 @@ async function pushToggle() {
     if (pushAan(CODE)) {
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
-        await rpc('w_push_unsubscribe', { p_endpoint: sub.endpoint }).catch(() => {});
-        await sub.unsubscribe();
+        // alleen DEZE wedstrijd uitschrijven; pas als er geen enkele koppeling
+        // meer over is mag het browser-abonnement zelf weg (Codex v10)
+        const res = await rpc('w_push_unsubscribe', { p_endpoint: sub.endpoint, p_code: CODE })
+          .catch(() => null);
+        if (!res || res.resterend === 0) await sub.unsubscribe();
       }
       localStorage.removeItem('push:' + CODE);
       toast('Meldingen over nieuwe vangsten staan uit.');
@@ -2269,7 +2346,7 @@ function initBeheerKnoppen() {
     const f = bvFoto.files[0];
     $('#bv-foto-label').textContent = f ? '📷 ' + (f.name.length > 30 ? f.name.slice(0, 30) + '…' : f.name) : '📷 Foto (optioneel)';
   });
-  let BV_POGING = null; // vast fotopad per poging, zie VANGST_POGING
+  let BV_POGING = null; // vast fotopad + idempotentiesleutel per poging
   $('#form-b-vangst').addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#bv-fout'), okEl = $('#bv-ok'), knop = $('#bv-submit');
@@ -2279,19 +2356,23 @@ function initBeheerKnoppen() {
     if (!$('#bv-team').value) { foutEl.textContent = 'Kies een team.'; foutEl.hidden = false; return; }
     knop.disabled = true; knop.textContent = 'Bezig…';
     try {
-      let pad = null;
       const f = bvFoto.files[0];
+      // één poging-object voor zowel het fotopad als de idempotentiesleutel,
+      // ook zonder foto (Codex v10)
+      const pogingKey = [f ? `${f.name}|${f.size}|${f.lastModified}` : 'geenfoto',
+                         gram, $('#bv-team').value].join('|');
+      if (!BV_POGING || BV_POGING.key !== pogingKey) {
+        BV_POGING = { key: pogingKey, pad: `${CODE}/${crypto.randomUUID()}.jpg`, id: crypto.randomUUID() };
+      }
+      let pad = null;
       if (f) {
-        const pogingKey = [f.name, f.size, f.lastModified, gram, $('#bv-team').value].join('|');
-        if (!BV_POGING || BV_POGING.key !== pogingKey) {
-          BV_POGING = { key: pogingKey, pad: `${CODE}/${crypto.randomUUID()}.jpg` };
-        }
         const blob = await compressFoto(f);
         pad = await uploadFoto(BV_POGING.pad, blob);
       }
       await rpc('w_admin_voeg_vangst', {
         p_code: CODE, p_pin: sessie.pin(CODE),
         p_team_id: $('#bv-team').value, p_gewicht_gram: gram, p_foto_path: pad,
+        p_client_id: BV_POGING.id,
       });
       BV_POGING = null;
       okEl.textContent = `Vangst van ${fmtKg(gram)} toegevoegd.`;

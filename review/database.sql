@@ -269,65 +269,7 @@ end $function$;
 -- Publieke RPC's: state en deelname
 -- =====================================================================
 
-CREATE OR REPLACE FUNCTION public.w_get_state(p_code text)
- RETURNS json
- LANGUAGE sql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-  select json_build_object(
-    'wedstrijd', (select json_build_object(
-        'code', w.code, 'kijk_code', w.kijk_code, 'naam', w.naam, 'mode', w.mode,
-        'start_ts', w.start_ts, 'eind_ts', w.eind_ts, 'status', w.status,
-        'zones', w.zones, 'max_teams', w.max_teams, 'regels', w.regels)
-      from wedstrijd.wedstrijden w where w.code = upper(trim(p_code))),
-    'teams', coalesce((select json_agg(json_build_object(
-        'id', t.id, 'naam', t.naam, 'naam2', t.naam2, 'team_naam', t.team_naam,
-        'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone)
-        order by t.lot_nummer nulls last, t.created_at)
-      from wedstrijd.teams t
-      join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id
-      where w.code = upper(trim(p_code))), '[]'::json),
-    'vangsten', coalesce((select json_agg(json_build_object(
-        'id', v.id, 'team_id', v.team_id, 'gewicht_gram', v.gewicht_gram,
-        'foto_path', v.foto_path, 'created_at', v.created_at)
-        order by v.created_at desc)
-      from wedstrijd.vangsten v
-      join wedstrijd.wedstrijden w on w.id = v.wedstrijd_id
-      where w.code = upper(trim(p_code)) and v.status = 'actief'), '[]'::json),
-    'server_now', now()
-  );
-$function$;
 
-CREATE OR REPLACE FUNCTION public.w_get_state_kijker(p_kijk_code text)
- RETURNS json
- LANGUAGE sql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-  select json_build_object(
-    'wedstrijd', (select json_build_object(
-        'kijk_code', w.kijk_code, 'naam', w.naam, 'mode', w.mode,
-        'start_ts', w.start_ts, 'eind_ts', w.eind_ts, 'status', w.status,
-        'max_teams', w.max_teams, 'regels', w.regels)
-      from wedstrijd.wedstrijden w where w.kijk_code = upper(trim(p_kijk_code))),
-    'teams', coalesce((select json_agg(json_build_object(
-        'id', t.id, 'naam', t.naam, 'naam2', t.naam2, 'team_naam', t.team_naam,
-        'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone)
-        order by t.lot_nummer nulls last, t.created_at)
-      from wedstrijd.teams t
-      join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id
-      where w.kijk_code = upper(trim(p_kijk_code))), '[]'::json),
-    'vangsten', coalesce((select json_agg(json_build_object(
-        'id', v.id, 'team_id', v.team_id, 'gewicht_gram', v.gewicht_gram,
-        'foto_path', v.foto_path, 'created_at', v.created_at)
-        order by v.created_at desc)
-      from wedstrijd.vangsten v
-      join wedstrijd.wedstrijden w on w.id = v.wedstrijd_id
-      where w.kijk_code = upper(trim(p_kijk_code)) and v.status = 'actief'), '[]'::json),
-    'server_now', now()
-  );
-$function$;
 
 CREATE OR REPLACE FUNCTION public.w_join(p_code text, p_naam text, p_naam2 text DEFAULT NULL::text, p_team_naam text DEFAULT NULL::text)
  RETURNS json
@@ -826,40 +768,6 @@ begin
   return json_build_object('ok', true);
 end $function$;
 
-CREATE OR REPLACE FUNCTION public.w_admin_voeg_vangst(p_code text, p_pin text, p_team_id uuid, p_gewicht_gram integer, p_foto_path text DEFAULT NULL::text)
- RETURNS json
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-declare
-  v_w wedstrijd.wedstrijden;
-  v_team wedstrijd.teams;
-  v_id uuid;
-  v_wie text;
-begin
-  select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code)) and admin_pin = trim(p_pin);
-  if not found then raise exception 'pin_onjuist'; end if;
-  select * into v_team from wedstrijd.teams where id = p_team_id and wedstrijd_id = v_w.id;
-  if not found then raise exception 'team_niet_gevonden'; end if;
-  if p_gewicht_gram is null or p_gewicht_gram < 50 or p_gewicht_gram > 50000 then
-    raise exception 'ongeldig_gewicht';
-  end if;
-  if p_foto_path is not null
-     and p_foto_path !~ ('^' || v_w.code || '/[A-Za-z0-9-]+\.(jpe?g|png|webp|gif|heic)$') then
-    raise exception 'ongeldige_foto';
-  end if;
-  insert into wedstrijd.vangsten (wedstrijd_id, team_id, gewicht_gram, foto_path)
-  values (v_w.id, v_team.id, p_gewicht_gram, p_foto_path)
-  returning id into v_id;
-  begin
-    v_wie := coalesce(v_team.team_naam, v_team.naam || coalesce(' & ' || v_team.naam2, ''));
-    perform extensions.http_post_ignore(v_w.id, v_team.id, v_w.naam,
-      'Nieuwe vangst: ' || round(p_gewicht_gram / 1000.0, 2) || ' kg door ' || v_wie);
-  exception when others then null;
-  end;
-  return json_build_object('id', v_id);
-end $function$;
 
 CREATE OR REPLACE FUNCTION public.w_admin_teamcodes(p_code text, p_pin text)
  RETURNS json
@@ -940,50 +848,6 @@ begin
   return json_build_object('ok', true, 'zones', jsonb_array_length(p_zones));
 end $function$;
 
-CREATE OR REPLACE FUNCTION public.w_maak_wedstrijd(p_naam text, p_mode text, p_start timestamp with time zone, p_eind timestamp with time zone, p_org_wachtwoord text, p_max_teams integer DEFAULT NULL::integer, p_regels text DEFAULT NULL::text, p_klant text DEFAULT NULL::text)
- RETURNS json
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-declare
-  v_code text;
-  v_kijk text;
-  v_pin text;
-  v_id uuid;
-  v_klant uuid;
-  v_klant_slug text;
-begin
-  if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_org_wachtwoord)) then
-    raise exception 'org_wachtwoord_onjuist';
-  end if;
-  if (select alleen_lezen from wedstrijd.instellingen where id = 1) then
-    raise exception 'alleen_lezen';
-  end if;
-  if coalesce(trim(p_naam),'') = '' or length(p_naam) > 60 then raise exception 'ongeldige_naam'; end if;
-  if p_mode not in ('individueel','koppel') then raise exception 'ongeldige_mode'; end if;
-  if p_eind <= p_start then raise exception 'eind_voor_start'; end if;
-  if p_max_teams is not null and (p_max_teams < 2 or p_max_teams > 200) then
-    raise exception 'ongeldig_maximum';
-  end if;
-  if p_regels is not null and length(p_regels) > 3000 then raise exception 'regels_te_lang'; end if;
-  -- alleen NULL/leeg (oude gecachte clients) valt terug op nphv; een
-  -- onbekende niet-lege slug is een configuratiefout en faalt luid (Codex v6 P1)
-  v_klant_slug := coalesce(nullif(lower(trim(p_klant)), ''), 'nphv');
-  select id into v_klant from wedstrijd.klanten where slug = v_klant_slug;
-  if v_klant is null then
-    raise exception 'klant_niet_gevonden';
-  end if;
-  v_code := wedstrijd.nieuwe_team_code();
-  v_kijk := wedstrijd.nieuwe_team_code();
-  v_pin := lower(wedstrijd.nieuwe_team_code()) || floor(random()*1000)::text;
-  insert into wedstrijd.wedstrijden (code, kijk_code, naam, mode, start_ts, eind_ts, admin_pin, zones, max_teams, regels, klant_id)
-  values (v_code, v_kijk, trim(p_naam), p_mode, p_start, p_eind, v_pin,
-          (select standaard_zones from wedstrijd.instellingen where id = 1), p_max_teams,
-          nullif(trim(coalesce(p_regels,'')), ''), v_klant)
-  returning id into v_id;
-  return json_build_object('code', v_code, 'kijk_code', v_kijk, 'pin', v_pin, 'id', v_id);
-end $function$;
 
 CREATE OR REPLACE FUNCTION public.w_org_verwijder_wedstrijd(p_wachtwoord text, p_code text)
  RETURNS json
@@ -1023,52 +887,7 @@ end $function$;
 -- Push-RPC's (subscriptions door clients; payload/cleanup door edge function)
 -- =====================================================================
 
-CREATE OR REPLACE FUNCTION public.w_push_subscribe(p_code text, p_token uuid, p_endpoint text, p_p256dh text, p_auth text, p_route text DEFAULT NULL::text)
- RETURNS json
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-declare
-  v_w wedstrijd.wedstrijden;
-  v_team_id uuid;
-begin
-  select * into v_w from wedstrijd.wedstrijden
-  where code = upper(trim(p_code)) or kijk_code = upper(trim(p_code));
-  if not found then raise exception 'wedstrijd_niet_gevonden'; end if;
-  if now() > v_w.eind_ts then
-    raise exception 'meldingen_gesloten';
-  end if;
-  if p_endpoint is null or length(p_endpoint) > 500 or p_endpoint not like 'https://%'
-     or p_p256dh is null or p_p256dh !~ '^[A-Za-z0-9_-]{80,130}$'
-     or p_auth is null or p_auth !~ '^[A-Za-z0-9_-]{16,50}$' then
-    raise exception 'ongeldige_subscription';
-  end if;
-  if p_route is not null and p_route !~ '^#/(w|k)/[A-Z0-9]{4,8}$' then
-    raise exception 'ongeldige_subscription';
-  end if;
-  if p_token is not null then
-    select id into v_team_id from wedstrijd.teams where wedstrijd_id = v_w.id and token = p_token;
-    if v_team_id is null then raise exception 'team_niet_gevonden'; end if;
-  end if;
-  insert into wedstrijd.push_subs (wedstrijd_id, team_id, endpoint, p256dh, auth, route)
-  values (v_w.id, v_team_id, p_endpoint, p_p256dh, p_auth, p_route)
-  on conflict (endpoint) do update set wedstrijd_id = excluded.wedstrijd_id,
-    team_id = excluded.team_id, p256dh = excluded.p256dh, auth = excluded.auth,
-    route = excluded.route;
-  return json_build_object('ok', true);
-end $function$;
 
-CREATE OR REPLACE FUNCTION public.w_push_unsubscribe(p_endpoint text)
- RETURNS json
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-begin
-  delete from wedstrijd.push_subs where endpoint = p_endpoint;
-  return json_build_object('ok', true);
-end $function$;
 
 CREATE OR REPLACE FUNCTION public.w_push_payload(p_secret text, p_wedstrijd_id uuid, p_team_id uuid DEFAULT NULL::uuid)
  RETURNS json
@@ -1514,4 +1333,221 @@ begin
   end if;
   update wedstrijd.instellingen set beheerder_wachtwoord = trim(p_nieuw) where id = 1;
   return json_build_object('ok', true);
+end $function$;
+
+-- ============ Codex v10 ronde 2 (18 jul 2026) ============
+CREATE OR REPLACE FUNCTION public.w_admin_voeg_vangst(p_code text, p_pin text, p_team_id uuid, p_gewicht_gram integer, p_foto_path text DEFAULT NULL::text, p_client_id uuid DEFAULT NULL::uuid)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_w wedstrijd.wedstrijden;
+  v_team wedstrijd.teams;
+  v_id uuid;
+  v_wie text;
+begin
+  select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code)) and admin_pin = trim(p_pin);
+  if not found then raise exception 'pin_onjuist'; end if;
+  -- idempotentie (Codex v10): retry na een verloren antwoord voegt niets dubbel toe
+  if p_client_id is not null then
+    select id into v_id from wedstrijd.vangsten where client_id = p_client_id;
+    if v_id is not null then return json_build_object('id', v_id, 'bestond_al', true); end if;
+  end if;
+  select * into v_team from wedstrijd.teams where id = p_team_id and wedstrijd_id = v_w.id;
+  if not found then raise exception 'team_niet_gevonden'; end if;
+  if p_gewicht_gram is null or p_gewicht_gram < 50 or p_gewicht_gram > 50000 then
+    raise exception 'ongeldig_gewicht';
+  end if;
+  if p_foto_path is not null
+     and p_foto_path !~ ('^' || v_w.code || '/[A-Za-z0-9-]+\.(jpe?g|png|webp|gif|heic)$') then
+    raise exception 'ongeldige_foto';
+  end if;
+  insert into wedstrijd.vangsten (wedstrijd_id, team_id, gewicht_gram, foto_path, client_id)
+  values (v_w.id, v_team.id, p_gewicht_gram, p_foto_path, p_client_id)
+  returning id into v_id;
+  begin
+    v_wie := coalesce(v_team.team_naam, v_team.naam || coalesce(' & ' || v_team.naam2, ''));
+    perform extensions.http_post_ignore(v_w.id, v_team.id, v_w.naam,
+      'Nieuwe vangst: ' || round(p_gewicht_gram / 1000.0, 2) || ' kg door ' || v_wie);
+  exception when others then null;
+  end;
+  return json_build_object('id', v_id);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_get_state(p_code text)
+ RETURNS json
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select json_build_object(
+    'wedstrijd', (select json_build_object(
+        'code', w.code, 'kijk_code', w.kijk_code, 'naam', w.naam, 'mode', w.mode,
+        'start_ts', w.start_ts, 'eind_ts', w.eind_ts, 'status', w.status,
+        'zones', w.zones, 'max_teams', w.max_teams, 'regels', w.regels,
+        'dag_regels', w.dag_regels,
+        'seizoen_ex_aequo', (select z.regels->>'ex_aequo' from wedstrijd.seizoenen z where z.id = w.seizoen_id))
+      from wedstrijd.wedstrijden w where w.code = upper(trim(p_code))),
+    'teams', coalesce((select json_agg(json_build_object(
+        'id', t.id, 'naam', t.naam, 'naam2', t.naam2, 'team_naam', t.team_naam,
+        'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone)
+        order by t.lot_nummer nulls last, t.created_at)
+      from wedstrijd.teams t
+      join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id
+      where w.code = upper(trim(p_code))), '[]'::json),
+    'vangsten', coalesce((select json_agg(json_build_object(
+        'id', v.id, 'team_id', v.team_id, 'gewicht_gram', v.gewicht_gram,
+        'foto_path', v.foto_path, 'created_at', v.created_at)
+        order by v.created_at desc)
+      from wedstrijd.vangsten v
+      join wedstrijd.wedstrijden w on w.id = v.wedstrijd_id
+      where w.code = upper(trim(p_code)) and v.status = 'actief'), '[]'::json),
+    'server_now', pg_catalog.now()
+  );
+$function$;
+
+CREATE OR REPLACE FUNCTION public.w_get_state_kijker(p_kijk_code text)
+ RETURNS json
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select json_build_object(
+    'wedstrijd', (select json_build_object(
+        'kijk_code', w.kijk_code, 'naam', w.naam, 'mode', w.mode,
+        'start_ts', w.start_ts, 'eind_ts', w.eind_ts, 'status', w.status,
+        'max_teams', w.max_teams, 'regels', w.regels,
+        'dag_regels', w.dag_regels,
+        'seizoen_ex_aequo', (select z.regels->>'ex_aequo' from wedstrijd.seizoenen z where z.id = w.seizoen_id))
+      from wedstrijd.wedstrijden w where w.kijk_code = upper(trim(p_kijk_code))),
+    'teams', coalesce((select json_agg(json_build_object(
+        'id', t.id, 'naam', t.naam, 'naam2', t.naam2, 'team_naam', t.team_naam,
+        'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone)
+        order by t.lot_nummer nulls last, t.created_at)
+      from wedstrijd.teams t
+      join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id
+      where w.kijk_code = upper(trim(p_kijk_code))), '[]'::json),
+    'vangsten', coalesce((select json_agg(json_build_object(
+        'id', v.id, 'team_id', v.team_id, 'gewicht_gram', v.gewicht_gram,
+        'foto_path', v.foto_path, 'created_at', v.created_at)
+        order by v.created_at desc)
+      from wedstrijd.vangsten v
+      join wedstrijd.wedstrijden w on w.id = v.wedstrijd_id
+      where w.kijk_code = upper(trim(p_kijk_code)) and v.status = 'actief'), '[]'::json),
+    'server_now', pg_catalog.now()
+  );
+$function$;
+
+CREATE OR REPLACE FUNCTION public.w_maak_wedstrijd(p_naam text, p_mode text, p_start timestamp with time zone, p_eind timestamp with time zone, p_org_wachtwoord text, p_max_teams integer DEFAULT NULL::integer, p_regels text DEFAULT NULL::text, p_klant text DEFAULT NULL::text, p_client_id uuid DEFAULT NULL::uuid)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_code text;
+  v_kijk text;
+  v_pin text;
+  v_id uuid;
+  v_klant uuid;
+  v_klant_slug text;
+  v_bestaand wedstrijd.wedstrijden;
+begin
+  if not exists (select 1 from wedstrijd.instellingen where id = 1 and organisator_wachtwoord = trim(p_org_wachtwoord)) then
+    raise exception 'org_wachtwoord_onjuist';
+  end if;
+  -- idempotentie (Codex v10): dezelfde poging opnieuw geeft dezelfde wedstrijd
+  -- terug in plaats van een tweede aan te maken
+  if p_client_id is not null then
+    select * into v_bestaand from wedstrijd.wedstrijden where client_id = p_client_id;
+    if found then
+      return json_build_object('code', v_bestaand.code, 'kijk_code', v_bestaand.kijk_code,
+                               'pin', v_bestaand.admin_pin, 'id', v_bestaand.id, 'bestond_al', true);
+    end if;
+  end if;
+  if (select alleen_lezen from wedstrijd.instellingen where id = 1) then
+    raise exception 'alleen_lezen';
+  end if;
+  if coalesce(trim(p_naam),'') = '' or length(p_naam) > 60 then raise exception 'ongeldige_naam'; end if;
+  if p_mode not in ('individueel','koppel') then raise exception 'ongeldige_mode'; end if;
+  if p_eind <= p_start then raise exception 'eind_voor_start'; end if;
+  if p_max_teams is not null and (p_max_teams < 2 or p_max_teams > 200) then
+    raise exception 'ongeldig_maximum';
+  end if;
+  if p_regels is not null and length(p_regels) > 3000 then raise exception 'regels_te_lang'; end if;
+  v_klant_slug := coalesce(nullif(lower(trim(p_klant)), ''), 'nphv');
+  select id into v_klant from wedstrijd.klanten where slug = v_klant_slug;
+  if v_klant is null then
+    raise exception 'klant_niet_gevonden';
+  end if;
+  v_code := wedstrijd.nieuwe_team_code();
+  v_kijk := wedstrijd.nieuwe_team_code();
+  v_pin := lower(wedstrijd.nieuwe_team_code()) || floor(random()*1000)::text;
+  insert into wedstrijd.wedstrijden (code, kijk_code, naam, mode, start_ts, eind_ts, admin_pin, zones, max_teams, regels, klant_id, client_id)
+  values (v_code, v_kijk, trim(p_naam), p_mode, p_start, p_eind, v_pin,
+          (select standaard_zones from wedstrijd.instellingen where id = 1), p_max_teams,
+          nullif(trim(coalesce(p_regels,'')), ''), v_klant, p_client_id)
+  returning id into v_id;
+  return json_build_object('code', v_code, 'kijk_code', v_kijk, 'pin', v_pin, 'id', v_id);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_push_subscribe(p_code text, p_token uuid, p_endpoint text, p_p256dh text, p_auth text, p_route text DEFAULT NULL::text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_w wedstrijd.wedstrijden;
+  v_team_id uuid;
+begin
+  select * into v_w from wedstrijd.wedstrijden
+  where code = upper(trim(p_code)) or kijk_code = upper(trim(p_code));
+  if not found then raise exception 'wedstrijd_niet_gevonden'; end if;
+  if pg_catalog.now() > v_w.eind_ts then
+    raise exception 'meldingen_gesloten';
+  end if;
+  if p_endpoint is null or length(p_endpoint) > 500 or p_endpoint not like 'https://%'
+     or p_p256dh is null or p_p256dh !~ '^[A-Za-z0-9_-]{80,130}$'
+     or p_auth is null or p_auth !~ '^[A-Za-z0-9_-]{16,50}$' then
+    raise exception 'ongeldige_subscription';
+  end if;
+  if p_route is not null and p_route !~ '^#/(w|k)/[A-Z0-9]{4,8}$' then
+    raise exception 'ongeldige_subscription';
+  end if;
+  if p_token is not null then
+    select id into v_team_id from wedstrijd.teams where wedstrijd_id = v_w.id and token = p_token;
+    if v_team_id is null then raise exception 'team_niet_gevonden'; end if;
+  end if;
+  insert into wedstrijd.push_subs (wedstrijd_id, team_id, endpoint, p256dh, auth, route)
+  values (v_w.id, v_team_id, p_endpoint, p_p256dh, p_auth, p_route)
+  on conflict (wedstrijd_id, endpoint) do update set
+    team_id = excluded.team_id, p256dh = excluded.p256dh, auth = excluded.auth,
+    route = excluded.route;
+  return json_build_object('ok', true);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_push_unsubscribe(p_endpoint text, p_code text DEFAULT NULL::text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_id uuid;
+  v_rest int;
+begin
+  if p_code is null or trim(p_code) = '' then
+    delete from wedstrijd.push_subs where endpoint = p_endpoint;
+    return json_build_object('ok', true, 'resterend', 0);
+  end if;
+  select id into v_id from wedstrijd.wedstrijden
+  where code = upper(trim(p_code)) or kijk_code = upper(trim(p_code));
+  if v_id is null then raise exception 'wedstrijd_niet_gevonden'; end if;
+  delete from wedstrijd.push_subs where endpoint = p_endpoint and wedstrijd_id = v_id;
+  select count(*) into v_rest from wedstrijd.push_subs where endpoint = p_endpoint;
+  -- de client mag pas echt unsubscriben als er geen enkele koppeling meer is
+  return json_build_object('ok', true, 'resterend', v_rest);
 end $function$;

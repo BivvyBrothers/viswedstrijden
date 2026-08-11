@@ -285,6 +285,8 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .rolknop.actief .rol-icoon { background: #ffffff; }
 .rolform { margin-top: 4px; }
 
+.regel-uitleg { margin: 0 0 8px; }
+
 /* wedstrijd-fase iconen: zelfde taal in de organisator- en beheerderslijst */
 .w-icoon {
   flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px;
