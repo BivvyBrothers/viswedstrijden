@@ -55,6 +55,12 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
 - **Backend:** Supabase-project "Samen" (`xyfvkmhkwcjqskxrcfrj`), schema **`wedstrijd`**
   (gedeeld project, LET OP: raak de andere schema's/tabellen daar niet aan).
   Foto's in publieke storage-bucket `wedstrijd-fotos` (max 5 MB, alleen afbeeldingen).
+  **Upload loopt sinds v64 via de edge function `upload-vangstfoto`**
+  (kopie in `review/upload-vangstfoto.ts`): die controleert eerst het teamtoken
+  of de admin-pin, kiest zelf het pad en uploadt met de service-role sleutel.
+  Rate-limit 20 uploads per IP per minuut. OPEN: de anon-INSERT-policy op de
+  bucket staat nog aan zodat PWA's met oude code blijven werken; intrekken zodra
+  de client-versie overal is opgehaald (dan pas is hoog-2 helemaal dicht).
 - **API-model:** tabellen hebben RLS aan zonder policies; ALLE toegang loopt via
   security-definer RPC's `w_*` in het public schema. Elke wijziging aan spelregels
   hoort dus in een RPC-migratie, niet in de frontend. Frontend praat via kale

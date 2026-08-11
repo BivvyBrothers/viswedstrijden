@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 63; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 64; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -54,6 +54,8 @@ const FOUTEN = {
   alleen_tijdens_aanmelden: 'Kan alleen tijdens de aanmeldfase (vóór de loting).',
   wedstrijd_niet_begonnen: 'De wedstrijd is nog niet begonnen.',
   wedstrijd_afgelopen: 'De wedstrijd is afgelopen: registreren kan niet meer.',
+  te_veel_uploads: 'Te veel foto\'s achter elkaar geüpload. Wacht een minuutje en probeer het opnieuw.',
+  geen_toegang: 'Je bent niet (meer) ingelogd bij dit team. Log opnieuw in met je persoonlijke code en probeer het nogmaals.',
   ongeldige_foto: 'De foto kon niet worden verwerkt (RAW-bestanden worden niet ondersteund). Kies een andere foto of maak een nieuwe.',
   ongeldige_subscription: 'Meldingen aanzetten is niet gelukt.',
   eind_voor_start: 'De eindtijd moet na de starttijd liggen.',
@@ -86,18 +88,33 @@ async function rpc(fn, args) {
   return tekst ? JSON.parse(tekst) : null;
 }
 
-async function uploadFoto(pad, blob) {
-  // pad wordt door de aanroeper per POGING vastgehouden: bij een retry na een
-  // netwerkfout uploaden we naar hetzelfde pad, zodat de server-idempotentie
-  // (unieke foto_path) een dubbele registratie kan herkennen (Codex v8 P1-2)
-  const r = await fetch(`${SB_URL}/storage/v1/object/${FOTO_BUCKET}/${pad}`, {
-    method: 'POST',
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'image/jpeg' },
-    body: blob,
+// Upload loopt sinds v64 via de edge function `upload-vangstfoto`, die eerst
+// het teamtoken of de admin-pin controleert en daarna zelf het pad kiest
+// (Codex v10 hoog-2). De aanroeper geeft een poging-object mee en onthoudt het
+// teruggekregen pad, zodat een retry na een netwerkfout hetzelfde pad hergebruikt
+// en de server-idempotentie een dubbele vangst herkent.
+async function uploadFoto(poging, blob) {
+  if (poging.pad) return poging.pad;   // deze poging is al eerder geslaagd
+  const t = sessie.team(CODE);
+  const kop = {
+    apikey: SB_KEY,
+    Authorization: `Bearer ${SB_KEY}`,
+    'Content-Type': 'image/jpeg',
+    'x-w-code': CODE,
+  };
+  if (t?.token) kop['x-w-token'] = t.token;
+  else if (sessie.pin(CODE)) kop['x-w-pin'] = sessie.pin(CODE);
+  const r = await fetch(`${SB_URL}/functions/v1/upload-vangstfoto`, {
+    method: 'POST', headers: kop, body: blob,
   });
-  if (r.status === 409) return pad; // bestond al: eerdere upload-poging was gelukt
-  if (!r.ok) throw new Error('ongeldige_foto');
-  return pad;
+  if (!r.ok) {
+    const j = await r.json().catch(() => null);
+    throw new Error(j?.fout === 'te_veel_uploads' ? 'te_veel_uploads'
+      : j?.fout === 'geen_toegang' ? 'geen_toegang' : 'ongeldige_foto');
+  }
+  const j = await r.json();
+  poging.pad = j.pad;
+  return j.pad;
 }
 // de klant-slug van deze omgeving; de server controleert altijd of het
 // wachtwoord bij deze klant hoort (tenancy-migratie)
@@ -2191,11 +2208,11 @@ function initWedstrijd() {
     try {
       const pogingKey = [bestand.name, bestand.size, bestand.lastModified, gram].join('|');
       if (!VANGST_POGING || VANGST_POGING.key !== pogingKey) {
-        VANGST_POGING = { key: pogingKey, pad: `${CODE}/${crypto.randomUUID()}.jpg` };
+        VANGST_POGING = { key: pogingKey, pad: null };
       }
       const blob = await compressFoto(bestand);
-      await uploadFoto(VANGST_POGING.pad, blob);
-      await rpc('w_registreer_vangst', { p_code: CODE, p_token: t.token, p_gewicht_gram: gram, p_foto_path: VANGST_POGING.pad });
+      const pad = await uploadFoto(VANGST_POGING, blob);
+      await rpc('w_registreer_vangst', { p_code: CODE, p_token: t.token, p_gewicht_gram: gram, p_foto_path: pad });
       VANGST_POGING = null;
       okEl.textContent = `Vangst van ${fmtKg(gram)} geregistreerd! 🎉`;
       okEl.hidden = false;
@@ -2386,12 +2403,12 @@ function initBeheerKnoppen() {
       const pogingKey = [f ? `${f.name}|${f.size}|${f.lastModified}` : 'geenfoto',
                          gram, $('#bv-team').value].join('|');
       if (!BV_POGING || BV_POGING.key !== pogingKey) {
-        BV_POGING = { key: pogingKey, pad: `${CODE}/${crypto.randomUUID()}.jpg`, id: crypto.randomUUID() };
+        BV_POGING = { key: pogingKey, pad: null, id: crypto.randomUUID() };
       }
       let pad = null;
       if (f) {
         const blob = await compressFoto(f);
-        pad = await uploadFoto(BV_POGING.pad, blob);
+        pad = await uploadFoto(BV_POGING, blob);
       }
       await rpc('w_admin_voeg_vangst', {
         p_code: CODE, p_pin: sessie.pin(CODE),
