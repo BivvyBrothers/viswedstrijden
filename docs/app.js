@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 65; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 66; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -33,6 +33,9 @@ const FOUTEN = {
   ongeldige_regels: 'Ongeldige seizoensinstellingen.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
   al_geloot: 'De loting is al gestart.',
+  reset_niet_mogelijk_vangsten: 'Opnieuw loten kan niet meer: er zijn al vangsten geregistreerd. Verwijder die eerst in Beheer als je echt opnieuw wilt loten.',
+  kies_eerst_je_plek: 'Kies eerst je stek of zone; daarna kun je vangsten doorgeven.',
+  geen_verbinding: 'Geen antwoord van de server. Controleer je bereik; de app probeert het vanzelf opnieuw.',
   geen_deelnemers: 'Er zijn nog geen deelnemers aangemeld.',
   te_veel_teams_voor_zones: 'Meer teams dan zones: pas de zones of het aantal deelnemers aan voor je loot.',
   te_veel_teams_voor_stekken: 'Meer teams dan beschikbare stekken: verklein het aantal deelnemers voor je loot.',
@@ -69,23 +72,38 @@ const foutTekst = (e) => FOUTEN[e.message]
     ? 'Geen verbinding met de server. Controleer je bereik en probeer het opnieuw; je invoer blijft staan.'
     : 'Er ging iets mis: ' + e.message);
 
-async function rpc(fn, args) {
-  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-    },
-    body: JSON.stringify(args || {}),
-  });
-  if (!r.ok) {
-    let msg = 'onbekende_fout';
-    try { const j = await r.json(); msg = j.message || msg; } catch { /* leeg */ }
-    throw new Error(msg);
+// Harde timeout: op een half werkend netwerk (captive portal, 1 streepje aan
+// het water) blijft fetch anders minutenlang hangen. Dan lijkt de app stil te
+// staan en loopt de poll-lus vol. Liever een nette fout en de volgende poll.
+const RPC_TIMEOUT_MS = 20000;
+
+async function rpc(fn, args, wachtMs) {
+  const stop = new AbortController();
+  const tik = setTimeout(() => stop.abort(), wachtMs || RPC_TIMEOUT_MS);
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SB_KEY,
+        Authorization: `Bearer ${SB_KEY}`,
+      },
+      body: JSON.stringify(args || {}),
+      signal: stop.signal,
+    });
+    if (!r.ok) {
+      let msg = 'onbekende_fout';
+      try { const j = await r.json(); msg = j.message || msg; } catch { /* leeg */ }
+      throw new Error(msg);
+    }
+    const tekst = await r.text();
+    return tekst ? JSON.parse(tekst) : null;
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('geen_verbinding');
+    throw err;
+  } finally {
+    clearTimeout(tik);
   }
-  const tekst = await r.text();
-  return tekst ? JSON.parse(tekst) : null;
 }
 
 // Upload loopt sinds v64 via de edge function `upload-vangstfoto`, die eerst
@@ -96,14 +114,19 @@ async function rpc(fn, args) {
 async function uploadFoto(poging, blob) {
   if (poging.pad) return poging.pad;   // deze poging is al eerder geslaagd
   const t = sessie.team(CODE);
+  const pin = sessie.pin(CODE);
   const kop = {
     apikey: SB_KEY,
     Authorization: `Bearer ${SB_KEY}`,
     'Content-Type': 'image/jpeg',
     'x-w-code': CODE,
   };
-  if (t?.token) kop['x-w-token'] = t.token;
-  else if (sessie.pin(CODE)) kop['x-w-pin'] = sessie.pin(CODE);
+  // de ACTIEVE rol bepaalt de credential: een organisator die op hetzelfde
+  // toestel ooit als deelnemer meedeed, stuurde anders een (mogelijk verlopen)
+  // teamtoken in plaats van zijn geldige pin
+  if (ROL === 'organisator' && pin) kop['x-w-pin'] = pin;
+  else if (t?.token) kop['x-w-token'] = t.token;
+  else if (pin) kop['x-w-pin'] = pin;
   const r = await fetch(`${SB_URL}/functions/v1/upload-vangstfoto`, {
     method: 'POST', headers: kop, body: blob,
   });
@@ -283,6 +306,12 @@ const zoneLabel = (naam) => {
 };
 
 /* ---------- routing ---------- */
+// SESSIE_GEN hoogt op bij een ROUTEWISSEL en bij uitloggen, niet bij elke poll.
+// Dat is het verschil met v62: toen kreeg elk verzoek een eigen nummer, dus een
+// antwoord dat langer onderweg was dan de pollinterval van 6 seconden werd door
+// de volgende poll ongeldig verklaard. Op een traag netwerk gold dat voor ELK
+// antwoord en bevroor het scherm terwijl de app leek te werken (Codex v11 P1).
+let SESSIE_GEN = 0;
 window.addEventListener('hashchange', route);
 window.addEventListener('DOMContentLoaded', () => {
   localStorage.removeItem('recente'); // opruiming: Recent-sectie is vervallen
@@ -311,6 +340,7 @@ async function checkVersie() {
 }
 
 function route() {
+  SESSIE_GEN += 1;   // alles wat nog onderweg is, hoort bij het vorige scherm
   const mW = location.hash.match(/^#\/w\/([A-Za-z0-9]{4,8})/);
   const mK = location.hash.match(/^#\/k\/([A-Za-z0-9]{4,8})/);
   const mT = location.hash.match(/[?&]t=([0-9a-f-]{36})/i);
@@ -537,16 +567,17 @@ function initHome() {
 }
 
 /* ---------- wedstrijd: state laden ---------- */
-let STATE_REQ = 0;  // generatieteller: een laat antwoord van een andere
-                    // wedstrijd of rol mag de huidige state nooit overschrijven
+let STATE_BEZIG = false;   // er loopt al een state-verzoek: sla deze poll over
 
 async function laadState(eerste) {
   if (!CODE) return;
+  if (STATE_BEZIG && !eerste) return;
+  STATE_BEZIG = true;
   // vastleggen waarvoor DIT verzoek is; na elke await opnieuw vergelijken
-  const mijnReq = ++STATE_REQ;
+  const mijnGen = SESSIE_GEN;
   const mijnCode = CODE;
   const mijnKijker = KIJKER;
-  const verouderd = () => mijnReq !== STATE_REQ || mijnCode !== CODE || mijnKijker !== KIJKER;
+  const verouderd = () => mijnGen !== SESSIE_GEN || mijnCode !== CODE || mijnKijker !== KIJKER;
   try {
     const s = mijnKijker
       ? await rpc('w_get_state_kijker', { p_kijk_code: mijnCode })
@@ -594,6 +625,10 @@ async function laadState(eerste) {
       $('#klok').textContent = '--:--:--';
       $('#klok-sub').textContent = 'Controleer je internet. De app probeert het vanzelf opnieuw.';
     }
+  } finally {
+    // alleen de eigenaar van de huidige generatie geeft de vlag vrij; een laat
+    // antwoord van een verlaten scherm mag het lopende verzoek niet vrijgeven
+    if (mijnGen === SESSIE_GEN) STATE_BEZIG = false;
   }
 }
 function toonNietGevonden() {
@@ -645,14 +680,25 @@ function renderSnelVangst() {
 /* ---------- organisatie-omgeving ---------- */
 let ORG_DATA = null;
 
+let ORG_BEZIG = false;
+
 async function laadOrg(eerste) {
+  if (ORG_BEZIG && !eerste) return;
+  ORG_BEZIG = true;
+  const mijnGen = SESSIE_GEN;
   try {
     const res = await rpc('w_org_wedstrijden', { p_wachtwoord: sessie.orgWw() || '', p_klant: KLANT() });
+    if (mijnGen !== SESSIE_GEN) return;   // uitgelogd of ander scherm: niets vullen
     if (!res) { sessionStorage.removeItem('orgww'); location.hash = ''; return; }
     ORG_DATA = res;
     renderOrg();
     if (eerste) laadOrgSeizoenen();
-  } catch { if (eerste) location.hash = ''; }
+  } catch {
+    if (mijnGen !== SESSIE_GEN) return;
+    if (eerste) location.hash = '';
+  } finally {
+    if (mijnGen === SESSIE_GEN) ORG_BEZIG = false;
+  }
 }
 
 /* ---------- seizoenenbeheer (organisatie) ---------- */
@@ -730,6 +776,7 @@ let SU_OPEN_CODE = null; // wedstrijd met uitgeklapte details
 // spiegelbeeld van wisSuScherm: organisator-state en gevoelige DOM leegmaken
 // bij uitloggen (Codex v10)
 function wisOrgScherm() {
+  SESSIE_GEN += 1;   // late antwoorden mogen het scherm niet opnieuw vullen
   ORG_DATA = null;
   ORG_SEIZOENEN = [];
   SEIZOEN_PER_CODE = {};
@@ -858,6 +905,11 @@ function suKaart(w, nuMs) {
       </div>
     </div>` : ''}
   </div>`;
+}
+
+// naam van de klant die in de beheerder-tab geselecteerd staat
+function suKlantNaam() {
+  return (SU_DATA?.klanten || []).find((x) => x.slug === SU_KLANT)?.naam || SU_KLANT || 'deze klant';
 }
 
 // instellingen van de klant die in de beheerder-tab geselecteerd staat
@@ -1382,6 +1434,12 @@ function renderLoting() {
 // tiebreaks: gelijk totaal -> grootste vis wint; gelijk grootste -> vroegst gevangen wint
 const klGrootsteVan = (r) => r.grootste ? r.grootste.gewicht_gram : 0;
 const klTijdGrootste = (r) => r.grootste ? new Date(r.grootste.created_at).getTime() : Infinity;
+// EEN comparator voor de grootste vis, gebruikt door zowel de tab als de
+// deelafbeelding. Die twee liepen uiteen: de afbeelding hield bij exact gelijk
+// gewicht de eerste uit de op TOTAALgewicht gesorteerde lijst en kon dus een
+// andere winnaar noemen dan de tabel (Codex v11 P2).
+const klGrootsteEerst = (a, b) => klGrootsteVan(b) - klGrootsteVan(a) || klTijdGrootste(a) - klTijdGrootste(b);
+const klGrootsteWinnaar = (rijen) => rijen.slice().sort(klGrootsteEerst)[0];
 
 // Welke ex-aequoregel geldt voor DEZE daguitslag? Per wedstrijd ingesteld gaat
 // voor, anders de seizoensregel, anders de app-standaard. De server stuurt
@@ -1489,7 +1547,7 @@ function renderKlassement() {
       </tr>`).join('')}
     </table>`;
   } else {
-    rijen.sort((a, b) => grootsteVan(b) - grootsteVan(a) || tijdGrootste(a) - tijdGrootste(b));
+    rijen.sort(klGrootsteEerst);
     el.innerHTML = `<table class="klassement">
       <tr><th>#</th><th>Team</th><th class="r">Grootste vis</th><th></th></tr>
       ${metRang((r) => `${grootsteVan(r)}|${tijdGrootste(r)}`).map(({ r, rang }) => `<tr>
@@ -1511,7 +1569,7 @@ function tekenUitslag() {
   const rijen = klSorteer(klassementRijen());
   const top = rijen.slice(0, 10);
   const rest = rijen.length - top.length;
-  const kampioenVis = rijen.reduce((m, r) => (klGrootsteVan(r) > klGrootsteVan(m) ? r : m), rijen[0]);
+  const kampioenVis = klGrootsteWinnaar(rijen);
 
   const B = 1080, KOP = 216, RIJ = 78, NA = rest > 0 ? 46 : 10, VIS = 92, VOET = 92;
   const H = KOP + 24 + top.length * RIJ + NA + VIS + VOET;
@@ -2058,7 +2116,7 @@ function initWedstrijd() {
     const knop = e.target.querySelector('button[type="submit"]');
     if (!e.target.dataset.bevestigd) {
       e.target.dataset.bevestigd = '1';
-      knop.textContent = '\u26a0\ufe0f Nogmaals: geldt voor ALLE omgevingen';
+      knop.textContent = `\u26a0\ufe0f Nogmaals: alleen ${suKlantNaam()}`;
       setTimeout(() => { delete e.target.dataset.bevestigd; knop.textContent = 'Reset'; }, 5000);
       return;
     }
@@ -2073,7 +2131,7 @@ function initWedstrijd() {
         p_klant: SU_KLANT,
       });
       $('#su-orgww-nieuw').value = '';
-      toast('Organisatie-wachtwoord aangepast (alle omgevingen). Geef het door aan de organisator.');
+      toast(`Organisatie-wachtwoord van ${suKlantNaam()} aangepast. Geef het door aan die organisator.`);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
     knop.disabled = false;
   });

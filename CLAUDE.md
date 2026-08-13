@@ -14,6 +14,9 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
   pincodes, tokens of persoonsgegevens committen. De Supabase-URL en publishable key
   in `docs/config.js` zijn bewust publiek en veilig.
 - Commits eindigen met `Co-Authored-By: Claude <naam> <noreply@anthropic.com>`.
+- `review/database.sql` is de REVIEWBRON, geen herstelscript: functiedefinities
+  worden bij elke migratie meegewijzigd, maar het bestand is nooit tegen een
+  lege database gedraaid. Herstelbron = de migratiegeschiedenis in Supabase.
 
 ## Architectuur
 
@@ -69,6 +72,13 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
   hoort dus in een RPC-migratie, niet in de frontend. Frontend praat via kale
   `fetch` met PostgREST (`/rest/v1/rpc/...`), geen supabase-js.
 - **Realtime:** bewust polling (elke 6s `w_get_state`), geen websockets.
+  **Late antwoorden (v66, na een bug uit v62):** `SESSIE_GEN` hoogt alleen op
+  bij een ROUTEWISSEL en bij uitloggen, NOOIT per poll. In v62 kreeg elk
+  verzoek een eigen nummer, waardoor een antwoord dat langer dan 6 seconden
+  onderweg was door de volgende poll ongeldig werd verklaard: op een traag
+  netwerk bleef het scherm daardoor leeg. Verder `STATE_BEZIG`/`ORG_BEZIG` (sla
+  een poll over zolang er een verzoek loopt) en een harde timeout van 20s in
+  `rpc()` via AbortController, foutcode `geen_verbinding`.
 - **Klok:** countdown rekent met `server_now` uit `w_get_state` (offset tegen
   Date.now), eindtijd wordt ALTIJD ook server-side afgedwongen in
   `w_registreer_vangst`.
@@ -97,7 +107,13 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
   Organisator (org-wachtwoord, `#/org`).
 - Elke wedstrijd heeft een **deelnemerscode** (`code`) en **kijkcode** (`kijk_code`),
   uniek over beide kolommen (generator `wedstrijd.nieuwe_code()`).
-  `w_get_state_kijker` geeft de deelnemerscode bewust NIET terug.
+  `w_get_state_kijker` geeft de deelnemerscode bewust NIET terug. Wat hij WEL
+  teruggeeft: team-ID's, namen, lotnummers, stekken/zones en alle actieve
+  vangsten met fotopad. De kijkers-UI toont daarvan alleen klok, klassement en
+  seizoen, maar de API-grens is ruimer. **Dat is een keuze, geen omissie**
+  (Codex v11 meldde het als lek): het is precies wat op de wedstrijddag aan het
+  water openbaar is, en de kijkcode deelt de organisator zelf. Wil je dat ooit
+  smaller, dan hoort dat server-side in een aparte projectie, niet in de client.
 - **Organisatie-omgeving:** `w_org_wedstrijden(p_wachtwoord)` levert alles incl.
   admin_pin per wedstrijd; "Openen & beheren" zet de pin in sessionStorage en
   navigeert naar de wedstrijd (beheer-tab direct ontgrendeld).
@@ -118,6 +134,13 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
   geheim token in localStorage (`team:CODE`). Geen accounts.
 - **Klassement:** totaalgewicht (som alle vissen per team) en grootste vis.
   Vangsten tellen direct mee; alleen de organisator corrigeert of verwijdert.
+- **Levenscyclus (server dwingt af, sinds v66):** opnieuw loten kan NIET meer
+  zodra er een actieve vangst is (`reset_niet_mogelijk_vangsten`); een vangst
+  wordt geweigerd als de wedstrijd in `stekkeuze` staat en het team nog geen
+  stek of zone heeft (`kies_eerst_je_plek`). Bewust NIET afgedwongen: "vangst
+  alleen bij status klaar". Een wedstrijd die nooit geloot wordt blijft op
+  `aanmelden` staan en dat is een ondersteunde werkwijze (eigen fase-icoon
+  sinds v59: LIVE, nog niet geloot).
 
 ## Kaart
 
@@ -415,5 +438,25 @@ by design (de RPC's zijn de publieke API, validatie zit erin).
 
 ## Bewuste beperkingen (niet "fixen" zonder overleg)
 
-- Foto's in een publieke bucket, geen rate-limiting, pins niet gehasht (hobby-schaal).
+- Foto's in een publieke bucket; pins niet gehasht (hobby-schaal). Uploads
+  lopen sinds v64 wel via de edge function met rate-limit, en sinds 11 aug is
+  de directe schrijfroute dicht.
 - Deelnemers kunnen eigen vangsten niet wijzigen (alleen organisator).
+- De kijkcode geeft via de API meer terug dan de kijkers-UI toont (zie v3:
+  rollen). Keuze, geen omissie.
+- Tijden worden uitgelegd in de tijdzone van het TOESTEL van de organisator.
+  Bij Nederlandse klanten geen probleem; een tenant-tijdzone staat op de
+  backlog.
+- Vangst registreren kan ook in een wedstrijd die nooit geloot is (status
+  `aanmelden`). Dat is bewust: informele wedstrijden zonder loting moeten
+  gewoon werken.
+
+## Speltypen: pas bouwen bij een concrete klantvraag (besluit Patrick, 13 aug 2026)
+
+Witvis-modus, lengte-modus (cm) en een algemene puntenformule voor aantallen of
+soorten stonden op de backlog. Ze gaan er NIET in tot een betalende klant er
+concreet om vraagt. Reden (Codex-featureadvies v11, door Patrick bevestigd): de
+hele codebase rekent in grammen en "grootste vis", en een tweede scoremodel
+raakt klassement, seizoen, deelafbeelding, kaart en export tegelijk. Zolang
+niemand het vraagt, is het gok-scope die de rest vertraagt. Op het moment dat
+er een klantvraag komt, kunnen we het alsnog inbouwen.

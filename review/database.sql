@@ -1,9 +1,15 @@
 -- =====================================================================
 -- Viswedstrijden Plas van der Ende: database-export (schema `wedstrijd`)
--- VERS GEGENEREERD uit de live Supabase-database op 8 jul 2026 (app v22,
--- na migratie wedstrijd_codex_v2_fixes). Dit bestand is de review-,
--- herstel- en migratiebron: alle definities hieronder zijn de EFFECTIEVE
--- live definities (pg_get_functiondef), geen changelog-lagen meer.
+-- Eerste export 8 jul 2026 (app v22); daarna bijgewerkt bij elke migratie,
+-- laatst op 13 aug 2026 (app v66, Codex-review v11).
+--
+-- WAT DIT BESTAND IS: de REVIEWBRON. De functiedefinities hieronder zijn de
+-- effectieve live definities (pg_get_functiondef) en worden bij elke migratie
+-- meegewijzigd. WAT HET NIET IS: een herstelscript. Het is nooit tegen een
+-- lege database gedraaid, de volgorde is niet gegarandeerd en niet elke
+-- kolom-, index- of RLS-wijziging is met terugwerkende kracht in de
+-- tabeldefinities bovenaan verwerkt (Codex v11 wees hier terecht op).
+-- Voor herstel geldt de migratiegeschiedenis in Supabase als bron.
 --
 -- Secrets (organisatie-wachtwoord, VAPID private key, push_secret) staan
 -- als rijdata in wedstrijd.instellingen en horen NIET in dit bestand.
@@ -172,17 +178,35 @@ AS $function$
 declare
   v_code text;
   v_chars text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  v_bytes bytea;
   i int;
 begin
   loop
     v_code := '';
-    for i in 1..6 loop
-      v_code := v_code || substr(v_chars, 1 + floor(random()*32)::int, 1);
+    v_bytes := extensions.gen_random_bytes(6);
+    for i in 0..5 loop
+      v_code := v_code || pg_catalog.substr(v_chars, 1 + (pg_catalog.get_byte(v_bytes, i) % 32), 1);
     end loop;
     exit when not exists (select 1 from wedstrijd.wedstrijden where code = v_code or kijk_code = v_code)
       and not exists (select 1 from wedstrijd.teams where deelnemer_code = v_code);
   end loop;
   return v_code;
+end $function$;
+
+-- pin voor een nieuwe wedstrijd: 6 kleine tekens + 3 cijfers, alles uit
+-- gen_random_bytes (Codex v11: random() is geen sleutelmateriaal)
+CREATE OR REPLACE FUNCTION wedstrijd.nieuwe_pin()
+ RETURNS text
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare
+  v_bytes bytea := extensions.gen_random_bytes(3);
+begin
+  return pg_catalog.lower(wedstrijd.nieuwe_team_code())
+    || (pg_catalog.get_byte(v_bytes, 0) % 10)::text
+    || (pg_catalog.get_byte(v_bytes, 1) % 10)::text
+    || (pg_catalog.get_byte(v_bytes, 2) % 10)::text;
 end $function$;
 
 CREATE OR REPLACE FUNCTION wedstrijd.nieuwe_code()
@@ -466,6 +490,12 @@ begin
   if not found then raise exception 'team_niet_gevonden'; end if;
   if now() < v_w.start_ts then raise exception 'wedstrijd_niet_begonnen'; end if;
   if now() > v_w.eind_ts then raise exception 'wedstrijd_afgelopen'; end if;
+  -- de loting loopt nog en dit team heeft nog geen plek: eerst kiezen (Codex v11)
+  if v_w.status = 'stekkeuze'
+     and coalesce(pg_catalog.cardinality(v_team.stekken), 0) = 0
+     and v_team.zone is null then
+    raise exception 'kies_eerst_je_plek';
+  end if;
   if p_gewicht_gram is null or p_gewicht_gram < 50 or p_gewicht_gram > 50000 then
     raise exception 'ongeldig_gewicht';
   end if;
@@ -582,6 +612,12 @@ begin
   select * into v_w from wedstrijd.wedstrijden
   where code = upper(trim(p_code)) and admin_pin = trim(p_pin) for update;
   if not found then raise exception 'pin_onjuist'; end if;
+  -- opnieuw loten mag niet meer zodra er gevist is: de vangsten blijven staan
+  -- en horen daarna bij teams zonder plek (Codex v11)
+  if exists (select 1 from wedstrijd.vangsten v
+             where v.wedstrijd_id = v_w.id and v.status = 'actief') then
+    raise exception 'reset_niet_mogelijk_vangsten';
+  end if;
   update wedstrijd.teams set lot_nummer = null, stekken = '{}', zone = null
   where wedstrijd_id = v_w.id;
   update wedstrijd.wedstrijden set status = 'aanmelden' where id = v_w.id;
@@ -733,17 +769,24 @@ CREATE OR REPLACE FUNCTION public.w_admin_verwijder_team(p_code text, p_pin text
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-declare v_w wedstrijd.wedstrijden;
+declare
+  v_w wedstrijd.wedstrijden;
+  v_team_id uuid;
 begin
   select * into v_w from wedstrijd.wedstrijden
   where code = upper(trim(p_code)) and admin_pin = trim(p_pin) for update;
   if not found then raise exception 'pin_onjuist'; end if;
+  -- eerst de TEAMRIJ locken: een gelijktijdige vangst-insert houdt een
+  -- FOR KEY SHARE-lock op deze rij, dus hierna kan er geen vangst meer tussen
+  -- de controle en de delete glippen (Codex v11)
+  select id into v_team_id from wedstrijd.teams
+  where id = p_team_id and wedstrijd_id = v_w.id for update;
+  if not found then raise exception 'team_niet_gevonden'; end if;
   -- vangsten zijn audit-data: eerst (soft-)verwijderen in Beheer, dan pas het team
-  if exists (select 1 from wedstrijd.vangsten where team_id = p_team_id) then
+  if exists (select 1 from wedstrijd.vangsten where team_id = v_team_id) then
     raise exception 'team_heeft_vangsten';
   end if;
-  delete from wedstrijd.teams where id = p_team_id and wedstrijd_id = v_w.id;
-  if not found then raise exception 'team_niet_gevonden'; end if;
+  delete from wedstrijd.teams where id = v_team_id;
   if v_w.status = 'stekkeuze' and not exists (
     select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and cardinality(stekken) = 0
   ) and exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id) then
@@ -1008,13 +1051,14 @@ begin
         sum(punten) filter (where not vervallen) as punten_totaal,
         sum(gewicht) filter (where not vervallen) as gewicht_geteld,
         sum(gewicht) as gewicht_totaal,
-        max(gewicht) as hoogste_dag
+        -- tiebreaks tellen alleen de MEEGETELDE wedstrijden (Codex v11 P0)
+        max(gewicht) filter (where not vervallen) as hoogste_dag_geteld
       from _sz_res group by sleutel
     ), gerangschikt as (
       select s.*,
         case when v_telling = 'totaalgewicht'
-          then rank() over (order by s.gewicht_geteld desc, s.hoogste_dag desc)
-          else rank() over (order by s.punten_totaal asc, s.gewicht_totaal desc, s.hoogste_dag desc)
+          then rank() over (order by s.gewicht_geteld desc, s.hoogste_dag_geteld desc)
+          else rank() over (order by s.punten_totaal asc, s.gewicht_geteld desc, s.hoogste_dag_geteld desc)
         end as plaats
       from stand s
     )
@@ -1064,11 +1108,10 @@ CREATE OR REPLACE FUNCTION public.w_su_wachtwoord(p_wachtwoord text, p_nieuw tex
 AS $function$
 declare
   v_huidig text;
-  v_org text;
 begin
   -- Codex v10: eerst locken, dan pas lezen en schrijven, anders kunnen twee
   -- gelijktijdige wijzigingen elkaar overschrijven (lock-out van de enige beheerder)
-  select beheerder_wachtwoord, organisator_wachtwoord into v_huidig, v_org
+  select beheerder_wachtwoord into v_huidig
   from wedstrijd.instellingen where id = 1 for update;
   -- idempotente retry (v9): het antwoord van een geslaagde poging kan verloren
   -- zijn gegaan; opnieuw dezelfde wijziging sturen mag dan geen fout geven
@@ -1079,7 +1122,13 @@ begin
   if coalesce(length(trim(p_nieuw)), 0) < 12 then
     raise exception 'beheerder_wachtwoord_te_kort';
   end if;
-  if v_org = trim(p_nieuw) then
+  -- tegen ALLE organisatorwachtwoorden controleren, niet alleen het oude
+  -- globale veld (Codex v11): sinds de tenancy-migratie staan de echte
+  -- wachtwoorden per klant in klant_instellingen
+  if exists (select 1 from wedstrijd.klant_instellingen
+             where organisator_wachtwoord = trim(p_nieuw))
+     or exists (select 1 from wedstrijd.instellingen
+                where id = 1 and organisator_wachtwoord = trim(p_nieuw)) then
     raise exception 'wachtwoord_gelijk_aan_org';
   end if;
   update wedstrijd.instellingen set beheerder_wachtwoord = trim(p_nieuw) where id = 1;
@@ -1409,10 +1458,19 @@ CREATE OR REPLACE FUNCTION public.w_org_wachtwoord(p_huidig text, p_nieuw text, 
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-declare v_klant uuid;
+declare
+  v_klant uuid;
+  v_beheerder text;
 begin
   if coalesce(length(trim(p_nieuw)), 0) < 6 then raise exception 'wachtwoord_te_kort'; end if;
   v_klant := wedstrijd.klant_van_org(p_huidig, p_klant);
+  -- de rij vastzetten voor we lezen en schrijven, en niet toestaan dat een
+  -- organisatorwachtwoord gelijk wordt aan het beheerderswachtwoord (Codex v11)
+  perform 1 from wedstrijd.klant_instellingen where klant_id = v_klant for update;
+  select beheerder_wachtwoord into v_beheerder from wedstrijd.instellingen where id = 1;
+  if v_beheerder is not null and v_beheerder = trim(p_nieuw) then
+    raise exception 'wachtwoord_gelijk_aan_beheerder';
+  end if;
   update wedstrijd.klant_instellingen set organisator_wachtwoord = trim(p_nieuw)
   where klant_id = v_klant;
   return json_build_object('ok', true);
@@ -1546,7 +1604,7 @@ begin
   if p_regels is not null and length(p_regels) > 3000 then raise exception 'regels_te_lang'; end if;
   v_code := wedstrijd.nieuwe_team_code();
   v_kijk := wedstrijd.nieuwe_team_code();
-  v_pin := lower(wedstrijd.nieuwe_team_code()) || floor(random()*1000)::text;
+  v_pin := wedstrijd.nieuwe_pin();
   insert into wedstrijd.wedstrijden (code, kijk_code, naam, mode, start_ts, eind_ts, admin_pin, zones, max_teams, regels, klant_id, client_id)
   values (v_code, v_kijk, trim(p_naam), p_mode, p_start, p_eind, v_pin,
           (select standaard_zones from wedstrijd.klant_instellingen where klant_id = v_klant), p_max_teams,
