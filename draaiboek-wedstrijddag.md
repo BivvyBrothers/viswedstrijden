@@ -87,7 +87,11 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
   de vangst klaarstaat. Komt de verbinding pas terug NA de eindtijd, dan meldt
   de app dat de vangst niet meer op tijd is doorgekomen en moet jij hem
   handmatig toevoegen (zie hierboven); de visser heeft gewicht, tijd en foto
-  nog op zijn scherm staan.
+  nog op zijn scherm staan. **Binnen 24 uur na de eindtijd gaat dat vanzelf:**
+  de app biedt zo'n vangst aan bij jou, en in Beheer verschijnt het blok
+  "Na de eindtijd binnengekomen" met foto, gewicht en het tijdstip dat de
+  telefoon van de visser noemt. Jij beslist of hij meetelt; tot dat moment
+  verandert er niets aan de uitslag.
 - **"Geen verbinding" op jouw telefoon:** de app probeert het vanzelf opnieuw;
   even wachten of de pagina verversen.
 - **Oranje balk "Nieuwe versie beschikbaar":** gewoon aantikken.

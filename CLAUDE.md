@@ -398,6 +398,21 @@ Getest met Chrome DevTools-netwerkemulatie: offline blijft het item staan
 (status `wacht`, geen upload geprobeerd), en zodra het `online`-event vuurt
 pakt de app hem uit zichzelf op, uploadt de foto en registreert.
 
+**Te laat binnen? Dan beslist de organisator (v69).** Is de wedstrijd voorbij
+tegen de tijd dat er weer verbinding is, dan biedt de app de vangst aan met
+`w_registreer_vangst_laat` (binnen `wedstrijd.late_marge()`, nu 24 uur na de
+eindtijd). Die zet hem op status **`wacht`**: dat telt NERGENS mee, niet in het
+klassement, niet in het seizoen, niet in de state van deelnemers of kijkers.
+De organisator ziet ze in Beheer onder "Na de eindtijd binnengekomen" met foto,
+gewicht, het door de telefoon gemelde vangsttijdstip en het moment van melden,
+en kiest per vangst meetellen (`actief`) of afwijzen (`verwijderd`) via
+`w_admin_vangst_beslis`. De vangsttijd van de telefoon (`vangsten.gevangen_op`)
+is bewust een INDICATIE: `created_at` blijft de onveranderbare audittijd van de
+server, en de RPC eist dat `gevangen_op` binnen start en eind van de wedstrijd
+valt. Lukt aanbieden ook niet meer (langer dan 24 uur geleden), dan blijft de
+vangst in de wachtrij staan met de melding dat de organisator hem handmatig
+moet toevoegen.
+
 ## Documentatie-oppervlakken (WERKAFSPRAAK sinds 15 jul 2026)
 
 Bij ELKE nieuwe feature of gedragswijziging die gebruikers raakt worden ALLE

@@ -103,8 +103,12 @@ create table wedstrijd.vangsten (
   team_id uuid not null references wedstrijd.teams(id) on delete cascade,
   gewicht_gram int not null check (gewicht_gram >= 50 and gewicht_gram <= 50000),
   foto_path text,                     -- NULL = handmatig ingevoerd door organisator
-  status text not null default 'actief' check (status in ('actief','verwijderd')),
-  created_at timestamptz not null default now()
+  -- 'wacht' = na de eindtijd binnengekomen uit de offline wachtrij van een
+  -- deelnemer; telt NIET mee tot de organisator hem goedkeurt (v69)
+  status text not null default 'actief' check (status in ('actief','verwijderd','wacht')),
+  created_at timestamptz not null default now(),   -- audittijd van de server
+  gevangen_op timestamptz,            -- wat de telefoon zegt; indicatie, geen bewijs
+  client_id uuid                      -- idempotentie bij handmatig toevoegen
 );
 create index vangsten_wedstrijd_idx on wedstrijd.vangsten (wedstrijd_id, status);
 -- idempotente registratie: zelfde foto kan maar bij 1 vangst horen
@@ -1091,6 +1095,100 @@ begin
         order by g.plaats, g.display) from gerangschikt g)
     )
   );
+end $function$;
+
+-- ============ Late vangsten met goedkeuring (v69, 13 aug 2026) ============
+-- Een vangst die door slecht bereik pas na de eindtijd doorkomt, wordt aan de
+-- organisator voorgelegd in plaats van geweigerd. Zie CLAUDE.md.
+
+CREATE OR REPLACE FUNCTION wedstrijd.late_marge()
+ RETURNS interval
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$ select interval '24 hours' $function$;
+
+CREATE OR REPLACE FUNCTION public.w_registreer_vangst_laat(p_code text, p_token uuid, p_gewicht_gram integer, p_foto_path text, p_gevangen_op timestamp with time zone)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_w wedstrijd.wedstrijden;
+  v_team wedstrijd.teams;
+  v_id uuid;
+begin
+  select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code));
+  if not found then raise exception 'wedstrijd_niet_gevonden'; end if;
+  select * into v_team from wedstrijd.teams where wedstrijd_id = v_w.id and token = p_token;
+  if not found then raise exception 'team_niet_gevonden'; end if;
+  if pg_catalog.now() <= v_w.eind_ts then raise exception 'wedstrijd_loopt_nog'; end if;
+  if pg_catalog.now() > v_w.eind_ts + wedstrijd.late_marge() then raise exception 'te_lang_geleden'; end if;
+  if p_gewicht_gram is null or p_gewicht_gram < 50 or p_gewicht_gram > 50000 then
+    raise exception 'ongeldig_gewicht';
+  end if;
+  if p_foto_path is null
+     or p_foto_path !~ ('^' || v_w.code || '/[A-Za-z0-9-]+\.(jpe?g|png|webp|gif|heic)$') then
+    raise exception 'ongeldige_foto';
+  end if;
+  if p_gevangen_op is null or p_gevangen_op < v_w.start_ts or p_gevangen_op > v_w.eind_ts then
+    raise exception 'buiten_wedstrijdtijd';
+  end if;
+
+  begin
+    insert into wedstrijd.vangsten (wedstrijd_id, team_id, gewicht_gram, foto_path, status, gevangen_op)
+    values (v_w.id, v_team.id, p_gewicht_gram, p_foto_path, 'wacht', p_gevangen_op)
+    returning id into v_id;
+  exception when unique_violation then
+    select id into v_id from wedstrijd.vangsten
+    where foto_path = p_foto_path and wedstrijd_id = v_w.id and team_id = v_team.id;
+    if not found then raise exception 'foto_al_gebruikt'; end if;
+    return json_build_object('id', v_id, 'dubbel', true);
+  end;
+  return json_build_object('id', v_id, 'status', 'wacht');
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_admin_wachtende(p_code text, p_pin text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_w wedstrijd.wedstrijden;
+begin
+  select * into v_w from wedstrijd.wedstrijden
+  where code = upper(trim(p_code)) and admin_pin = trim(p_pin);
+  if not found then raise exception 'pin_onjuist'; end if;
+  return coalesce((select json_agg(json_build_object(
+      'id', v.id, 'team_id', v.team_id,
+      'naam', coalesce(pg_catalog.nullif(pg_catalog.btrim(t.team_naam), ''),
+                       pg_catalog.btrim(t.naam) ||
+                       coalesce(' & ' || pg_catalog.btrim(t.naam2), '')),
+      'gewicht_gram', v.gewicht_gram, 'foto_path', v.foto_path,
+      'gevangen_op', v.gevangen_op, 'gemeld_op', v.created_at)
+      order by v.gevangen_op)
+    from wedstrijd.vangsten v join wedstrijd.teams t on t.id = v.team_id
+    where v.wedstrijd_id = v_w.id and v.status = 'wacht'), '[]'::json);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.w_admin_vangst_beslis(p_code text, p_pin text, p_vangst_id uuid, p_goedkeuren boolean)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_w wedstrijd.wedstrijden;
+  v_status text;
+begin
+  select * into v_w from wedstrijd.wedstrijden
+  where code = upper(trim(p_code)) and admin_pin = trim(p_pin) for update;
+  if not found then raise exception 'pin_onjuist'; end if;
+  v_status := case when p_goedkeuren then 'actief' else 'verwijderd' end;
+  update wedstrijd.vangsten set status = v_status
+  where id = p_vangst_id and wedstrijd_id = v_w.id and status = 'wacht';
+  if not found then raise exception 'vangst_niet_gevonden'; end if;
+  return json_build_object('ok', true, 'status', v_status);
 end $function$;
 
 -- =====================================================================

@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 68; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 69; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -33,6 +33,10 @@ const FOUTEN = {
   ongeldige_regels: 'Ongeldige seizoensinstellingen.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
   al_geloot: 'De loting is al gestart.',
+  wedstrijd_loopt_nog: 'De wedstrijd loopt nog: gebruik gewoon Registreer vangst.',
+  te_lang_geleden: 'Deze vangst is te lang na de wedstrijd binnengekomen om nog te kunnen meetellen.',
+  buiten_wedstrijdtijd: 'Het tijdstip van deze vangst valt buiten de wedstrijd.',
+  vangst_niet_gevonden: 'Deze vangst is er niet (meer).',
   reset_niet_mogelijk_vangsten: 'Opnieuw loten kan niet meer: er zijn al vangsten geregistreerd. Verwijder die eerst in Beheer als je echt opnieuw wilt loten.',
   kies_eerst_je_plek: 'Kies eerst je stek of zone; daarna kun je vangsten doorgeven.',
   geen_verbinding: 'Geen antwoord van de server. Controleer je bereik; de app probeert het vanzelf opnieuw.',
@@ -2132,8 +2136,21 @@ async function verstuurWachtrij() {
       } catch (err) {
         const code = err.message || '';
         if (code === 'wedstrijd_afgelopen') {
-          item.status = 'te_laat';
-          await wachtrijZet(item);
+          // de wedstrijd is intussen voorbij: aanbieden aan de organisator, die
+          // beslist. Een tijdstip van een offline telefoon is immers geen bewijs.
+          try {
+            await rpc('w_registreer_vangst_laat', {
+              p_code: item.code, p_token: team.token,
+              p_gewicht_gram: item.gewicht_gram, p_foto_path: item.pad,
+              p_gevangen_op: new Date(item.gemaakt_op).toISOString(),
+            });
+            await wachtrijWeg(item.id);
+            toast('De wedstrijd was al afgelopen. Je vangst is doorgegeven aan de organisator.');
+          } catch (err2) {
+            item.status = 'te_laat';
+            item.fout = foutTekst(err2);
+            await wachtrijZet(item);
+          }
         } else if (WACHTRIJ_DEFINITIEF.includes(code)) {
           item.status = 'geweigerd';
           item.fout = foutTekst(err);
@@ -2159,7 +2176,8 @@ async function renderWachtrij() {
     if (i.status === 'te_laat') {
       return `<div class="wachtrij-rij te-laat">
         <span class="tekst">⚠️ <b>${fmtKg(i.gewicht_gram)}</b> van ${esc(wanneer)} is niet meer op tijd
-        doorgekomen. Vraag de organisator om hem handmatig toe te voegen.</span>
+        doorgekomen en kon ook niet meer worden aangeboden${i.fout ? ` (${esc(i.fout)})` : ''}.
+        Vraag de organisator om hem handmatig toe te voegen.</span>
         <button class="btn klein-btn" data-wachtrij-weg="${esc(i.id)}">verwijderen</button></div>`;
     }
     if (i.status === 'geweigerd') {
@@ -2846,6 +2864,46 @@ async function beheerActie(fn, extra) {
   }
 }
 
+// Vangsten die pas na de eindtijd binnenkwamen (offline wachtrij van een
+// deelnemer). Ze staan op status 'wacht' en tellen NIET mee tot de organisator
+// ze goedkeurt; het tijdstip komt van de telefoon en is geen bewijs.
+async function renderWachtende() {
+  const kaart = $('#b-wacht-card'), el = $('#b-wachtende');
+  if (!kaart || !el) return;
+  let lijst = [];
+  try {
+    lijst = await rpc('w_admin_wachtende', { p_code: CODE, p_pin: sessie.pin(CODE) }) || [];
+  } catch { kaart.hidden = true; return; }
+  if (!lijst.length) { kaart.hidden = true; el.innerHTML = ''; return; }
+  kaart.hidden = false;
+  el.innerHTML = lijst.map((v) => `
+    <div class="b-rij">
+      ${v.foto_path ? `<img class="thumb" src="${esc(fotoUrl(v.foto_path))}" data-groot="${esc(fotoUrl(v.foto_path))}" alt="">` : ''}
+      <span class="naam">${esc(v.naam)} · <b>${fmtKg(v.gewicht_gram)}</b></span>
+      <span class="muted klein">gevangen ${esc(fmtDatumTijd(v.gevangen_op))} ·
+        gemeld ${esc(fmtDatumTijd(v.gemeld_op))}</span>
+      <button class="btn primary klein-btn" data-wacht-ja="${esc(v.id)}">✅ meetellen</button>
+      <button class="btn gevaar klein-btn" data-wacht-nee="${esc(v.id)}">afwijzen</button>
+    </div>`).join('');
+  el.querySelectorAll('[data-wacht-ja]').forEach((b) => {
+    b.onclick = () => beslisWachtende(b.dataset.wachtJa, true);
+  });
+  el.querySelectorAll('[data-wacht-nee]').forEach((b) => {
+    b.onclick = () => tikNogmaals(b, '⚠️ Zeker afwijzen?', () => beslisWachtende(b.dataset.wachtNee, false));
+  });
+}
+
+async function beslisWachtende(id, goedkeuren) {
+  try {
+    await rpc('w_admin_vangst_beslis', {
+      p_code: CODE, p_pin: sessie.pin(CODE), p_vangst_id: id, p_goedkeuren: goedkeuren,
+    });
+    toast(goedkeuren ? 'Vangst telt nu mee in het klassement.' : 'Vangst afgewezen.');
+    await laadState(false);
+    await renderWachtende();
+  } catch (err) { toast(foutTekst(err)); }
+}
+
 async function renderBeheer(magPrefill) {
   if (ROL !== 'organisator' || !ADMIN_OPEN) { $('#beheer-inhoud').hidden = true; $('#pin-card').hidden = false; return; }
   $('#pin-card').hidden = true;
@@ -2856,6 +2914,8 @@ async function renderBeheer(magPrefill) {
         && (actiefEl.tagName === 'INPUT' || actiefEl.tagName === 'TEXTAREA')) return;
     if (document.querySelector('#beheer-inhoud [data-scherp]')) return;
   }
+
+  renderWachtende();
 
   const w = STATE.wedstrijd;
   $('#b-code').textContent = w.code;
