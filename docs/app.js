@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 67; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 68; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -111,15 +111,16 @@ async function rpc(fn, args, wachtMs) {
 // (Codex v10 hoog-2). De aanroeper geeft een poging-object mee en onthoudt het
 // teruggekregen pad, zodat een retry na een netwerkfout hetzelfde pad hergebruikt
 // en de server-idempotentie een dubbele vangst herkent.
-async function uploadFoto(poging, blob) {
+async function uploadFoto(poging, blob, code) {
   if (poging.pad) return poging.pad;   // deze poging is al eerder geslaagd
-  const t = sessie.team(CODE);
-  const pin = sessie.pin(CODE);
+  const wCode = code || CODE;
+  const t = sessie.team(wCode);
+  const pin = sessie.pin(wCode);
   const kop = {
     apikey: SB_KEY,
     Authorization: `Bearer ${SB_KEY}`,
     'Content-Type': 'image/jpeg',
-    'x-w-code': CODE,
+    'x-w-code': wCode,
   };
   // de ACTIEVE rol bepaalt de credential: een organisator die op hetzelfde
   // toestel ooit als deelnemer meedeed, stuurde anders een (mogelijk verlopen)
@@ -327,8 +328,10 @@ window.addEventListener('DOMContentLoaded', () => {
   $('#update-banner').addEventListener('click', () => location.reload());
   // terug in beeld: direct verversen (de poll loopt op de achtergrond op 1/10 tempo)
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && CODE) laadState(!INIT_KLAAR);
+    if (!document.hidden && CODE) { laadState(!INIT_KLAAR); verstuurWachtrij(); }
   });
+  // zodra het bereik terug is meteen proberen, niet wachten op de volgende poll
+  window.addEventListener('online', () => { if (CODE) verstuurWachtrij(); });
 });
 
 async function checkVersie() {
@@ -366,12 +369,14 @@ function route() {
     ADMIN_KIES = null;
     POLL_TELLER = 0;
     laadState(true);
+    verstuurWachtrij();          // openstaande vangsten van een vorige sessie
     SEIZOEN = null;
     laadSeizoen();
     POLL = setInterval(() => {
       POLL_TELLER += 1;
       if (document.hidden && POLL_TELLER % 10 !== 0) return; // op de achtergrond: 1x per minuut (accu)
       laadState(!INIT_KLAAR);
+      if (POLL_TELLER % 5 === 0) verstuurWachtrij();   // elke 30s: staat er nog iets klaar?
       // seizoensstand rustig meeverversen (corrigeerde vangsten, nieuwe wedstrijden)
       if (SEIZOEN && POLL_TELLER % 10 === 0) laadSeizoen();
     }, 6000);
@@ -682,7 +687,7 @@ function renderAlles(eerste) {
   renderKaart();
   renderLoting();
   renderVangsten();
-  if (ROL === 'deelnemer') renderTeamTab();
+  if (ROL === 'deelnemer') { renderTeamTab(); renderWachtrij(); }
   if (ROL === 'organisator') renderBeheer(eerste);
   renderSnelVangst();
 }
@@ -2045,6 +2050,137 @@ function vangstFotoHtml(v, maat) {
     : `<img class="thumb" src="${url}" data-groot="${url}" alt="">`;
 }
 
+
+/* ---------- offline wachtrij voor vangsten ---------- */
+// Een vangst die aan het water wordt ingevoerd mag niet verdwijnen doordat het
+// bereik wegvalt. De poging leefde tot v67 in een gewone variabele: sloot de
+// visser de app of herlaadde hij de pagina, dan was alles weg (Codex v11).
+// Nu gaat elke vangst EERST duurzaam in IndexedDB en pas daarna naar de server;
+// de rij wordt automatisch geleegd zodra er weer verbinding is.
+//
+// Bewust GEEN Background Sync: op iPhone is dat niet betrouwbaar beschikbaar.
+// We proberen opnieuw bij het openen van de app, bij een online-event en tijdens
+// het pollen. Het teamtoken wordt NIET in de wachtrij opgeslagen; dat wordt bij
+// verzenden vers uit localStorage gehaald.
+const WACHTRIJ_DB = 'vwa-wachtrij';
+const WACHTRIJ_STORE = 'vangsten';
+let WACHTRIJ_BEZIG = false;
+let WACHTRIJ_CACHE = [];   // laatste stand, voor het renderen
+
+function wachtrijDb() {
+  return new Promise((ok, fout) => {
+    const v = indexedDB.open(WACHTRIJ_DB, 1);
+    v.onupgradeneeded = () => {
+      if (!v.result.objectStoreNames.contains(WACHTRIJ_STORE)) {
+        v.result.createObjectStore(WACHTRIJ_STORE, { keyPath: 'id' });
+      }
+    };
+    v.onsuccess = () => ok(v.result);
+    v.onerror = () => fout(v.error);
+  });
+}
+
+async function wachtrijActie(modus, fn) {
+  const db = await wachtrijDb();
+  return new Promise((ok, fout) => {
+    const tx = db.transaction(WACHTRIJ_STORE, modus);
+    const req = fn(tx.objectStore(WACHTRIJ_STORE));
+    tx.oncomplete = () => ok(req ? req.result : undefined);
+    tx.onerror = () => fout(tx.error);
+    tx.onabort = () => fout(tx.error);
+  });
+}
+
+const wachtrijZet = (item) => wachtrijActie('readwrite', (st) => st.put(item));
+const wachtrijWeg = (id) => wachtrijActie('readwrite', (st) => st.delete(id));
+async function wachtrijAlles() {
+  try {
+    const alles = await wachtrijActie('readonly', (st) => st.getAll());
+    return (alles || []).sort((a, b) => a.gemaakt_op - b.gemaakt_op);
+  } catch { return []; }   // privémodus of geen IndexedDB: dan werkt de app als vroeger
+}
+
+// serverfouten die NIET vanzelf overgaan: opnieuw proberen heeft geen zin
+const WACHTRIJ_DEFINITIEF = ['ongeldig_gewicht', 'ongeldige_foto', 'team_niet_gevonden',
+                             'kies_eerst_je_plek', 'foto_al_gebruikt', 'geen_toegang'];
+
+async function verstuurWachtrij() {
+  if (WACHTRIJ_BEZIG) return;
+  if (navigator.onLine === false) { await renderWachtrij(); return; }
+  WACHTRIJ_BEZIG = true;
+  try {
+    for (const item of await wachtrijAlles()) {
+      if (item.status) continue;   // te_laat of geweigerd: wacht op de gebruiker
+      const team = sessie.team(item.code);
+      if (!team) {
+        item.status = 'geweigerd';
+        item.fout = 'Je bent uitgelogd bij dit team, dus deze vangst kan niet meer worden verstuurd.';
+        await wachtrijZet(item);
+        continue;
+      }
+      try {
+        if (!item.pad) {
+          const poging = { pad: null };
+          item.pad = await uploadFoto(poging, item.blob, item.code);
+          await wachtrijZet(item);   // pad bewaren: een retry uploadt niet opnieuw
+        }
+        await rpc('w_registreer_vangst', {
+          p_code: item.code, p_token: team.token,
+          p_gewicht_gram: item.gewicht_gram, p_foto_path: item.pad,
+        });
+        await wachtrijWeg(item.id);
+      } catch (err) {
+        const code = err.message || '';
+        if (code === 'wedstrijd_afgelopen') {
+          item.status = 'te_laat';
+          await wachtrijZet(item);
+        } else if (WACHTRIJ_DEFINITIEF.includes(code)) {
+          item.status = 'geweigerd';
+          item.fout = foutTekst(err);
+          await wachtrijZet(item);
+        } else {
+          break;   // netwerk of rate-limit: later opnieuw, volgorde behouden
+        }
+      }
+    }
+  } finally {
+    WACHTRIJ_BEZIG = false;
+  }
+  await renderWachtrij();
+}
+
+async function renderWachtrij() {
+  const el = $('#wachtrij');
+  if (!el) return;
+  WACHTRIJ_CACHE = (await wachtrijAlles()).filter((i) => i.code === CODE);
+  if (!WACHTRIJ_CACHE.length) { el.hidden = true; el.innerHTML = ''; return; }
+  el.innerHTML = WACHTRIJ_CACHE.map((i) => {
+    const wanneer = fmtDatumTijd(new Date(i.gemaakt_op).toISOString());
+    if (i.status === 'te_laat') {
+      return `<div class="wachtrij-rij te-laat">
+        <span class="tekst">⚠️ <b>${fmtKg(i.gewicht_gram)}</b> van ${esc(wanneer)} is niet meer op tijd
+        doorgekomen. Vraag de organisator om hem handmatig toe te voegen.</span>
+        <button class="btn klein-btn" data-wachtrij-weg="${esc(i.id)}">verwijderen</button></div>`;
+    }
+    if (i.status === 'geweigerd') {
+      return `<div class="wachtrij-rij te-laat">
+        <span class="tekst">⚠️ <b>${fmtKg(i.gewicht_gram)}</b> van ${esc(wanneer)}: ${esc(i.fout || 'niet geaccepteerd')}</span>
+        <button class="btn klein-btn" data-wachtrij-weg="${esc(i.id)}">verwijderen</button></div>`;
+    }
+    return `<div class="wachtrij-rij">
+      <span class="tekst">⏳ <b>${fmtKg(i.gewicht_gram)}</b> van ${esc(wanneer)} staat klaar en wordt
+      verstuurd zodra er verbinding is. Je hoeft niets te doen; de app blijft het proberen.</span>
+      <button class="btn klein-btn" data-wachtrij-nu="1">nu proberen</button></div>`;
+  }).join('');
+  el.hidden = false;
+  el.querySelectorAll('[data-wachtrij-weg]').forEach((b) => {
+    b.onclick = async () => { await wachtrijWeg(b.dataset.wachtrijWeg); await renderWachtrij(); };
+  });
+  el.querySelectorAll('[data-wachtrij-nu]').forEach((b) => {
+    b.onclick = () => verstuurWachtrij();
+  });
+}
+
 /* ---------- push-meldingen ---------- */
 const pushKanHier = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -2341,9 +2477,8 @@ function initWedstrijd() {
     } else { img.hidden = true; }
   });
 
-  // vast fotopad per poging (bestand+gewicht): een retry na een netwerkfout
-  // hergebruikt het pad en kan daardoor niet dubbel registreren
-  let VANGST_POGING = null;
+  // (het vaste fotopad per poging zit sinds v68 in de wachtrij zelf: elk item
+  //  bewaart zijn eigen pad, dus een retry uploadt en registreert nooit dubbel)
   $('#form-vangst').addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#v-fout'), okEl = $('#v-ok'), knop = $('#v-submit');
@@ -2359,19 +2494,42 @@ function initWedstrijd() {
     }
     knop.disabled = true; knop.textContent = 'Bezig met uploaden…';
     try {
-      const pogingKey = [bestand.name, bestand.size, bestand.lastModified, gram].join('|');
-      if (!VANGST_POGING || VANGST_POGING.key !== pogingKey) {
-        VANGST_POGING = { key: pogingKey, pad: null };
-      }
       const blob = await compressFoto(bestand);
-      const pad = await uploadFoto(VANGST_POGING, blob);
-      await rpc('w_registreer_vangst', { p_code: CODE, p_token: t.token, p_gewicht_gram: gram, p_foto_path: pad });
-      VANGST_POGING = null;
-      okEl.textContent = `Vangst van ${fmtKg(gram)} geregistreerd! 🎉`;
-      okEl.hidden = false;
-      $('#form-vangst').reset();
-      $('#v-preview').hidden = true;
-      $('#v-foto-label').textContent = '📷 Foto maken of kiezen';
+      // eerst duurzaam vastleggen, dan pas versturen: valt het bereik weg of
+      // sluit de visser de app, dan staat de vangst er nog steeds
+      const item = { id: crypto.randomUUID(), code: CODE, gewicht_gram: gram,
+                     blob, gemaakt_op: Date.now(), pad: null };
+      let inWachtrij = true;
+      try { await wachtrijZet(item); } catch { inWachtrij = false; }
+
+      if (inWachtrij) {
+        // formulier meteen leeg: de vangst is vastgelegd, ook als het versturen
+        // nog moet gebeuren
+        $('#form-vangst').reset();
+        $('#v-preview').hidden = true;
+        $('#v-foto-label').textContent = '📷 Foto maken of kiezen';
+        await verstuurWachtrij();
+        const rest = (await wachtrijAlles()).find((i) => i.id === item.id);
+        if (!rest) {
+          okEl.textContent = `Vangst van ${fmtKg(gram)} geregistreerd! 🎉`;
+          okEl.hidden = false;
+        } else if (rest.status === 'geweigerd') {
+          foutEl.textContent = rest.fout || 'De vangst is niet geaccepteerd.';
+          foutEl.hidden = false;
+        } else {
+          okEl.textContent = `Vangst van ${fmtKg(gram)} opgeslagen. Hij wordt verstuurd zodra er verbinding is.`;
+          okEl.hidden = false;
+        }
+      } else {
+        // geen IndexedDB (bijvoorbeeld privémodus): de oude, directe weg
+        const pad = await uploadFoto({ pad: null }, blob);
+        await rpc('w_registreer_vangst', { p_code: CODE, p_token: t.token, p_gewicht_gram: gram, p_foto_path: pad });
+        okEl.textContent = `Vangst van ${fmtKg(gram)} geregistreerd! 🎉`;
+        okEl.hidden = false;
+        $('#form-vangst').reset();
+        $('#v-preview').hidden = true;
+        $('#v-foto-label').textContent = '📷 Foto maken of kiezen';
+      }
       await laadState(false);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
     knop.disabled = false; knop.textContent = 'Registreer vangst';

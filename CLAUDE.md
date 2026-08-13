@@ -368,6 +368,36 @@ indient geeft een wedstrijd met de regels en tijden van vorig seizoen.
 `w_org_wedstrijden` geeft sinds deze versie ook `regels` terug (alleen een
 extra JSON-veld, geen signatuurwijziging, dus oude clients merken niets).
 
+## Offline wachtrij voor vangsten (v68, 13 aug 2026)
+
+Derde voorstel uit het Codex-featureadvies. Een vangst gaat EERST duurzaam in
+IndexedDB (`vwa-wachtrij`, store `vangsten`, keyPath `id`) en pas daarna naar de
+server. Tot v67 leefde de poging in een gewone variabele: app sluiten of
+herladen betekende alles kwijt, terwijl juist aan het water het bereik wegvalt.
+
+- `wachtrijZet/Alles/Weg` zijn dunne wrappers om IndexedDB. Mislukt het openen
+  (privémodus, oude browser), dan valt het formulier terug op de oude directe
+  weg, zodat de app nooit slechter werkt dan voorheen.
+- Het item bewaart `code`, `gewicht_gram`, de gecomprimeerde `blob`,
+  `gemaakt_op` en na een geslaagde upload het `pad`. **Het teamtoken staat er
+  bewust NIET in**; dat wordt bij verzenden vers uit localStorage gehaald.
+  Doordat het pad bewaard blijft, uploadt een retry niet opnieuw en kan de
+  registratie niet dubbel (de RPC is idempotent op `foto_path`).
+- `verstuurWachtrij()` loopt de rij op volgorde af. Bij een NETWERKfout stopt
+  hij (volgorde behouden, later opnieuw). `wedstrijd_afgelopen` zet het item op
+  `te_laat`; de definitieve serverfouten uit `WACHTRIJ_DEFINITIEF` zetten het op
+  `geweigerd` met de vertaalde melding. Beide blijven staan tot de gebruiker ze
+  wegtikt, zodat een vangst nooit stil verdwijnt.
+- Aangeroepen bij: openen van een wedstrijd, elke 5e poll (30s), terugkeren naar
+  de voorgrond, en het `online`-event. **Bewust geen Background Sync**: op
+  iPhone niet betrouwbaar beschikbaar.
+- De strook `#wachtrij` staat boven het registratieformulier en toont per item
+  wat er staat te wachten, met "nu proberen" of "verwijderen".
+
+Getest met Chrome DevTools-netwerkemulatie: offline blijft het item staan
+(status `wacht`, geen upload geprobeerd), en zodra het `online`-event vuurt
+pakt de app hem uit zichzelf op, uploadt de foto en registreert.
+
 ## Documentatie-oppervlakken (WERKAFSPRAAK sinds 15 jul 2026)
 
 Bij ELKE nieuwe feature of gedragswijziging die gebruikers raakt worden ALLE

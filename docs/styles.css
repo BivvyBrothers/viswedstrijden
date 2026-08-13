@@ -417,3 +417,14 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
   font-size: 14px; line-height: 1.5; color: var(--tekst);
 }
 .sjabloon-hint .klein-btn { margin-left: 6px; }
+
+/* vangsten die nog verstuurd moeten worden (offline wachtrij) */
+.wachtrij { display: grid; gap: 8px; margin: 0 0 14px; }
+.wachtrij-rij {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--zand); border-left: 4px solid var(--blauw);
+  border-radius: 8px; padding: 10px 12px; font-size: 14px; line-height: 1.45;
+}
+.wachtrij-rij.te-laat { border-left-color: var(--rood); }
+.wachtrij-rij .tekst { flex: 1 1 190px; min-width: 0; }
+.wachtrij-rij b { font-variant-numeric: tabular-nums; }

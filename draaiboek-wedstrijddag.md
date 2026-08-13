@@ -80,9 +80,14 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
 ## Als de techniek tegenzit
 
 - **Geen bereik bij een visser:** de app blijft werken vanuit het geheugen;
-  zodra er weer verbinding is loopt alles vanzelf bij. Registreren kan pas
-  weer mét verbinding; lukt dat niet op tijd, gebruik dan jouw handmatige
-  invoer (zie hierboven).
+  zodra er weer verbinding is loopt alles vanzelf bij. **Een vangst registreren
+  kan sinds v68 ook zonder bereik**: gewicht en foto worden op de telefoon
+  bewaard en automatisch verstuurd zodra er weer verbinding is, ook als de app
+  tussendoor dicht is geweest. De visser ziet dan boven het formulier staan dat
+  de vangst klaarstaat. Komt de verbinding pas terug NA de eindtijd, dan meldt
+  de app dat de vangst niet meer op tijd is doorgekomen en moet jij hem
+  handmatig toevoegen (zie hierboven); de visser heeft gewicht, tijd en foto
+  nog op zijn scherm staan.
 - **"Geen verbinding" op jouw telefoon:** de app probeert het vanzelf opnieuw;
   even wachten of de pagina verversen.
 - **Oranje balk "Nieuwe versie beschikbaar":** gewoon aantikken.
