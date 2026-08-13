@@ -409,3 +409,11 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 
 /* KemblincK-logo in het merk-blok */
 .merk-voet img { width: 84px; height: auto; }
+
+/* melding boven het aanmaakformulier als de velden uit een sjabloon komen */
+.sjabloon-hint {
+  background: var(--zand); border-left: 4px solid var(--oranje);
+  border-radius: 8px; padding: 10px 12px; margin: 0 0 12px;
+  font-size: 14px; line-height: 1.5; color: var(--tekst);
+}
+.sjabloon-hint .klein-btn { margin-left: 6px; }

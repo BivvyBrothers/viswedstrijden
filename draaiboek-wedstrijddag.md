@@ -13,6 +13,12 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
    hem dan aan het seizoen (dropdown op de wedstrijdkaart in de
    organisatie-omgeving); deelnemers en kijkers krijgen er dan een
    Seizoen-tabblad met de doorlopende stand bij.
+   **Sneller: 📋 Als sjabloon.** Staat er al een vergelijkbare wedstrijd in de
+   lijst, tik dan op die knop. Type, maximum, regels, de duur en het seizoen
+   worden overgenomen, en de datum schuift door naar dezelfde weekdag en tijd
+   in de eerstvolgende week. Deelnemers, vangsten, codes en loting gaan NOOIT
+   mee. Boven het formulier staat dan een gele regel: controleer naam, datum,
+   tijden en regels voor je aanmaakt.
 2. **Adres en codes delen:** direct na het aanmaken verschijnt een
    deel-melding met de deelnemerscode, de directe link en de kijkcode;
    met **📤 Deel de uitnodiging** zet je alles in één bericht in de

@@ -1394,6 +1394,7 @@ begin
       'naam', w.naam, 'mode', w.mode, 'status', w.status,
       'start_ts', w.start_ts, 'eind_ts', w.eind_ts,
       'heeft_zones', (w.zones is not null), 'max_teams', w.max_teams,
+      'regels', w.regels,
       'teams', (select count(*) from wedstrijd.teams t where t.wedstrijd_id = w.id),
       'vangsten', (select count(*) from wedstrijd.vangsten v where v.wedstrijd_id = w.id and v.status = 'actief'))
       order by w.start_ts desc)

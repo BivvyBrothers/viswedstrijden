@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 66; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 67; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -434,13 +434,18 @@ function renderTabs() {
 }
 
 /* ---------- home ---------- */
-function initHome() {
-  const startVeld = $('#nw-start'), eindVeld = $('#nw-eind');
+// standaard: morgen 08:00 tot 17:00; ook gebruikt als het sjabloon wordt gewist
+function zetStandaardTijden() {
   const morgen = new Date(Date.now() + 86400000);
   morgen.setHours(8, 0, 0, 0);
-  startVeld.value = naarLocalInput(morgen.toISOString());
+  $('#nw-start').value = naarLocalInput(morgen.toISOString());
   const eind = new Date(morgen); eind.setHours(17, 0, 0, 0);
-  eindVeld.value = naarLocalInput(eind.toISOString());
+  $('#nw-eind').value = naarLocalInput(eind.toISOString());
+}
+
+function initHome() {
+  const startVeld = $('#nw-start'), eindVeld = $('#nw-eind');
+  zetStandaardTijden();
 
   // rolknoppen: klap het bijbehorende invoerveld uit
   document.querySelectorAll('.rolknop').forEach((k) => {
@@ -546,6 +551,22 @@ function initHome() {
       });
       NIEUW_POGING = null;
       sessie.zetPin(res.code, res.pin);
+      // sjabloon: hetzelfde seizoen en dezelfde dagregel meekoppelen. Mislukt dat,
+      // dan is de wedstrijd er gewoon en kan de organisator het seizoen alsnog
+      // met de keuzelijst op de wedstrijdkaart kiezen.
+      if (SJABLOON && SJABLOON.seizoen_id && !res.bestond_al) {
+        try {
+          await rpc('w_org_seizoen_koppel', {
+            p_wachtwoord: sessie.orgWw() || '',
+            p_code: res.code,
+            p_seizoen_id: SJABLOON.seizoen_id,
+            p_ex_aequo: SJABLOON.ex || null,
+            p_klant: KLANT(),
+          });
+        } catch { toast('Wedstrijd aangemaakt, maar het seizoen koppelen lukte niet. Kies het seizoen op de wedstrijdkaart.'); }
+      }
+      SJABLOON = null;
+      toonSjabloonHint();
       DEEL_NIEUW = {
         naam: $('#nw-naam').value.trim(),
         start: new Date(startVeld.value).toISOString(),
@@ -1096,9 +1117,67 @@ function orgWedstrijdKaart(w, nuMs) {
     <div class="row org-acties">
       <button class="btn primary" data-org-open="${esc(w.code)}">Openen &amp; beheren</button>
       ${w.status === 'aanmelden' && actief ? `<button class="btn" data-org-loting="${esc(w.code)}">🎲 Start loting</button>` : ''}
+      <button class="btn" data-org-sjabloon="${esc(w.code)}" title="Vul het formulier 'Nieuwe wedstrijd' met de instellingen van deze wedstrijd">\ud83d\udccb Als sjabloon</button>
       <button class="btn gevaar" data-org-verwijder="${esc(w.code)}" data-naam="${esc(w.naam)}">🗑️</button>
     </div>
   </div>`;
+}
+
+// Een wedstrijd als sjabloon gebruiken: type, maximum, regels, duur, seizoen en
+// dagregel overnemen naar een NIEUWE datum. Nooit deelnemers, vangsten, codes of
+// loting; die horen bij de oude wedstrijd. Het draaiboek liet de organisator dit
+// tot nu toe elke keer opnieuw intikken (Codex-featureadvies v11, voorstel 1).
+let SJABLOON = null;   // { code, naam, seizoen_id, ex } zolang het formulier gevuld staat
+
+function vulSjabloon(code) {
+  const w = (ORG_DATA?.wedstrijden || []).find((x) => x.code === code);
+  if (!w) return;
+  const start = new Date(w.start_ts);
+  const eind = new Date(w.eind_ts);
+  const duurMs = eind.getTime() - start.getTime();
+  // dezelfde weekdag en tijd, doorgeschoven naar de eerstvolgende toekomst
+  const nieuweStart = new Date(start);
+  while (nieuweStart.getTime() <= nu()) nieuweStart.setDate(nieuweStart.getDate() + 7);
+  const nieuwEind = new Date(nieuweStart.getTime() + duurMs);
+
+  $('#nw-naam').value = w.naam;
+  $('#nw-mode').value = w.mode;
+  $('#nw-max').value = w.max_teams || '';
+  $('#nw-regels').value = w.regels || '';
+  $('#nw-start').value = naarLocalInput(nieuweStart.toISOString());
+  $('#nw-eind').value = naarLocalInput(nieuwEind.toISOString());
+
+  const gekoppeld = SEIZOEN_PER_CODE[w.code];
+  SJABLOON = { code: w.code, naam: w.naam, seizoen_id: gekoppeld ? gekoppeld.id : null,
+               ex: gekoppeld ? gekoppeld.ex : null };
+  toonSjabloonHint();
+  // naar de KAART scrollen, niet naar het formulier: anders valt de melding
+  // die vertelt dat dit gekopieerde waarden zijn net boven beeld
+  ($('#form-nieuw').closest('section') || $('#form-nieuw'))
+    .scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('#nw-naam').focus();
+  $('#nw-naam').select();
+}
+
+// de organisator moet zien dat hier gekopieerde waarden staan: een sjabloon dat
+// je gedachteloos indient, geeft een wedstrijd met de regels van vorig jaar
+function toonSjabloonHint() {
+  const el = $('#nw-sjabloon');
+  if (!el) return;
+  if (!SJABLOON) { el.hidden = true; return; }
+  const seizoenTekst = SJABLOON.seizoen_id
+    ? ` Het seizoen wordt automatisch meegekoppeld.` : '';
+  el.innerHTML = `\ud83d\udccb Overgenomen van <b>${esc(SJABLOON.naam)}</b>.
+    Controleer naam, datum, tijden en regels.${seizoenTekst}
+    <button type="button" class="btn klein-btn" id="nw-sjabloon-wis">leegmaken</button>`;
+  el.hidden = false;
+  $('#nw-sjabloon-wis').onclick = () => {
+    SJABLOON = null;
+    ['#nw-naam', '#nw-max', '#nw-regels', '#nw-start', '#nw-eind'].forEach((s2) => { $(s2).value = ''; });
+    $('#nw-mode').value = 'individueel';
+    zetStandaardTijden();
+    toonSjabloonHint();
+  };
 }
 
 function renderOrg() {
@@ -1137,6 +1216,9 @@ function renderOrg() {
         location.hash = '#/w/' + b.dataset.orgLoting;
       } catch (err) { toast(foutTekst(err)); }
     });
+  });
+  document.querySelectorAll('[data-org-sjabloon]').forEach((b) => {
+    b.onclick = () => vulSjabloon(b.dataset.orgSjabloon);
   });
   document.querySelectorAll('[data-org-verwijder]').forEach((b) => {
     b.onclick = () => tikNogmaals(b, '⚠️ Definitief weg', async () => {

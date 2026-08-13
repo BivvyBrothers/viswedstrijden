@@ -334,6 +334,25 @@ Uit review v8 (UX-2/9/10), gericht op gebruik met natte handen en fel zonlicht:
 - **Landing**: directe demo-links per rol (kijker `/demo/#/k/KIJKJE`,
   deelnemer `/demo/#/w/DEMOJA`).
 
+## Wedstrijd als sjabloon (v67, 13 aug 2026)
+
+Knop **📋 Als sjabloon** op elke wedstrijdkaart in de organisatie-omgeving
+(`data-org-sjabloon`). `vulSjabloon(code)` vult het formulier Nieuwe wedstrijd
+met naam, type, maximum, regels en de DUUR van de bronwedstrijd; de datum
+schuift per hele week door tot de eerstvolgende toekomstige datum, zodat
+dezelfde weekdag en tijd blijven staan. Had de bron een seizoen, dan wordt de
+nieuwe wedstrijd na het aanmaken automatisch aan hetzelfde seizoen en dezelfde
+dagregel gekoppeld (`w_org_seizoen_koppel`); mislukt dat, dan blijft de
+wedstrijd gewoon bestaan en zegt een toast dat het seizoen handmatig moet.
+Nooit overgenomen: deelnemers, vangsten, codes, pin, loting.
+
+Boven het formulier verschijnt `#nw-sjabloon` met de bron en een
+leegmaak-knop. Dat is bewust opdringerig: een sjabloon dat je gedachteloos
+indient geeft een wedstrijd met de regels en tijden van vorig seizoen.
+
+`w_org_wedstrijden` geeft sinds deze versie ook `regels` terug (alleen een
+extra JSON-veld, geen signatuurwijziging, dus oude clients merken niets).
+
 ## Documentatie-oppervlakken (WERKAFSPRAAK sinds 15 jul 2026)
 
 Bij ELKE nieuwe feature of gedragswijziging die gebruikers raakt worden ALLE
