@@ -124,30 +124,42 @@ create table wedstrijd.push_subs (
 );
 create index push_subs_wedstrijd_idx on wedstrijd.push_subs (wedstrijd_id);
 
+-- PER KLANT sinds 13 aug 2026 (migraties stekring_per_klant_stap1/stap2): de
+-- ring moet gelijk zijn aan STEK_POSITIE in de kaart.js van die tenant, anders
+-- biedt de app stekken aan die de server met 'onbekende_stek' weigert.
+-- SQL genereren en controleren: tools/stekring_sql.py --slug <tenant>
 create table wedstrijd.stek_ring (
-  positie int primary key,
-  stek int not null unique
+  klant_id uuid not null references wedstrijd.klanten(id) on delete cascade,
+  positie int not null,
+  stek int not null,
+  primary key (klant_id, positie),
+  constraint stek_ring_klant_stek_uniek unique (klant_id, stek)
 );
 -- fysieke volgorde rond de plas (zelfde als STEK_POSITIE in docs/kaart.js):
 -- oneven 1..99, dan even 100 terug naar 54, dan 52 terug naar 20, gat, dan bank 10,8,6,4,2.
 -- Bewust: 52-54 (over de duiker) geldt als aangrenzend; gaten tussen 10-20 en 2-1.
 do $$
-declare pos int := 0; s int;
+declare pos int := 0; s int; v_nphv uuid;
 begin
+  select id into v_nphv from wedstrijd.klanten where slug = 'nphv';
   for s in select generate_series(1, 99, 2) loop
-    pos := pos + 1; insert into wedstrijd.stek_ring values (pos, s);
+    pos := pos + 1; insert into wedstrijd.stek_ring values (v_nphv, pos, s);
   end loop;
   for s in select generate_series(100, 54, -2) loop
-    pos := pos + 1; insert into wedstrijd.stek_ring values (pos, s);
+    pos := pos + 1; insert into wedstrijd.stek_ring values (v_nphv, pos, s);
   end loop;
   for s in select generate_series(52, 20, -2) loop
-    pos := pos + 1; insert into wedstrijd.stek_ring values (pos, s);
+    pos := pos + 1; insert into wedstrijd.stek_ring values (v_nphv, pos, s);
   end loop;
   pos := pos + 1; -- gat: zuidwest-oever zonder stekken
   foreach s in array array[10,8,6,4,2] loop
-    pos := pos + 1; insert into wedstrijd.stek_ring values (pos, s);
+    pos := pos + 1; insert into wedstrijd.stek_ring values (v_nphv, pos, s);
   end loop;
 end $$;
+-- demo-omgeving: 40 aaneengesloten stekken, gelijk aan docs/demo/kaart.js
+insert into wedstrijd.stek_ring (klant_id, positie, stek)
+select (select id from wedstrijd.klanten where slug = 'demo'), g, g
+from generate_series(1, 40) g;
 -- stekken 12/14/16/18 bestaan niet (13/15/17 wel), conform de NPHV-kaart
 
 -- RLS aan zonder policies: tabellen zijn alleen via de RPC's bereikbaar
@@ -218,7 +230,7 @@ begin
   return wedstrijd.nieuwe_team_code();
 end $function$;
 
-CREATE OR REPLACE FUNCTION wedstrijd.valideer_zones(p_zones jsonb)
+CREATE OR REPLACE FUNCTION wedstrijd.valideer_zones(p_zones jsonb, p_klant uuid)
  RETURNS void
  LANGUAGE plpgsql
  SET search_path TO ''
@@ -241,7 +253,9 @@ begin
     select coalesce(array_agg(distinct s::int), '{}') into v_stekken
     from jsonb_array_elements_text(z->'stekken') s;
     if cardinality(v_stekken) = 0 then raise exception 'ongeldige_zones'; end if;
-    if exists (select 1 from unnest(v_stekken) s where s not in (select stek from wedstrijd.stek_ring)) then
+    -- stekken moeten op de kaart van DEZE klant bestaan
+    if exists (select 1 from unnest(v_stekken) s
+               where s not in (select stek from wedstrijd.stek_ring where klant_id = p_klant)) then
       raise exception 'onbekende_stek';
     end if;
     if alle && v_stekken then raise exception 'stek_in_meerdere_zones'; end if;
@@ -403,7 +417,7 @@ begin
   end if;
 
   select array_agg(positie order by positie) into v_posities
-  from wedstrijd.stek_ring where stek = any(p_stekken);
+  from wedstrijd.stek_ring where klant_id = v_w.klant_id and stek = any(p_stekken);
   if coalesce(cardinality(v_posities),0) <> v_nodig then raise exception 'onbekende_stek'; end if;
   if v_nodig = 2 and v_posities[2] - v_posities[1] <> 1 then
     raise exception 'stekken_niet_naast_elkaar';
@@ -547,14 +561,14 @@ begin
   return json_build_object('ok', true);
 end $function$;
 
-CREATE OR REPLACE FUNCTION wedstrijd.max_koppels()
+CREATE OR REPLACE FUNCTION wedstrijd.max_koppels(p_klant uuid)
  RETURNS integer
  LANGUAGE sql
  STABLE
 AS $function$
   with segmenten as (
     select positie - row_number() over (order by positie) as groep
-    from wedstrijd.stek_ring
+    from wedstrijd.stek_ring where klant_id = p_klant
   )
   select coalesce(sum(floor(aantal / 2))::int, 0)
   from (select count(*) as aantal from segmenten group by groep) s;
@@ -584,9 +598,9 @@ begin
     if v_w.mode = 'koppel' then
       -- Codex v10: niet stekken/2, maar het aantal paren dat fysiek naast
       -- elkaar KAN liggen (de ring heeft een onderbreking)
-      v_capaciteit := wedstrijd.max_koppels();
+      v_capaciteit := wedstrijd.max_koppels(v_w.klant_id);
     else
-      select count(*) into v_capaciteit from wedstrijd.stek_ring;
+      select count(*) into v_capaciteit from wedstrijd.stek_ring where klant_id = v_w.klant_id;
     end if;
     if v_teams > v_capaciteit then
       raise exception 'te_veel_teams_voor_stekken';
@@ -702,7 +716,7 @@ begin
     update wedstrijd.wedstrijden set zones = null where id = v_w.id;
     return json_build_object('ok', true, 'zones', 0);
   end if;
-  perform wedstrijd.valideer_zones(p_zones);
+  perform wedstrijd.valideer_zones(p_zones, v_w.klant_id);
   update wedstrijd.wedstrijden set zones = p_zones where id = v_w.id;
   return json_build_object('ok', true, 'zones', jsonb_array_length(p_zones));
 end $function$;
@@ -748,7 +762,7 @@ begin
       raise exception 'verkeerd_aantal_stekken';
     end if;
     select array_agg(positie order by positie) into v_posities
-    from wedstrijd.stek_ring where stek = any(p_stekken);
+    from wedstrijd.stek_ring where klant_id = v_w.klant_id and stek = any(p_stekken);
     if coalesce(cardinality(v_posities),0) <> v_nodig then raise exception 'onbekende_stek'; end if;
     if v_nodig = 2 and v_posities[2] - v_posities[1] <> 1 then raise exception 'stekken_niet_naast_elkaar'; end if;
     if exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and stekken && p_stekken) then
@@ -1448,7 +1462,7 @@ begin
     update wedstrijd.klant_instellingen set standaard_zones = null where klant_id = v_klant;
     return json_build_object('ok', true, 'zones', 0);
   end if;
-  perform wedstrijd.valideer_zones(p_zones);
+  perform wedstrijd.valideer_zones(p_zones, v_klant);
   update wedstrijd.klant_instellingen set standaard_zones = p_zones where klant_id = v_klant;
   return json_build_object('ok', true, 'zones', jsonb_array_length(p_zones));
 end $function$;

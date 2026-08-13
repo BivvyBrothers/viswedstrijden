@@ -235,9 +235,12 @@ def bouw_tenant(slug, kort, volledig, water, stekken, zones, kaart_van):
     print(f"     insert into wedstrijd.klanten (slug, naam) values ('{slug}', '<volledige naam>');")
     print(f"     insert into wedstrijd.klant_instellingen (klant_id, organisator_wachtwoord)")
     print(f"       select id, '<eigen organisatie-wachtwoord>' from wedstrijd.klanten where slug = '{slug}';")
-    print(f'  5. LET OP: org-wachtwoord, zones en alleen-lezen zijn sinds 18 jul PER KLANT')
-    print(f'     (wedstrijd.klant_instellingen). De stek_ring is nog wel gedeeld met NPHV,')
-    print(f'     dus stekkeuze/koppelmode werkt alleen met de NPHV-nummering; zie CLAUDE.md.')
+    print(f'  5. STEKRING van deze klant vullen (VERPLICHT, anders geeft elke stekkeuze')
+    print(f'     `onbekende_stek`). De ring moet exact gelijk zijn aan STEK_POSITIE in')
+    print(f'     docs/{slug}/kaart.js; genereer de SQL met:')
+    print(f'       python3 tools/stekring_sql.py --slug {slug}')
+    print(f'  6. LET OP: org-wachtwoord, zones, alleen-lezen EN de stekring zijn per klant')
+    print(f'     (wedstrijd.klant_instellingen + wedstrijd.stek_ring); zie CLAUDE.md.')
 
 
 if __name__ == '__main__':

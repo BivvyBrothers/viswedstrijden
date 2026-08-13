@@ -37,7 +37,7 @@ Tabellen (RLS aan, geen policies; alle toegang via RPC's):
 - `wedstrijden` : code, naam, mode (individueel/koppel), start/eind, status, admin_pin
 - `teams`       : deelnemers/koppels, geheim token, lotnummer, gekozen stekken
 - `vangsten`    : gewicht (gram), foto-pad, status (actief/verwijderd)
-- `stek_ring`   : fysieke volgorde van de 96 stekken rond de plas (voor "naast elkaar")
+- `stek_ring`   : fysieke volgorde van de stekken rond het water, PER KLANT (voor "naast elkaar")
 
 RPC's (public schema, security definer, alle validatie server-side):
 - `w_maak_wedstrijd`, `w_get_state`, `w_join`, `w_mijn_team`

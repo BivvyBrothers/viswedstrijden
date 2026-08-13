@@ -27,8 +27,8 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
   `wedstrijd.klanten` (slug = tenant-map, naam) + `wedstrijden.klant_id`.
   Elke tenant-omgeving is een klant; `config.js` heeft `const TENANT = '<slug>'`
   en `w_maak_wedstrijd` krijgt `p_klant` mee (oude clients zonder parameter
-  vallen terug op nphv). Lichte eerste tenancy-stap voor het beheeroverzicht;
-  org-wachtwoord/zones/stek_ring blijven gedeeld tot de volledige migratie.
+  vallen terug op nphv). Dit was de eerste tenancy-stap (beheeroverzicht);
+  org-wachtwoord en zones volgden 18 jul, de stekring 13 aug. Alles per klant nu.
   Nieuwe tenant = ook een klant-rij inserten (nieuwe_tenant.py print de SQL).
 - **Multi-tenant (sinds 11 jul 2026):** elke organisatie krijgt een eigen pad,
   bijv. `/nphv/` (NPHV, Nootdorps Pijnackerse Hengelsportvereniging, Plas van
@@ -125,9 +125,23 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
   (stuk zuidwest-oever zonder stekken, conform de originele NPHV-kaart; oneven
   13/15/17 bestaan gewoon). Oneven = noord/west-oevers, even = ingang-bank (2-10)
   en zuidoever (20-100).
-- **`stek_ring`** (tabel + `STEK_POSITIE` in kaart.js): fysieke volgorde rond de
-  plas voor "naast elkaar"-checks bij koppels. Bewuste keuzes: 52-54 (over de
-  duiker) telt als aangrenzend; gaten tussen 10-20 en tussen 2-1.
+- **`stek_ring`** (tabel + `STEK_POSITIE` in kaart.js): fysieke volgorde rond het
+  water voor "naast elkaar"-checks bij koppels. Bewuste keuzes bij NPHV: 52-54
+  (over de duiker) telt als aangrenzend; gaten tussen 10-20 en tussen 2-1.
+  **PER KLANT sinds 13 aug 2026** (migraties `stekring_per_klant_stap1/stap2`):
+  kolom `klant_id`, primary key `(klant_id, positie)`. Daarvoor was de ring
+  globaal en dus de NPHV-nummering, waardoor de demokaart (stekken 1 t/m 40)
+  plekken aanbood die de server met `onbekende_stek` weigerde. Dat was de harde
+  blokkade voor klant 2. De klant wordt ALTIJD uit de wedstrijd afgeleid
+  (`v_w.klant_id`), nooit uit een parameter van de client.
+  **De ring moet exact gelijk zijn aan `STEK_POSITIE` in de kaart.js van die
+  tenant.** Genereren en controleren: `python3 tools/stekring_sql.py --slug X`
+  (met `--check` alleen de samenvatting: aantal stekken, aaneengesloten stukken
+  en het maximum aantal koppels). Aangepast per klant: `wedstrijd.max_koppels(klant)`
+  en `wedstrijd.valideer_zones(zones, klant)`; die twee zitten in het schema
+  `wedstrijd` en zijn niet via PostgREST aanroepbaar, dus hun oude signatuur is
+  gedropt. De RPC-signaturen in `public` zijn ONgewijzigd, dus oude PWA-clients
+  blijven werken.
 - **Modes:** `individueel` (1 stek per visser) of `koppel` (2 aangrenzende stekken,
   score als team).
 - **Rollen:** organisator = pincode per wedstrijd; deelnemer = wedstrijdcode + naam,
@@ -198,9 +212,10 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
   (index/instructies/sw/manifest/config/version + standaardkaart) en voegt de
   keuzeregel op de rootpagina toe. ELKE vervanging heeft een assert; als het
   NPHV-sjabloon wijzigt, faalt het script luid in plaats van stil.
-- LET OP tot de DB-tenancy er is: de server valideert stekken tegen de
-  NPHV-`stek_ring`; standaardkaart-tenants kunnen dus nog geen eigen
-  stekkeuze/koppelmode draaien. Kijk-demo's en direct geseede data werken wel.
+- Sinds 13 aug 2026 heeft elke klant een EIGEN stekring, dus standaardkaart-
+  tenants kunnen gewoon stekkeuze en koppelmode draaien. Wel verplicht bij een
+  nieuwe tenant: de ring vullen met `tools/stekring_sql.py --slug X`, anders
+  geeft elke stekkeuze `onbekende_stek`.
 
 ## Demo-omgeving (/demo/, 12 jul 2026)
 
@@ -418,7 +433,10 @@ Bij elke release controleren:
    wedstrijd.klant_instellingen (eigen organisatiewachtwoord, eventueel
    standaardzones) voordat de omgeving live gaat; anders faalt inloggen met
    org_wachtwoord_onjuist en aanmaken met klant_niet_gevonden.
-   nieuwe_tenant.py print beide insert-statements.
+   nieuwe_tenant.py print beide insert-statements. **Daarnaast VERPLICHT: de
+   stekring van die klant vullen** (`python3 tools/stekring_sql.py --slug X`),
+   anders geeft elke stekkeuze `onbekende_stek`. Controleer met `--check` dat
+   het aantal stekken en het maximum aantal koppels klopt met de kaart.
 7. Root-hash-test: `/#/k/KIJKJE` moet in /demo/ landen, `/#/org` in /nphv/
    (landing.js: kale root-hashes zijn legacy-NPHV; nieuwe tenants delen
    ALTIJD links met tenantpad, alleen de demo-kijkcode heeft een mapping).
