@@ -1,2 +1,6 @@
 .DS_Store
 prijsstrategie.md
+
+# originele vangstfoto's: alleen de verkleinde versies in docs/ gaan mee
+marketing/fotos-bron/*
+!marketing/fotos-bron/LEESMIJ.txt

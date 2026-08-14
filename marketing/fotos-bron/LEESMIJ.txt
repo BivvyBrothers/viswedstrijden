@@ -1,0 +1,10 @@
+Zet hier de originele vangstfoto's neer (jpg/png/heic, formaat maakt niet uit).
+
+Daarna:
+    python3 tools/site_fotos.py --bron marketing/fotos-bron --html
+
+Dat schrijft ze verkleind en ZONDER metadata (dus zonder GPS-locatie van de
+stek) naar docs/schermen/vangsten/ en print het HTML-blok voor de landing.
+
+Deze bronmap staat in .gitignore: alleen de verkleinde versies gaan mee de
+publieke repo in.

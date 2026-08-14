@@ -75,6 +75,16 @@
     .landing-hero .telefoon { width: min(178px, 58vw); }
   }
   .sectie { padding: clamp(20px, 4vw, 36px); }
+  /* strook echte vangstfoto's; elke verhouding valt goed door object-fit */
+  .fotostrook {
+    display: grid; gap: 10px; margin: 20px 0 0;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+  .fotostrook img {
+    width: 100%; height: 190px; object-fit: cover; display: block;
+    border-radius: 12px; box-shadow: 0 4px 14px rgba(35, 40, 26, .18);
+  }
+  .fotostrook-bron { margin: 8px 0 0; }
   .scan-figuur { margin: 20px 0 0; }
   .scan-figuur img {
     display: block; width: 100%; height: auto;
