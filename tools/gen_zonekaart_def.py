@@ -3,12 +3,13 @@
 # foto) op de wedstrijdstekkenkaart, met zoneletters A.. en zonelijst.
 import math
 import json
+import os
 import sys
 import numpy as np
 from PIL import Image, ImageDraw
 from collections import deque
 
-sys.path.insert(0, '/Users/kemble/Library/CloudStorage/OneDrive-Persoonlijk/Claude cowork/KemblincK/Viswedstrijden/tools')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # shape.py staat hiernaast
 import shape
 
 S = 3.7

@@ -3,8 +3,9 @@
 # Grenslijnen lopen van de oever (midden tussen twee buurstekken) naar een
 # middellijn door de plas, zoals op de geplastificeerde wedstrijdkaart.
 import math
+import os
 import sys
-sys.path.insert(0, '/Users/kemble/Library/CloudStorage/OneDrive-Persoonlijk/Claude cowork/KemblincK/Viswedstrijden/tools')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # shape.py staat hiernaast
 import shape
 
 S = 3.7
