@@ -441,6 +441,16 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
    `uitslag-gedeeld.png`. Die laatste is GEEN schermopname maar de afbeelding
    die de app zelf op een canvas tekent: opgehaald met
    `tekenUitslag().toDataURL()` na `wachtOpVoetLogo()`.
+   **Echte vangstfoto's (14 aug):** vier foto's van Patrick in de sectie
+   "Vangst erin, klassement bijgewerkt" (`.fotostrook`), plus zes in
+   `docs/schermen/vangsten/` waarvan er twee alleen in de schermopname van de
+   vangstenlijst zitten. Bron: `marketing/fotos-bron/` (in .gitignore, blijft
+   buiten de publieke repo). Verwerken ALTIJD met `tools/site_fotos.py`: dat
+   past de EXIF-draaiing toe en schrijft de foto daarna opnieuw weg ZONDER enige
+   metadata. Van de 37 aangeleverde originelen hadden er 3 GPS-coordinaten, en
+   de site verkoopt "geen locatie-tracking"; dan mag de stek niet alsnog in de
+   metadata van een sfeerfoto staan. Bronvermelding met link naar BivvyBrothers
+   (akkoord Patrick 14 aug).
    Voor het loting-beeld is de STATE in de browser gezet (status `stekkeuze`,
    lotnummers, start in de toekomst zodat de zwevende vangstknop wegblijft): de
    UI is echt, alleen de toestand is geënsceneerd, want de demowedstrijd is
