@@ -1,0 +1,9 @@
+ALLEEN de foto's in deze map mogen op de site en in de app (afspraak Patrick,
+14 aug 2026). De map marketing/fotos-bron/ is de grote verzameling; die is
+NIET vrijgegeven.
+
+Verwerken:
+    python3 tools/site_fotos.py --bron marketing/fotos-site --html
+
+Dat schrijft ze verkleind en zonder metadata (dus zonder GPS-locatie) naar
+docs/schermen/vangsten/ en print het HTML-blok voor de landing.
