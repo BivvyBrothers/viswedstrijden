@@ -435,6 +435,16 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
    kaartopname `#topcode` leegmaken (de wedstrijdcode geeft toegang tot de
    deelnemerslijst) en vanaf scrollTop 0 fotograferen, zodat "Loting & volgorde"
    met de deelnemersnamen NIET in beeld komt.
+   **Zes beelden sinds 13 aug** (`docs/schermen/`): klassement (hero),
+   `scherm-loting.png` (stekkeuze), `scherm-kaart-nphv.png` (dieptekaart),
+   `scherm-seizoen.png` (seizoensklassement), `scherm-home.png` (startscherm) en
+   `uitslag-gedeeld.png`. Die laatste is GEEN schermopname maar de afbeelding
+   die de app zelf op een canvas tekent: opgehaald met
+   `tekenUitslag().toDataURL()` na `wachtOpVoetLogo()`.
+   Voor het loting-beeld is de STATE in de browser gezet (status `stekkeuze`,
+   lotnummers, start in de toekomst zodat de zwevende vangstknop wegblijft): de
+   UI is echt, alleen de toestand is geënsceneerd, want de demowedstrijd is
+   afgelopen. Dat is bewust geen wijziging in de database.
    `docs/info.html` is alleen nog een redirect naar /.
 2. `docs/inloggen/index.html` | inlogpagina met de organisatie-keuze
    (nieuwe tenants komen hier als kaart bij; nieuwe_tenant.py doet dat)
