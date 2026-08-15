@@ -125,6 +125,73 @@
   .stap-rij p { margin: 2px 0 0; font-size: 15px; color: var(--tekst); line-height: 1.55; }
   .cta { text-align: center; }
   .cta .btn { display: inline-block; text-decoration: none; margin-top: 6px; }
+
+  /* ---- landingsritme (staat achteraan zodat het van de regels hierboven wint) ---- */
+  /* landing-opmaak: meer rust en grotere koppen dan de app zelf.
+     De app zet elke sectie in een witte kaart op een gevlekte achtergrond; op
+     een landingspagina leest dat als een smalle balk waar je doorheen scrollt.
+     Hier dus: egale achtergrond, bredere maat, en secties zonder doos. Alleen
+     waar een blok echt iets afbakent (privacy, FAQ, slotoproep) blijft een
+     vlak staan. */
+  body {
+    background: var(--zand);          /* geen vlekkenpatroon op de landing */
+  }
+  .container {
+    max-width: 1120px;
+    padding-left: clamp(16px, 4vw, 40px);
+    padding-right: clamp(16px, 4vw, 40px);
+    padding-top: 0;                 /* hero sluit aan op de balk erboven */
+  }
+  /* secties: geen kaart, alleen ruimte */
+  .sectie.card {
+    background: none; box-shadow: none; border-radius: 0;
+    padding: clamp(44px, 7vw, 88px) 0;
+    margin: 0;
+    border-bottom: 1px solid rgba(42, 39, 33, .08);
+  }
+  .sectie.card:last-of-type { border-bottom: none; }
+  /* blokken die WEL een vlak mogen zijn */
+  .sectie.card.privacy-blok, .sectie.card.faq, .sectie.card.cta {
+    border-radius: 18px; padding: clamp(28px, 5vw, 52px);
+    margin: clamp(28px, 5vw, 56px) 0; border-bottom: none;
+  }
+  .sectie.card.faq, .sectie.card.cta {
+    background: #fff; box-shadow: 0 1px 4px rgba(42, 39, 33, .08);
+  }
+  /* de regel `.sectie.card { background: none }` hierboven is specifieker dan
+     `.privacy-blok`, dus die kleur moet hier expliciet terug */
+  .sectie.card.privacy-blok { background: var(--blauw-donker); color: #fff; }
+  /* een kaart van 1120px breed met alleen tekst oogt leeg: die twee smaller */
+  .sectie.card.faq, .sectie.card.cta, .card.merk-blok { max-width: 900px; margin-left: auto; margin-right: auto; }
+  .faq details, .faq summary, .cta p { max-width: none; }
+  /* hero en privacy lopen van rand tot rand: dat haalt het "alles zit in een
+     doos"-gevoel eruit dat je krijgt als elke sectie even breed is */
+  .landing-hero, .sectie.card.privacy-blok {
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    border-radius: 0;
+    padding-left: max(clamp(16px, 4vw, 40px), calc(50vw - 560px));
+    padding-right: max(clamp(16px, 4vw, 40px), calc(50vw - 560px));
+  }
+  .landing-hero { padding-top: clamp(40px, 6vw, 84px); padding-bottom: clamp(40px, 6vw, 84px); margin-top: 0; }
+  .sectie.card.privacy-blok { padding-top: clamp(40px, 6vw, 72px); padding-bottom: clamp(40px, 6vw, 72px); }
+  body { overflow-x: hidden; }   /* 100vw telt de scrollbar mee */
+  /* tekst blijft leesbaar breed, ook al is de pagina breder geworden */
+  .duo > .tekstkolom { max-width: 56ch; }
+  /* leesbare regellengte in secties zonder twee kolommen; beeldblokken en de
+     duo-indeling hebben hun eigen breedte */
+  .sectie > *:not(.duo):not(.scan-figuur):not(.fotostrook) { max-width: 74ch; }
+  .stap-rij p { max-width: 70ch; }
+
+  /* losse figuren niet over de volle 1120px uitrekken */
+  .scan-figuur { max-width: 760px; }
+  .scan-figuur figcaption { max-width: 68ch; }
+
+  /* om-en-om: bij elke tweede duo-sectie staat het beeld links */
+  .sectie.card:nth-of-type(even) .duo { flex-direction: row-reverse; }
+  @media (max-width: 720px) {
+    .sectie.card:nth-of-type(even) .duo { flex-direction: row; }
+  }
 </style>
 </head>
 <body>
