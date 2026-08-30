@@ -431,5 +431,23 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 
 /* duo: het blok met de inlogcode voor je maat */
 .duo-code { background: var(--zand); border-radius: 10px; padding: 10px 12px; margin: 10px 0; }
-#join-duo-label { display: flex; gap: 8px; align-items: flex-start; }
-#join-duo-label input { margin-top: 3px; }
+/* de duo-keuze is een echte keuze, geen kleine lettertjes: een aanraakbaar
+   blok met een groot vinkje (de standaard input-breedte van de app zou de
+   checkbox anders tot een balk uitrekken) */
+#join-duo-label {
+  display: flex; gap: 12px; align-items: center;
+  background: var(--zand); border: 2px solid var(--zand-donker);
+  border-radius: 12px; padding: 12px 14px; cursor: pointer;
+  font-size: 15.5px; font-weight: 700; color: var(--tekst); line-height: 1.35;
+}
+#join-duo-label input {
+  width: 26px; height: 26px; flex: 0 0 auto; margin: 0;
+  accent-color: var(--blauw); cursor: pointer;
+}
+#join-duo-label small { font-weight: 400; color: var(--grijs, #6b6a5f); }
+#join-duo-label:has(input:checked) { border-color: var(--blauw); background: #fff; }
+
+/* vaste doorgeef-knop bovenaan de vangsten-tab */
+.vangst-doorgeef { width: 100%; margin: 0 0 6px; font-size: 17px; padding: 14px; }
+.vangst-doorgeef:disabled { opacity: .55; }
+#vangst-doorgeef-sub { margin: 0 0 12px; }

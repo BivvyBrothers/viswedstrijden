@@ -365,6 +365,8 @@
   <section id="tab-vangsten" class="tab" hidden>
     <div class="card">
       <h2>Vangsten</h2>
+      <button id="vangst-doorgeef" class="btn primary vangst-doorgeef" hidden>⚖️ Vangst doorgeven</button>
+      <p id="vangst-doorgeef-sub" class="muted klein" hidden></p>
       <div id="vangsten-feed"></div>
     </div>
   </section>
@@ -376,8 +378,9 @@
       <p id="join-uitleg" class="muted"></p>
       <form id="form-join" class="stack">
         <label>Naam <input id="join-naam" type="text" maxlength="40" required></label>
-        <label id="join-duo-label" class="muted klein" hidden><input type="checkbox" id="join-duo">
-          Wij vissen met z'n tweeën aan één stek (ieder een eigen score)</label>
+        <label id="join-duo-label" hidden><input type="checkbox" id="join-duo">
+          <span>🎣 Wij vissen met z'n tweeën aan één stek<br>
+          <small>samen loten en zitten, ieder een eigen score</small></span></label>
         <label id="join-naam2-label" hidden><span id="join-naam2-tekst">Naam koppelmaat</span> <input id="join-naam2" type="text" maxlength="40"></label>
         <label id="join-teamnaam-label" hidden>Teamnaam <span class="muted">(optioneel)</span> <input id="join-teamnaam" type="text" maxlength="40" placeholder="bijv. De Bivvy Brothers"></label>
         <button type="submit" class="btn primary">Aanmelden</button>

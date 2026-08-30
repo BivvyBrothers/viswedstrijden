@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 73; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 74; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -715,9 +715,12 @@ function renderAlles(eerste) {
 function renderSnelVangst() {
   const knop = $('#snel-vangst');
   if (!knop) return;
-  const opTeamTab = !$('#tab-team')?.hidden;   // daar staat het formulier al
+  // niet zweven waar het formulier al staat (team-tab) of waar de vaste
+  // doorgeef-knop staat (vangsten-tab)
+  const opTeamTab = !$('#tab-team')?.hidden;
+  const opVangstenTab = !$('#tab-vangsten')?.hidden;
   knop.hidden = !(ROL === 'deelnemer' && fase() === 'live'
-    && !!sessie.team(CODE) && !opTeamTab);
+    && !!sessie.team(CODE) && !opTeamTab && !opVangstenTab);
 }
 
 /* ---------- organisatie-omgeving ---------- */
@@ -2045,6 +2048,23 @@ async function deelSeizoen() {
 
 /* ---------- vangstenfeed ---------- */
 function renderVangsten() {
+  // vaste doorgeef-knop (klantvraag NPHV): deelnemers zoeken registreren op
+  // deze tab; voor de start zichtbaar maar uitgeschakeld met de starttijd erbij
+  const knop = $('#vangst-doorgeef');
+  if (knop) {
+    const sub = $('#vangst-doorgeef-sub');
+    const f = fase();
+    const deelnemerMetTeam = ROL === 'deelnemer' && !!sessie.team(CODE);
+    const toon = deelnemerMetTeam && f !== 'voorbij';
+    knop.hidden = !toon;
+    if (sub) sub.hidden = !(toon && f === 'voor');
+    if (toon) {
+      knop.disabled = f !== 'live';
+      if (f === 'voor' && sub) {
+        sub.textContent = `Doorgeven kan vanaf de start van de wedstrijd (${fmtDatumTijd(STATE.wedstrijd.start_ts)}).`;
+      }
+    }
+  }
   const el = $('#vangsten-feed');
   if (!STATE.vangsten.length) {
     el.innerHTML = '<p class="muted">Nog geen vangsten. De eerste vis komt eraan…</p>';
@@ -2680,6 +2700,12 @@ function initWedstrijd() {
     if (bewaard) zetKaartZoom(bewaard);
   } catch { /* privémodus */ }
 
+  $('#vangst-doorgeef')?.addEventListener('click', () => {
+    activateTab('team');
+    renderSnelVangst();
+    $('#registreer-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('#v-gewicht')?.focus();
+  });
   $('#snel-vangst')?.addEventListener('click', () => {
     activateTab('team');   // het registratieformulier staat op Mijn team, niet op Vangsten
     renderSnelVangst();
