@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 75; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 76; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -168,6 +168,22 @@ function naarLocalInput(iso) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 const ledenNaam = (t) => t.naam2 ? `${t.naam} & ${t.naam2}` : t.naam;
+// initialen-cirkels naast namen (besluit Patrick 31 aug: cirkels, geen foto's:
+// nul bytes bij slecht bereik en geen profielgevoel). Kleur komt deterministisch
+// uit de naam, uit een vast aards palet met genoeg contrast voor witte tekst.
+const AVATAR_KLEUREN = ['#4d5839', '#50808E', '#B85042', '#8a6d3b', '#b06f18',
+                        '#5A5A8F', '#028090', '#a63c2c', '#6b4f8a', '#356a48'];
+function avatarKleur(naam) {
+  let h = 0;
+  for (const c of String(naam).toLowerCase()) h = ((h * 31) + c.charCodeAt(0)) >>> 0;
+  return AVATAR_KLEUREN[h % AVATAR_KLEUREN.length];
+}
+function avatarVanNaam(naam, maat) {
+  const delen = String(naam).trim().split(/\s+/);
+  const ini = ((delen[0]?.[0] || '?') + (delen.length > 1 ? delen[delen.length - 1][0] : '')).toUpperCase();
+  return `<span class="avatar${maat ? ' ' + maat : ''}" style="background:${avatarKleur(naam)}" aria-hidden="true">${esc(ini)}</span>`;
+}
+const avatarHtml = (t, maat) => avatarVanNaam(teamNaam(t), maat);
 const teamNaam = (t) => t.team_naam || ledenNaam(t);
 const teamNaamHtml = (t) => t.team_naam
   ? `${esc(t.team_naam)} <span class="leden">(${esc(ledenNaam(t))})</span>`
@@ -1541,7 +1557,7 @@ function renderLoting() {
         : (geloot ? (isBeurt ? 'aan de beurt…' : 'wacht') : '');
       return `<div class="loting-rij${isBeurt ? ' beurt' : ''}">
         <span class="lotnr">${t.lot_nummer ?? '·'}</span>
-        <span>${teamNaamHtml(t)}${maat ? ` <span class="muted klein">· vist samen met ${esc(maat.naam)}</span>` : ''}</span>
+        <span>${avatarHtml(t, 'k')}${teamNaamHtml(t)}${maat ? ` <span class="muted klein">· vist samen met ${esc(maat.naam)}</span>` : ''}</span>
         <span class="stekjes">${esc(keuze)}</span>
       </div>`;
     }).join('');
@@ -1657,7 +1673,7 @@ function renderKlassement() {
       <tr><th>#</th><th>Team</th><th class="r">Vissen</th><th class="r">Totaal</th></tr>
       ${metRang(klRangSleutel).map(({ r, rang }) => `<tr>
         <td class="${rangKlas(rang)}">${rang}</td>
-        <td>${teamNaamHtml(r.team)} <span class="muted klein">${esc(plek(r.team))}</span>
+        <td>${avatarHtml(r.team, 'k')}${teamNaamHtml(r.team)} <span class="muted klein">${esc(plek(r.team))}</span>
           <div class="opbouw">${vissenVan(r.team.id)}</div></td>
         <td class="r">${r.aantal}</td>
         <td class="r"><b>${fmtKg(r.totaal)}</b></td>
@@ -1669,7 +1685,7 @@ function renderKlassement() {
       <tr><th>#</th><th>Team</th><th class="r">Grootste vis</th><th></th></tr>
       ${metRang((r) => `${grootsteVan(r)}|${tijdGrootste(r)}`).map(({ r, rang }) => `<tr>
         <td class="${rangKlas(rang)}">${rang}</td>
-        <td>${teamNaamHtml(r.team)}</td>
+        <td>${avatarHtml(r.team, 'k')}${teamNaamHtml(r.team)}</td>
         <td class="r"><b>${fmtKg(r.grootste.gewicht_gram)}</b></td>
         <td>${r.grootste.foto_path
           ? `<img class="thumb" src="${esc(fotoUrl(r.grootste.foto_path))}" alt="grootste vis" data-groot="${esc(fotoUrl(r.grootste.foto_path))}">`
@@ -1970,7 +1986,7 @@ function renderSeizoen() {
       <tr><th>#</th><th>Deelnemer</th>${s.wedstrijden.map((w, i) => `<th class="r" title="${esc(w.naam)}">${i + 1}</th>`).join('')}<th class="r">${opGewicht ? 'Totaal' : 'Punten'}</th></tr>
       ${s.stand.map((d) => `<tr>
         <td class="${rangKlas(d.plaats)}">${d.plaats}</td>
-        <td>${esc(d.naam)}<div class="opbouw">${fmtKg(d.gewicht_totaal)} gevangen</div></td>
+        <td>${avatarVanNaam(d.naam, 'k')}${esc(d.naam)}<div class="opbouw">${fmtKg(d.gewicht_totaal)} gevangen</div></td>
         ${d.resultaten.map(cel).join('')}
         <td class="r"><b>${opGewicht ? fmtKg(d.gewicht_geteld) : Number(d.punten)}</b></td>
       </tr>`).join('')}
@@ -2077,7 +2093,7 @@ function renderVangsten() {
       ${vangstFotoHtml(v, 'groot')}
       <div class="info">
         <div class="gewicht">${fmtKg(v.gewicht_gram)}</div>
-        <div class="wie">${t ? teamNaamHtml(t) : 'onbekend'}</div>
+        <div class="wie">${t ? `${avatarHtml(t, 'mini')}${teamNaamHtml(t)}` : 'onbekend'}</div>
         <div class="tijd">${fmtDatumTijd(v.created_at)}</div>
         <div style="margin-top:6px"><button class="btn klein-btn" data-deel-vangst="${esc(v.id)}">\ud83d\udce4 deel</button></div>
       </div>
@@ -2792,7 +2808,7 @@ function renderTeamTab() {
 
   joinCard.hidden = true;
   teamCard.hidden = false;
-  $('#team-titel').textContent = teamNaam(mijn);
+  $('#team-titel').innerHTML = avatarHtml(mijn) + esc(teamNaam(mijn));
   // duo: zolang de aanmelder op dit toestel zit, blijft de code voor de maat
   // zichtbaar (na herladen kan de organisator hem altijd nog opzoeken in Beheer)
   const duoBlok = $('#duo-code-blok');
