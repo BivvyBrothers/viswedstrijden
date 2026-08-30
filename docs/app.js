@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 69; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 70; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -702,9 +702,9 @@ function renderAlles(eerste) {
 function renderSnelVangst() {
   const knop = $('#snel-vangst');
   if (!knop) return;
-  const opVangstenTab = !$('#tab-vangsten')?.hidden;
+  const opTeamTab = !$('#tab-team')?.hidden;   // daar staat het formulier al
   knop.hidden = !(ROL === 'deelnemer' && fase() === 'live'
-    && !!sessie.team(CODE) && !opVangstenTab);
+    && !!sessie.team(CODE) && !opTeamTab);
 }
 
 /* ---------- organisatie-omgeving ---------- */
@@ -2586,8 +2586,9 @@ function initWedstrijd() {
   } catch { /* privémodus */ }
 
   $('#snel-vangst')?.addEventListener('click', () => {
-    activateTab('vangsten');
+    activateTab('team');   // het registratieformulier staat op Mijn team, niet op Vangsten
     renderSnelVangst();
+    $('#registreer-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('#v-gewicht')?.focus();
   });
 
