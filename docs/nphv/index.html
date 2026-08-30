@@ -375,6 +375,19 @@
       elk toestel weer in onder je eigen naam, ook in de beginscherm-app):</p>
       <p><b id="team-code" class="codegroot"></b>
       <button id="btn-herstel" class="btn klein-btn">kopieer</button></p>
+      <div id="naam-wijzig-blok" hidden>
+        <button id="btn-naam-wijzig" class="btn klein-btn">✏️ naam aanpassen</button>
+        <form id="form-naam" class="stack" hidden>
+          <label>Naam <input id="wn-naam" type="text" maxlength="40" required></label>
+          <label id="wn-naam2-label" hidden>Naam koppelmaat <input id="wn-naam2" type="text" maxlength="40"></label>
+          <label id="wn-teamnaam-label" hidden>Teamnaam <span class="muted">(optioneel)</span> <input id="wn-teamnaam" type="text" maxlength="40"></label>
+          <div class="row">
+            <button type="submit" class="btn primary">Opslaan</button>
+            <button type="button" id="btn-naam-annuleer" class="btn">Annuleren</button>
+          </div>
+          <p id="naam-fout" class="fout" hidden></p>
+        </form>
+      </div>
       <p><button id="btn-team-uitloggen" class="btn gevaar klein-btn">uitloggen bij dit team</button></p>
     </div>
 

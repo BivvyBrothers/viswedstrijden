@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 70; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 71; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -33,6 +33,7 @@ const FOUTEN = {
   ongeldige_regels: 'Ongeldige seizoensinstellingen.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
   al_geloot: 'De loting is al gestart.',
+  naam_wijzigen_gesloten: 'De wedstrijd is al begonnen: je naam aanpassen kan alleen vóór de start. Vraag anders de organisator.',
   wedstrijd_loopt_nog: 'De wedstrijd loopt nog: gebruik gewoon Registreer vangst.',
   te_lang_geleden: 'Deze vangst is te lang na de wedstrijd binnengekomen om nog te kunnen meetellen.',
   buiten_wedstrijdtijd: 'Het tijdstip van deze vangst valt buiten de wedstrijd.',
@@ -2561,6 +2562,41 @@ function initWedstrijd() {
     setTimeout(() => { $('#btn-herstel').textContent = 'kopieer'; }, 2500);
   });
 
+  $('#btn-naam-wijzig')?.addEventListener('click', () => {
+    const mijn = mijnTeam();
+    if (!mijn) return;
+    $('#wn-naam').value = mijn.naam || '';
+    $('#wn-naam2').value = mijn.naam2 || '';
+    $('#wn-teamnaam').value = mijn.team_naam || '';
+    $('#form-naam').hidden = false;
+    $('#btn-naam-wijzig').hidden = true;
+    $('#wn-naam').focus();
+  });
+  $('#btn-naam-annuleer')?.addEventListener('click', () => {
+    $('#form-naam').hidden = true;
+    $('#naam-fout').hidden = true;
+    $('#btn-naam-wijzig').hidden = false;
+  });
+  $('#form-naam')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const foutEl = $('#naam-fout'); foutEl.hidden = true;
+    const t = sessie.team(CODE);
+    if (!t) return;
+    try {
+      const res = await rpc('w_wijzig_team', {
+        p_code: CODE, p_token: t.token,
+        p_naam: $('#wn-naam').value.trim(),
+        p_naam2: $('#wn-naam2').value.trim() || null,
+        p_team_naam: $('#wn-teamnaam').value.trim() || null,
+      });
+      sessie.zetTeam(CODE, { ...t, naam: res.naam });
+      $('#form-naam').hidden = true;
+      $('#btn-naam-wijzig').hidden = false;
+      toast('Naam aangepast.');
+      await laadState(false);
+    } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+  });
+
   $('#btn-team-uitloggen').addEventListener('click', () =>
     tikNogmaals($('#btn-team-uitloggen'), '⚠️ Zeker? Bewaar eerst je inlogcode', () => {
       localStorage.removeItem('team:' + CODE);
@@ -2682,6 +2718,18 @@ function renderTeamTab() {
      f === 'voorbij' ? 'De wedstrijd is afgelopen.' :
      'De loting moet nog beginnen.');
   $('#team-info').textContent = (mijn.team_naam ? `${ledenNaam(mijn)} · ` : '') + plek;
+
+  // naam aanpassen kan tot de START (klantvraag NPHV): daarna is de naam de
+  // sleutel van uitslag en seizoen en gaat het via de organisator
+  const wijzigBlok = $('#naam-wijzig-blok');
+  if (wijzigBlok) {
+    const magWijzigen = f === 'voor';
+    wijzigBlok.hidden = !magWijzigen;
+    if (!magWijzigen) { $('#form-naam').hidden = true; $('#btn-naam-wijzig').hidden = false; }
+    $('#wn-naam2-label').hidden = w.mode !== 'koppel';
+    $('#wn-naam2').required = w.mode === 'koppel';
+    $('#wn-teamnaam-label').hidden = w.mode !== 'koppel';
+  }
 
   if (f === 'live') {
     regCard.hidden = false; dichtCard.hidden = true;
