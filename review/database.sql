@@ -319,7 +319,7 @@ end $function$;
 
 
 
-CREATE OR REPLACE FUNCTION public.w_join(p_code text, p_naam text, p_naam2 text DEFAULT NULL::text, p_team_naam text DEFAULT NULL::text)
+CREATE OR REPLACE FUNCTION public.w_join(p_code text, p_naam text, p_naam2 text DEFAULT NULL::text, p_team_naam text DEFAULT NULL::text, p_duo boolean DEFAULT false)
  RETURNS json
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -337,8 +337,11 @@ begin
   if v_w.status <> 'aanmelden' then raise exception 'aanmelden_gesloten'; end if;
   -- Codex v10: ook een nooit-gelote wedstrijd sluit bij de eindtijd
   if pg_catalog.now() >= v_w.eind_ts then raise exception 'wedstrijd_afgelopen'; end if;
-  -- v72: individueel + tweede naam = DUO (samen loten, ieder een eigen score)
-  v_plekken := case when v_w.mode = 'individueel' and coalesce(trim(p_naam2),'') <> '' then 2 else 1 end;
+  -- v73: duo kan alleen EXPLICIET (p_duo) en alleen bij individueel; een
+  -- meegestuurde maar betekenisloze p_naam2 wordt zoals voorheen genegeerd
+  if p_duo and v_w.mode <> 'individueel' then raise exception 'duo_alleen_individueel'; end if;
+  if p_duo and coalesce(trim(p_naam2),'') = '' then raise exception 'tweede_naam_verplicht'; end if;
+  v_plekken := case when p_duo then 2 else 1 end;
   if v_w.max_teams is not null and
      (select count(*) from wedstrijd.teams where wedstrijd_id = v_w.id) + v_plekken > v_w.max_teams then
     raise exception 'wedstrijd_vol';
@@ -349,8 +352,25 @@ begin
   end if;
   if p_naam2 is not null and length(p_naam2) > 40 then raise exception 'ongeldige_naam'; end if;
   if p_team_naam is not null and length(p_team_naam) > 40 then raise exception 'ongeldige_naam'; end if;
+  -- namen case-insensitief uniek binnen de wedstrijd: het seizoen groepeert op
+  -- lower(trim(naam)), dus 'Jan' en 'jan' zouden daar stil samensmelten
+  if exists (select 1 from wedstrijd.teams
+             where wedstrijd_id = v_w.id
+               and lower(pg_catalog.btrim(naam)) = lower(pg_catalog.btrim(p_naam))) then
+    raise exception 'naam_bestaat_al';
+  end if;
+  if p_duo then
+    if lower(pg_catalog.btrim(p_naam)) = lower(pg_catalog.btrim(p_naam2)) then
+      raise exception 'duo_namen_gelijk';
+    end if;
+    if exists (select 1 from wedstrijd.teams
+               where wedstrijd_id = v_w.id
+                 and lower(pg_catalog.btrim(naam)) = lower(pg_catalog.btrim(p_naam2))) then
+      raise exception 'naam_bestaat_al';
+    end if;
+  end if;
 
-  if v_plekken = 2 then
+  if p_duo then
     -- duo: twee losse deelnemers die samen loten
     v_duo := gen_random_uuid();
     insert into wedstrijd.teams (wedstrijd_id, naam, deelnemer_code, duo_id)
@@ -361,7 +381,8 @@ begin
     returning * into v_maat;
     return json_build_object('team_id', v_team.id, 'token', v_team.token,
       'deelnemer_code', v_team.deelnemer_code,
-      'duo', json_build_object('naam', v_maat.naam, 'deelnemer_code', v_maat.deelnemer_code));
+      'duo', json_build_object('naam', v_maat.naam,
+        'deelnemer_code', v_maat.deelnemer_code, 'token', v_maat.token));
   end if;
 
   insert into wedstrijd.teams (wedstrijd_id, naam, naam2, team_naam, deelnemer_code)
@@ -398,11 +419,51 @@ CREATE OR REPLACE FUNCTION public.w_mijn_team(p_code text, p_token uuid)
  SET search_path TO ''
 AS $function$
   select json_build_object('id', t.id, 'naam', t.naam, 'naam2', t.naam2,
-    'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'deelnemer_code', t.deelnemer_code)
+    'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'deelnemer_code', t.deelnemer_code,
+    'duo', (select json_build_object('naam', m.naam, 'deelnemer_code', m.deelnemer_code)
+            from wedstrijd.teams m
+            where t.duo_id is not null and m.duo_id = t.duo_id and m.id <> t.id
+              and m.wedstrijd_id = t.wedstrijd_id limit 1))
   from wedstrijd.teams t
   join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id
   where w.code = upper(trim(p_code)) and t.token = p_token;
 $function$;
+
+-- v71/v73: deelnemer past tot de START zijn eigen naam aan (daarna is de naam
+-- de sleutel van uitslag en seizoen en loopt het via de organisator)
+CREATE OR REPLACE FUNCTION public.w_wijzig_team(p_code text, p_token uuid, p_naam text, p_naam2 text DEFAULT NULL::text, p_team_naam text DEFAULT NULL::text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_w wedstrijd.wedstrijden;
+  v_team wedstrijd.teams;
+begin
+  select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code));
+  if not found then raise exception 'wedstrijd_niet_gevonden'; end if;
+  select * into v_team from wedstrijd.teams
+  where wedstrijd_id = v_w.id and token = p_token for update;
+  if not found then raise exception 'team_niet_gevonden'; end if;
+  if pg_catalog.now() >= v_w.start_ts then raise exception 'naam_wijzigen_gesloten'; end if;
+  if coalesce(trim(p_naam),'') = '' or length(p_naam) > 40 then raise exception 'ongeldige_naam'; end if;
+  if v_w.mode = 'koppel' and (coalesce(trim(p_naam2),'') = '' or length(p_naam2) > 40) then
+    raise exception 'tweede_naam_verplicht';
+  end if;
+  if p_team_naam is not null and length(p_team_naam) > 40 then raise exception 'ongeldige_naam'; end if;
+  if exists (select 1 from wedstrijd.teams
+             where wedstrijd_id = v_w.id and id <> v_team.id
+               and lower(pg_catalog.btrim(naam)) = lower(pg_catalog.btrim(p_naam))) then
+    raise exception 'naam_bestaat_al';
+  end if;
+  update wedstrijd.teams set
+    naam = trim(p_naam),
+    naam2 = case when v_w.mode = 'koppel' then trim(p_naam2) else naam2 end,
+    team_naam = case when v_w.mode = 'koppel' then nullif(trim(coalesce(p_team_naam,'')), '') else team_naam end
+  where id = v_team.id;
+  return json_build_object('ok', true, 'naam', trim(p_naam));
+end $function$;
 
 -- =====================================================================
 -- Publieke RPC's: stekkeuze
@@ -1207,7 +1268,7 @@ begin
   if not found then raise exception 'pin_onjuist'; end if;
   return coalesce((select json_agg(json_build_object(
       'id', v.id, 'team_id', v.team_id,
-      'naam', coalesce(pg_catalog.nullif(pg_catalog.btrim(t.team_naam), ''),
+      'naam', coalesce(nullif(pg_catalog.btrim(t.team_naam), ''),
                        pg_catalog.btrim(t.naam) ||
                        coalesce(' & ' || pg_catalog.btrim(t.naam2), '')),
       'gewicht_gram', v.gewicht_gram, 'foto_path', v.foto_path,
@@ -1352,7 +1413,7 @@ AS $function$
         'id', t.id, 'naam', t.naam, 'naam2', t.naam2, 'team_naam', t.team_naam,
         'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone,
         'duo_id', t.duo_id)
-        order by t.lot_nummer nulls last, t.created_at)
+        order by t.lot_nummer nulls last, t.created_at, t.id)
       from wedstrijd.teams t
       join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id
       where w.code = upper(trim(p_code))), '[]'::json),
@@ -1385,7 +1446,7 @@ AS $function$
         'id', t.id, 'naam', t.naam, 'naam2', t.naam2, 'team_naam', t.team_naam,
         'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone,
         'duo_id', t.duo_id)
-        order by t.lot_nummer nulls last, t.created_at)
+        order by t.lot_nummer nulls last, t.created_at, t.id)
       from wedstrijd.teams t
       join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id
       where w.kijk_code = upper(trim(p_kijk_code))), '[]'::json),

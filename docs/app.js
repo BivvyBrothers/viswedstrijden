@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 72; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 73; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -33,6 +33,8 @@ const FOUTEN = {
   ongeldige_regels: 'Ongeldige seizoensinstellingen.',
   wachtwoord_te_kort: 'Wachtwoord moet minimaal 6 tekens zijn.',
   al_geloot: 'De loting is al gestart.',
+  duo_namen_gelijk: 'Vul twee verschillende namen in; jullie staan ieder apart in het klassement.',
+  duo_alleen_individueel: 'Samen aan één stek kan alleen bij een individuele wedstrijd.',
   naam_wijzigen_gesloten: 'De wedstrijd is al begonnen: je naam aanpassen kan alleen vóór de start. Vraag anders de organisator.',
   wedstrijd_loopt_nog: 'De wedstrijd loopt nog: gebruik gewoon Registreer vangst.',
   te_lang_geleden: 'Deze vangst is te lang na de wedstrijd binnengekomen om nog te kunnen meetellen.',
@@ -349,6 +351,7 @@ async function checkVersie() {
 
 function route() {
   SESSIE_GEN += 1;   // alles wat nog onderweg is, hoort bij het vorige scherm
+  DUO_MAAT_GEZOCHT = false;
   const mW = location.hash.match(/^#\/w\/([A-Za-z0-9]{4,8})/);
   const mK = location.hash.match(/^#\/k\/([A-Za-z0-9]{4,8})/);
   const mT = location.hash.match(/[?&]t=([0-9a-f-]{36})/i);
@@ -603,7 +606,8 @@ function initHome() {
   });
 }
 
-let DUO_MAAT = null;   // {naam, deelnemer_code} van je maat, direct na een duo-aanmelding
+let DUO_MAAT = null;        // {code, naam, deelnemer_code, token?}: maat-gegevens, gebonden aan de wedstrijdcode
+let DUO_MAAT_GEZOCHT = false;  // eenmalige herstelpoging via w_mijn_team na herladen
 
 /* ---------- wedstrijd: state laden ---------- */
 let STATE_BEZIG = false;   // er loopt al een state-verzoek: sla deze poll over
@@ -1359,11 +1363,20 @@ function adminKiesActief() {
   if (!doel || (doel.stekken || []).length) { ADMIN_KIES = null; return null; }
   return ADMIN_KIES;
 }
-function magSelecteren() {
-  if (adminKiesActief()) return true;
+// duoleden delen een lotnummer en zijn dus SAMEN aan de beurt; vergelijk op
+// lotnummer + eigen open keuze, nooit op team-id (Codex duo-review P0)
+function mijnBeurtNu() {
   const mijn = mijnTeam();
   const beurt = teamAanBeurt();
-  return !!(mijn && beurt && beurt.id === mijn.id);
+  return !!(mijn && beurt && beurt.lot_nummer === mijn.lot_nummer
+    && !(mijn.stekken || []).length);
+}
+const zelfdeEenheid = (a, b) => !!a && !!b
+  && (a.id === b.id || (!!a.duo_id && a.duo_id === b.duo_id));
+
+function magSelecteren() {
+  if (adminKiesActief()) return true;
+  return mijnBeurtNu();
 }
 
 function klikStek(nr) {
@@ -1409,7 +1422,7 @@ function renderKaart() {
   const mijn = mijnTeam();
   const beurt = teamAanBeurt();
   const namens = adminKiesActief();
-  const mijnBeurt = !!(mijn && beurt && mijn.id === beurt.id);
+  const mijnBeurt = mijnBeurtNu();
   if (!mijnBeurt && !namens) { SELECTIE = []; SELECTIE_ZONE = null; }
 
   const bezetDoor = {};
@@ -1425,7 +1438,7 @@ function renderKaart() {
     const doetMee = !heeftZones() || !!zone;
     g.classList.toggle('uit', !doetMee && !eigenaar);
     if (eigenaar) {
-      g.classList.add(mijn && eigenaar.id === mijn.id ? 'mijn' : 'bezet');
+      g.classList.add(zelfdeEenheid(eigenaar, mijn) ? 'mijn' : 'bezet');
       if (titel) titel.textContent = `Stek ${nr}: ${zLabel}${teamNaam(eigenaar)}`;
     } else if (!doetMee) {
       if (titel) titel.textContent = `Stek ${nr}: doet niet mee in deze wedstrijd`;
@@ -1443,7 +1456,7 @@ function renderKaart() {
     g.classList.remove('bezet', 'mijn', 'keuze', 'kiesbaar');
     const naam = String(g.dataset.zone || '');
     const eigenaar = zonesVanTeams[naam.toLowerCase()];
-    if (eigenaar) g.classList.add(mijn && eigenaar.id === mijn.id ? 'mijn' : 'bezet');
+    if (eigenaar) g.classList.add(zelfdeEenheid(eigenaar, mijn) ? 'mijn' : 'bezet');
     else if (SELECTIE_ZONE && String(SELECTIE_ZONE).toLowerCase() === naam.toLowerCase()) g.classList.add('keuze');
     else if (mijnBeurt || namens) g.classList.add('kiesbaar');
   });
@@ -1518,7 +1531,7 @@ function renderLoting() {
     : '';
   el.innerHTML = voortgang + (geloot ? '' : '<p class="muted klein">De loting is nog niet gestart. Volgorde hieronder is de aanmeldvolgorde.</p>') +
     STATE.teams.map((t) => {
-      const isBeurt = beurt && beurt.id === t.id;
+      const isBeurt = !!(beurt && t.lot_nummer === beurt.lot_nummer && !(t.stekken || []).length);
       const maat = t.duo_id ? STATE.teams.find((x) => x.duo_id === t.duo_id && x.id !== t.id) : null;
       const keuze = t.zone ? zoneLabel(t.zone)
         : (t.stekken || []).length ? 'stek ' + t.stekken.join(' + ')
@@ -2468,27 +2481,50 @@ function initWedstrijd() {
     renderKaart();
   });
 
-  $('#join-duo')?.addEventListener('change', () => renderTeamTab());
+  $('#join-duo')?.addEventListener('change', () => {
+    // uitvinken wist het veld: een verborgen restwaarde mag nooit stil een
+    // duo aanmaken (Codex duo-review P1)
+    if (!$('#join-duo').checked && STATE?.wedstrijd?.mode === 'individueel') {
+      $('#join-naam2').value = '';
+    }
+    renderTeamTab();
+  });
   $('#form-join').addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#join-fout'); foutEl.hidden = true;
     try {
+      const isKoppel = STATE?.wedstrijd?.mode === 'koppel';
+      const duoAan = !isKoppel && !!$('#join-duo')?.checked;
+      const naam2 = $('#join-naam2').value.trim();
+      if (duoAan && !naam2) {
+        foutEl.textContent = 'Vul ook de naam van je maat in, of zet het vinkje uit.';
+        foutEl.hidden = false; return;
+      }
       const res = await rpc('w_join', {
         p_code: CODE,
         p_naam: $('#join-naam').value.trim(),
-        p_naam2: $('#join-naam2').value.trim() || null,
+        // alleen meesturen als hij betekenis heeft: koppelmaat of duo-maat
+        p_naam2: (isKoppel || duoAan) ? (naam2 || null) : null,
         p_team_naam: $('#join-teamnaam').value.trim() || null,
+        p_duo: duoAan,
       });
       sessie.zetTeam(CODE, { id: res.team_id, token: res.token, naam: $('#join-naam').value.trim(), code: res.deelnemer_code });
-      DUO_MAAT = res.duo || null;
+      DUO_MAAT = res.duo ? { code: CODE, ...res.duo } : null;
       if (res.deelnemer_code) toast(`🔑 Bewaar je persoonlijke inlogcode: ${res.deelnemer_code}`);
       await laadState(false);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
   $('#duo-code-deel')?.addEventListener('click', async () => {
-    if (!DUO_MAAT) return;
-    const tekst = `Ik heb ons aangemeld voor ${STATE?.wedstrijd?.naam || 'de viswedstrijd'}. `
-      + `Open ${location.origin}${location.pathname}#/w/${CODE} en log in als deelnemer met jouw persoonlijke code: ${DUO_MAAT.deelnemer_code}`;
+    if (!DUO_MAAT || DUO_MAAT.code !== CODE) return;
+    const naam = STATE?.wedstrijd?.naam || 'de viswedstrijd';
+    // direct na de aanmelding hebben we het token van de maat: dan logt de
+    // link meteen in; na herladen valt hij terug op code + korte instructie
+    const tekst = DUO_MAAT.token
+      ? `Ik heb ons aangemeld voor ${naam}. Open deze link, dan ben je meteen ingelogd: `
+        + `${location.origin}${location.pathname}#/w/${CODE}?t=${DUO_MAAT.token} `
+        + `Je persoonlijke inlogcode (bewaar hem goed): ${DUO_MAAT.deelnemer_code}`
+      : `Ik heb ons aangemeld voor ${naam}. Open ${location.origin}${location.pathname}, `
+        + `kies Deelnemer en vul jouw persoonlijke code in: ${DUO_MAAT.deelnemer_code}`;
     if (navigator.share) {
       try { await navigator.share({ text: tekst }); } catch { /* geannuleerd */ }
     } else {
@@ -2622,6 +2658,7 @@ function initWedstrijd() {
   $('#btn-team-uitloggen').addEventListener('click', () =>
     tikNogmaals($('#btn-team-uitloggen'), '⚠️ Zeker? Bewaar eerst je inlogcode', () => {
       localStorage.removeItem('team:' + CODE);
+      DUO_MAAT = null;
       toast('Uitgelogd bij dit team. Met je persoonlijke code log je weer in.');
       laadState(false);
     }));
@@ -2732,10 +2769,17 @@ function renderTeamTab() {
   // zichtbaar (na herladen kan de organisator hem altijd nog opzoeken in Beheer)
   const duoBlok = $('#duo-code-blok');
   if (duoBlok) {
-    duoBlok.hidden = !DUO_MAAT;
-    if (DUO_MAAT) {
-      $('#duo-maat-naam').textContent = DUO_MAAT.naam;
-      $('#duo-maat-code').textContent = DUO_MAAT.deelnemer_code;
+    const maatVanDeze = DUO_MAAT && DUO_MAAT.code === CODE ? DUO_MAAT : null;
+    duoBlok.hidden = !maatVanDeze;
+    if (maatVanDeze) {
+      $('#duo-maat-naam').textContent = maatVanDeze.naam;
+      $('#duo-maat-code').textContent = maatVanDeze.deelnemer_code;
+    } else if (mijn.duo_id && !DUO_MAAT_GEZOCHT) {
+      // na herladen: de maatcode eenmalig terughalen via het eigen token
+      DUO_MAAT_GEZOCHT = true;
+      rpc('w_mijn_team', { p_code: CODE, p_token: t.token }).then((mt) => {
+        if (mt?.duo) { DUO_MAAT = { code: CODE, ...mt.duo }; renderTeamTab(); }
+      }).catch(() => {});
     }
   }
   if (t.code) {
@@ -2776,8 +2820,8 @@ function renderTeamTab() {
   } else {
     regCard.hidden = true; dichtCard.hidden = false;
     $('#dicht-tekst').textContent = f === 'voor'
-      ? `Registreren kan vanaf de start (${fmtDatumTijd(w.start_ts)}).`
-      : 'De wedstrijd is afgelopen. Registreren is niet meer mogelijk.';
+      ? `🎣 Vangsten doorgeven kan vanaf de start van de wedstrijd (${fmtDatumTijd(w.start_ts)}). Tot die tijd hoef je niets te doen.`
+      : 'De wedstrijd is afgelopen; vangsten doorgeven kan niet meer.';
   }
 
   const eigen = STATE.vangsten.filter((v) => v.team_id === mijn.id);
