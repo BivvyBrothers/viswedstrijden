@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 74; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 75; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -2257,9 +2257,11 @@ function renderPushKnop() {
   }
   if (pushKanHier()) {
     knop.hidden = false; tip.hidden = true;
-    knop.textContent = pushAan(CODE)
+    const aan = pushAan(CODE);
+    knop.textContent = aan
       ? '🔕 Zet meldingen over nieuwe vangsten uit'
       : '🔔 Zet meldingen over nieuwe vangsten aan';
+    knop.classList.toggle('push-oproep', !aan);
   } else if (isIos() && !window.navigator.standalone) {
     knop.hidden = true;
     tip.hidden = false;
