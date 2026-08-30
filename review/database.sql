@@ -87,6 +87,7 @@ create table wedstrijd.teams (
   naam text not null,
   naam2 text,
   token uuid not null default gen_random_uuid(),
+  duo_id uuid,                        -- v72: twee individuele deelnemers die SAMEN loten (zelfde duo_id); null = solo
   lot_nummer int,
   stekken int[] not null default '{}',
   created_at timestamptz not null default now(),
@@ -327,21 +328,42 @@ AS $function$
 declare
   v_w wedstrijd.wedstrijden;
   v_team wedstrijd.teams;
+  v_maat wedstrijd.teams;
+  v_duo uuid;
+  v_plekken int;
 begin
   select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code)) for update;
   if not found then raise exception 'wedstrijd_niet_gevonden'; end if;
   if v_w.status <> 'aanmelden' then raise exception 'aanmelden_gesloten'; end if;
   -- Codex v10: ook een nooit-gelote wedstrijd sluit bij de eindtijd
   if pg_catalog.now() >= v_w.eind_ts then raise exception 'wedstrijd_afgelopen'; end if;
+  -- v72: individueel + tweede naam = DUO (samen loten, ieder een eigen score)
+  v_plekken := case when v_w.mode = 'individueel' and coalesce(trim(p_naam2),'') <> '' then 2 else 1 end;
   if v_w.max_teams is not null and
-     (select count(*) from wedstrijd.teams where wedstrijd_id = v_w.id) >= v_w.max_teams then
+     (select count(*) from wedstrijd.teams where wedstrijd_id = v_w.id) + v_plekken > v_w.max_teams then
     raise exception 'wedstrijd_vol';
   end if;
   if coalesce(trim(p_naam),'') = '' or length(p_naam) > 40 then raise exception 'ongeldige_naam'; end if;
   if v_w.mode = 'koppel' and (coalesce(trim(p_naam2),'') = '' or length(p_naam2) > 40) then
     raise exception 'tweede_naam_verplicht';
   end if;
+  if p_naam2 is not null and length(p_naam2) > 40 then raise exception 'ongeldige_naam'; end if;
   if p_team_naam is not null and length(p_team_naam) > 40 then raise exception 'ongeldige_naam'; end if;
+
+  if v_plekken = 2 then
+    -- duo: twee losse deelnemers die samen loten
+    v_duo := gen_random_uuid();
+    insert into wedstrijd.teams (wedstrijd_id, naam, deelnemer_code, duo_id)
+    values (v_w.id, trim(p_naam), wedstrijd.nieuwe_team_code(), v_duo)
+    returning * into v_team;
+    insert into wedstrijd.teams (wedstrijd_id, naam, deelnemer_code, duo_id)
+    values (v_w.id, trim(p_naam2), wedstrijd.nieuwe_team_code(), v_duo)
+    returning * into v_maat;
+    return json_build_object('team_id', v_team.id, 'token', v_team.token,
+      'deelnemer_code', v_team.deelnemer_code,
+      'duo', json_build_object('naam', v_maat.naam, 'deelnemer_code', v_maat.deelnemer_code));
+  end if;
+
   insert into wedstrijd.teams (wedstrijd_id, naam, naam2, team_naam, deelnemer_code)
   values (v_w.id, trim(p_naam),
           case when v_w.mode = 'koppel' then trim(p_naam2) end,
@@ -430,9 +452,12 @@ begin
   if exists (
     select 1 from wedstrijd.teams
     where wedstrijd_id = v_w.id and stekken && p_stekken
+      and (v_team.duo_id is null or duo_id is distinct from v_team.duo_id)
   ) then raise exception 'stek_bezet'; end if;
 
-  update wedstrijd.teams set stekken = p_stekken where id = v_team.id;
+  update wedstrijd.teams set stekken = p_stekken
+  where id = v_team.id
+     or (v_team.duo_id is not null and duo_id = v_team.duo_id and wedstrijd_id = v_w.id);
 
   if not exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and cardinality(stekken) = 0) then
     update wedstrijd.wedstrijden set status = 'klaar' where id = v_w.id;
@@ -476,9 +501,12 @@ begin
   if exists (
     select 1 from wedstrijd.teams
     where wedstrijd_id = v_w.id and lower(coalesce(zone,'')) = lower(trim(p_zone))
+      and (v_team.duo_id is null or duo_id is distinct from v_team.duo_id)
   ) then raise exception 'zone_bezet'; end if;
 
-  update wedstrijd.teams set stekken = v_stekken, zone = trim(p_zone) where id = v_team.id;
+  update wedstrijd.teams set stekken = v_stekken, zone = trim(p_zone)
+  where id = v_team.id
+     or (v_team.duo_id is not null and duo_id = v_team.duo_id and wedstrijd_id = v_w.id);
 
   if not exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and cardinality(stekken) = 0) then
     update wedstrijd.wedstrijden set status = 'klaar' where id = v_w.id;
@@ -593,7 +621,9 @@ begin
   where code = upper(trim(p_code)) and admin_pin = trim(p_pin) for update;
   if not found then raise exception 'pin_onjuist'; end if;
   if v_w.status <> 'aanmelden' then raise exception 'al_geloot'; end if;
-  select count(*) into v_teams from wedstrijd.teams where wedstrijd_id = v_w.id;
+  -- v72: een duo telt als EEN loteenheid
+  select count(distinct coalesce(duo_id::text, id::text)) into v_teams
+  from wedstrijd.teams where wedstrijd_id = v_w.id;
   if v_teams < 1 then raise exception 'geen_deelnemers'; end if;
   if v_w.zones is not null then
     v_capaciteit := jsonb_array_length(v_w.zones);
@@ -610,11 +640,16 @@ begin
       raise exception 'te_veel_teams_voor_stekken';
     end if;
   end if;
-  with geschud as (
-    select id, row_number() over (order by random()) as nr
+  with eenheid as (
+    select coalesce(duo_id::text, id::text) as sleutel
     from wedstrijd.teams where wedstrijd_id = v_w.id
+    group by coalesce(duo_id::text, id::text)
+  ), geschud as (
+    select sleutel, row_number() over (order by random()) as nr from eenheid
   )
-  update wedstrijd.teams t set lot_nummer = g.nr from geschud g where t.id = g.id;
+  update wedstrijd.teams t set lot_nummer = g.nr
+  from geschud g
+  where t.wedstrijd_id = v_w.id and coalesce(t.duo_id::text, t.id::text) = g.sleutel;
   update wedstrijd.wedstrijden set status = 'stekkeuze' where id = v_w.id;
   return json_build_object('ok', true);
 end $function$;
@@ -755,10 +790,13 @@ begin
     where lower(trim(z->>'naam')) = lower(trim(p_zone));
     if cardinality(v_stekken) = 0 then raise exception 'onbekende_zone'; end if;
     if exists (select 1 from wedstrijd.teams
-               where wedstrijd_id = v_w.id and lower(coalesce(zone,'')) = lower(trim(p_zone))) then
+               where wedstrijd_id = v_w.id and lower(coalesce(zone,'')) = lower(trim(p_zone))
+                 and (v_team.duo_id is null or duo_id is distinct from v_team.duo_id)) then
       raise exception 'zone_bezet';
     end if;
-    update wedstrijd.teams set stekken = v_stekken, zone = trim(p_zone) where id = v_team.id;
+    update wedstrijd.teams set stekken = v_stekken, zone = trim(p_zone)
+  where id = v_team.id
+     or (v_team.duo_id is not null and duo_id = v_team.duo_id and wedstrijd_id = v_w.id);
   else
     if p_stekken is null then raise exception 'wedstrijd_zonder_zones'; end if;
     v_nodig := case when v_w.mode = 'koppel' then 2 else 1 end;
@@ -769,10 +807,14 @@ begin
     from wedstrijd.stek_ring where klant_id = v_w.klant_id and stek = any(p_stekken);
     if coalesce(cardinality(v_posities),0) <> v_nodig then raise exception 'onbekende_stek'; end if;
     if v_nodig = 2 and v_posities[2] - v_posities[1] <> 1 then raise exception 'stekken_niet_naast_elkaar'; end if;
-    if exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and stekken && p_stekken) then
+    if exists (select 1 from wedstrijd.teams
+               where wedstrijd_id = v_w.id and stekken && p_stekken
+                 and (v_team.duo_id is null or duo_id is distinct from v_team.duo_id)) then
       raise exception 'stek_bezet';
     end if;
-    update wedstrijd.teams set stekken = p_stekken where id = v_team.id;
+    update wedstrijd.teams set stekken = p_stekken
+  where id = v_team.id
+     or (v_team.duo_id is not null and duo_id = v_team.duo_id and wedstrijd_id = v_w.id);
   end if;
 
   if not exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and cardinality(stekken) = 0) then
@@ -790,6 +832,7 @@ AS $function$
 declare
   v_w wedstrijd.wedstrijden;
   v_team_id uuid;
+  v_duo uuid;
 begin
   select * into v_w from wedstrijd.wedstrijden
   where code = upper(trim(p_code)) and admin_pin = trim(p_pin) for update;
@@ -797,7 +840,7 @@ begin
   -- eerst de TEAMRIJ locken: een gelijktijdige vangst-insert houdt een
   -- FOR KEY SHARE-lock op deze rij, dus hierna kan er geen vangst meer tussen
   -- de controle en de delete glippen (Codex v11)
-  select id into v_team_id from wedstrijd.teams
+  select id, duo_id into v_team_id, v_duo from wedstrijd.teams
   where id = p_team_id and wedstrijd_id = v_w.id for update;
   if not found then raise exception 'team_niet_gevonden'; end if;
   -- vangsten zijn audit-data: eerst (soft-)verwijderen in Beheer, dan pas het team
@@ -805,6 +848,9 @@ begin
     raise exception 'team_heeft_vangsten';
   end if;
   delete from wedstrijd.teams where id = v_team_id;
+  if v_duo is not null then
+    update wedstrijd.teams set duo_id = null where duo_id = v_duo and wedstrijd_id = v_w.id;
+  end if;
   if v_w.status = 'stekkeuze' and not exists (
     select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and cardinality(stekken) = 0
   ) and exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id) then
@@ -1304,7 +1350,8 @@ AS $function$
       from wedstrijd.wedstrijden w where w.code = upper(trim(p_code))),
     'teams', coalesce((select json_agg(json_build_object(
         'id', t.id, 'naam', t.naam, 'naam2', t.naam2, 'team_naam', t.team_naam,
-        'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone)
+        'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone,
+        'duo_id', t.duo_id)
         order by t.lot_nummer nulls last, t.created_at)
       from wedstrijd.teams t
       join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id
@@ -1336,7 +1383,8 @@ AS $function$
       from wedstrijd.wedstrijden w where w.kijk_code = upper(trim(p_kijk_code))),
     'teams', coalesce((select json_agg(json_build_object(
         'id', t.id, 'naam', t.naam, 'naam2', t.naam2, 'team_naam', t.team_naam,
-        'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone)
+        'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone,
+        'duo_id', t.duo_id)
         order by t.lot_nummer nulls last, t.created_at)
       from wedstrijd.teams t
       join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id

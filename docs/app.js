@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 71; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 72; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -425,6 +425,12 @@ const TABS_PER_ROL = {
   organisator: ['kaart', 'klassement', 'vangsten', 'seizoen', 'beheer'],
 };
 function renderTabs() {
+  // duidelijker labels (klantvraag NPHV): bij een individuele wedstrijd is
+  // "Mijn team" verwarrend, daar heet de tab "Mijn deelname"
+  const teamKnop = document.querySelector('#tabs button[data-tab=team]');
+  if (teamKnop && STATE?.wedstrijd) {
+    teamKnop.textContent = STATE.wedstrijd.mode === 'koppel' ? 'Mijn team' : 'Mijn deelname';
+  }
   // de seizoen-tab bestaat alleen als deze wedstrijd bij een seizoen hoort
   const zichtbaar = (TABS_PER_ROL[ROL] || TABS_PER_ROL.deelnemer)
     .filter((naam) => naam !== 'seizoen' || !!SEIZOEN);
@@ -596,6 +602,8 @@ function initHome() {
     knop.textContent = oudeTekst;
   });
 }
+
+let DUO_MAAT = null;   // {naam, deelnemer_code} van je maat, direct na een duo-aanmelding
 
 /* ---------- wedstrijd: state laden ---------- */
 let STATE_BEZIG = false;   // er loopt al een state-verzoek: sla deze poll over
@@ -1511,12 +1519,13 @@ function renderLoting() {
   el.innerHTML = voortgang + (geloot ? '' : '<p class="muted klein">De loting is nog niet gestart. Volgorde hieronder is de aanmeldvolgorde.</p>') +
     STATE.teams.map((t) => {
       const isBeurt = beurt && beurt.id === t.id;
+      const maat = t.duo_id ? STATE.teams.find((x) => x.duo_id === t.duo_id && x.id !== t.id) : null;
       const keuze = t.zone ? zoneLabel(t.zone)
         : (t.stekken || []).length ? 'stek ' + t.stekken.join(' + ')
         : (geloot ? (isBeurt ? 'aan de beurt…' : 'wacht') : '');
       return `<div class="loting-rij${isBeurt ? ' beurt' : ''}">
         <span class="lotnr">${t.lot_nummer ?? '·'}</span>
-        <span>${teamNaamHtml(t)}</span>
+        <span>${teamNaamHtml(t)}${maat ? ` <span class="muted klein">· vist samen met ${esc(maat.naam)}</span>` : ''}</span>
         <span class="stekjes">${esc(keuze)}</span>
       </div>`;
     }).join('');
@@ -2459,6 +2468,7 @@ function initWedstrijd() {
     renderKaart();
   });
 
+  $('#join-duo')?.addEventListener('change', () => renderTeamTab());
   $('#form-join').addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#join-fout'); foutEl.hidden = true;
@@ -2470,9 +2480,21 @@ function initWedstrijd() {
         p_team_naam: $('#join-teamnaam').value.trim() || null,
       });
       sessie.zetTeam(CODE, { id: res.team_id, token: res.token, naam: $('#join-naam').value.trim(), code: res.deelnemer_code });
+      DUO_MAAT = res.duo || null;
       if (res.deelnemer_code) toast(`🔑 Bewaar je persoonlijke inlogcode: ${res.deelnemer_code}`);
       await laadState(false);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+  });
+  $('#duo-code-deel')?.addEventListener('click', async () => {
+    if (!DUO_MAAT) return;
+    const tekst = `Ik heb ons aangemeld voor ${STATE?.wedstrijd?.naam || 'de viswedstrijd'}. `
+      + `Open ${location.origin}${location.pathname}#/w/${CODE} en log in als deelnemer met jouw persoonlijke code: ${DUO_MAAT.deelnemer_code}`;
+    if (navigator.share) {
+      try { await navigator.share({ text: tekst }); } catch { /* geannuleerd */ }
+    } else {
+      const ok = await kopieerTekst(tekst);
+      toast(ok ? 'Bericht gekopieerd; plak het in de groepsapp.' : 'Kopiëren lukte niet.');
+    }
   });
 
   const RAW_EXTENSIES = /\.(cr2|cr3|nef|nrw|arw|raf|dng|orf|rw2|pef|srw|raw)$/i;
@@ -2687,8 +2709,14 @@ function renderTeamTab() {
     joinCard.hidden = false;
     const kanJoinen = w.status === 'aanmelden';
     $('#form-join').hidden = !kanJoinen;
-    $('#join-naam2-label').hidden = w.mode !== 'koppel';
-    $('#join-naam2').required = w.mode === 'koppel';
+    // duo (alleen individueel): samen loten en zitten, ieder een eigen score
+    const duoLabel = $('#join-duo-label');
+    const duoAan = w.mode === 'individueel' && !!$('#join-duo')?.checked;
+    if (duoLabel) duoLabel.hidden = w.mode !== 'individueel';
+    $('#join-naam2-label').hidden = !(w.mode === 'koppel' || duoAan);
+    $('#join-naam2').required = w.mode === 'koppel' || duoAan;
+    const naam2Tekst = $('#join-naam2-tekst');
+    if (naam2Tekst) naam2Tekst.textContent = w.mode === 'koppel' ? 'Naam koppelmaat' : 'Naam van je maat';
     $('#join-teamnaam-label').hidden = w.mode !== 'koppel';
     $('#join-uitleg').textContent = kanJoinen
       ? (w.mode === 'koppel' ? 'Vul eerst jullie gegevens in: beide namen, en eventueel een teamnaam.' : 'Vul eerst je naam in om mee te doen.')
@@ -2700,6 +2728,16 @@ function renderTeamTab() {
   joinCard.hidden = true;
   teamCard.hidden = false;
   $('#team-titel').textContent = teamNaam(mijn);
+  // duo: zolang de aanmelder op dit toestel zit, blijft de code voor de maat
+  // zichtbaar (na herladen kan de organisator hem altijd nog opzoeken in Beheer)
+  const duoBlok = $('#duo-code-blok');
+  if (duoBlok) {
+    duoBlok.hidden = !DUO_MAAT;
+    if (DUO_MAAT) {
+      $('#duo-maat-naam').textContent = DUO_MAAT.naam;
+      $('#duo-maat-code').textContent = DUO_MAAT.deelnemer_code;
+    }
+  }
   if (t.code) {
     $('#team-code').textContent = t.code;
   } else {
@@ -2717,7 +2755,9 @@ function renderTeamTab() {
      f === 'live' ? 'Je doet mee! Registreer je vangsten hieronder.' :
      f === 'voorbij' ? 'De wedstrijd is afgelopen.' :
      'De loting moet nog beginnen.');
-  $('#team-info').textContent = (mijn.team_naam ? `${ledenNaam(mijn)} · ` : '') + plek;
+  const duoMaatTeam = mijn.duo_id ? STATE.teams.find((x) => x.duo_id === mijn.duo_id && x.id !== mijn.id) : null;
+  $('#team-info').textContent = (mijn.team_naam ? `${ledenNaam(mijn)} · ` : '')
+    + (duoMaatTeam ? `Je vist samen met ${duoMaatTeam.naam} (ieder een eigen score). ` : '') + plek;
 
   // naam aanpassen kan tot de START (klantvraag NPHV): daarna is de naam de
   // sleutel van uitslag en seizoen en gaat het via de organisator

@@ -304,7 +304,7 @@
   </details>
 
   <nav class="tabs" id="tabs">
-    <button data-tab="kaart" class="actief">Kaart</button>
+    <button data-tab="kaart" class="actief">Kaart &amp; loting</button>
     <button data-tab="klassement">Klassement</button>
     <button data-tab="vangsten">Vangsten</button>
     <button data-tab="team">Mijn team</button>
@@ -376,7 +376,9 @@
       <p id="join-uitleg" class="muted"></p>
       <form id="form-join" class="stack">
         <label>Naam <input id="join-naam" type="text" maxlength="40" required></label>
-        <label id="join-naam2-label" hidden>Naam koppelmaat <input id="join-naam2" type="text" maxlength="40"></label>
+        <label id="join-duo-label" class="muted klein" hidden><input type="checkbox" id="join-duo">
+          Wij vissen met z'n tweeën aan één stek (ieder een eigen score)</label>
+        <label id="join-naam2-label" hidden><span id="join-naam2-tekst">Naam koppelmaat</span> <input id="join-naam2" type="text" maxlength="40"></label>
         <label id="join-teamnaam-label" hidden>Teamnaam <span class="muted">(optioneel)</span> <input id="join-teamnaam" type="text" maxlength="40" placeholder="bijv. De Bivvy Brothers"></label>
         <button type="submit" class="btn primary">Aanmelden</button>
         <p id="join-fout" class="fout" hidden></p>
@@ -390,6 +392,12 @@
       elk toestel weer in onder je eigen naam, ook in de beginscherm-app):</p>
       <p><b id="team-code" class="codegroot"></b>
       <button id="btn-herstel" class="btn klein-btn">kopieer</button></p>
+      <div id="duo-code-blok" class="duo-code" hidden>
+        <p class="muted klein">🎣 Jullie vissen samen aan één stek. Geef deze inlogcode aan
+          <b id="duo-maat-naam"></b>; daarmee doet die op de eigen telefoon mee (eigen score):</p>
+        <p><b id="duo-maat-code" class="codegroot"></b>
+        <button id="duo-code-deel" class="btn klein-btn">📤 stuur naar je maat</button></p>
+      </div>
       <div id="naam-wijzig-blok" hidden>
         <button id="btn-naam-wijzig" class="btn klein-btn">✏️ naam aanpassen</button>
         <form id="form-naam" class="stack" hidden>

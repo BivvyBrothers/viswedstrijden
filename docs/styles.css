@@ -428,3 +428,8 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .wachtrij-rij.te-laat { border-left-color: var(--rood); }
 .wachtrij-rij .tekst { flex: 1 1 190px; min-width: 0; }
 .wachtrij-rij b { font-variant-numeric: tabular-nums; }
+
+/* duo: het blok met de inlogcode voor je maat */
+.duo-code { background: var(--zand); border-radius: 10px; padding: 10px 12px; margin: 10px 0; }
+#join-duo-label { display: flex; gap: 8px; align-items: flex-start; }
+#join-duo-label input { margin-top: 3px; }

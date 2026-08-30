@@ -349,6 +349,35 @@ Uit review v8 (UX-2/9/10), gericht op gebruik met natte handen en fel zonlicht:
 - **Landing**: directe demo-links per rol (kijker `/demo/#/k/KIJKJE`,
   deelnemer `/demo/#/w/DEMOJA`).
 
+## Duo's: samen loten, apart in het klassement (v72, 30 aug 2026)
+
+Klantvraag NPHV (Kelvin): twee vissers die samen aan een stek zitten maar
+ieder een eigen score hebben. **Een duo is twee gewone individuele deelnemers
+(elk een eigen token, inlogcode, klassementregel en vangsten) met dezelfde
+`teams.duo_id`. Alleen de LOTING behandelt ze als eenheid.** Bewust NIET de
+koppelmodus uitgebreid met een "score apart"-schakelaar: dat zou klassement,
+seizoen en deelafbeeldingen raken; dit raakt alleen aanmelden en loting.
+
+- Aanmelden: bij een individuele wedstrijd een vinkje "Wij vissen met z'n
+  tweeen aan een stek" + tweede naamveld. `w_join` maakt dan twee teams met
+  dezelfde duo_id (signatuur ongewijzigd: p_naam2 bij individueel betekende
+  voorheen niets, oude clients merken niets). De aanmelder krijgt de
+  inlogcode van de maat terug (`res.duo`) en kan die delen (share-knop).
+- Loting: `w_start_stekkeuze` telt capaciteit en schudt per LOTEENHEID
+  (`coalesce(duo_id, id)`); duoleden krijgen hetzelfde lotnummer. De keuze van
+  de een (zone of stek) wordt in dezelfde transactie naar de maat gekopieerd
+  (`w_kies_zone`, `w_kies_stek`, `w_admin_kies`); de bezet-controle slaat de
+  eigen duogenoot over. Verwijdert de organisator een duolid, dan loot de maat
+  weer solo (`w_admin_verwijder_team` zet duo_id van de partner op null).
+- Klassement/seizoen/delen: ongewijzigd, het zijn gewone teams. `w_get_state`
+  en de kijker-variant geven `duo_id` mee zodat de app "vist samen met X"
+  toont (lotinglijst + Mijn deelname). Duo telt als 2 voor max_teams, als 1
+  voor de zone-capaciteit.
+
+**Tablabels (zelfde ronde):** "Kaart" heet nu "Kaart & loting" en de teamtab
+heet bij individuele wedstrijden "Mijn deelname" (bij koppels "Mijn team",
+dynamisch in renderTabs). De data-tab-namen zijn ONgewijzigd (kaart/team).
+
 ## Wedstrijd als sjabloon (v67, 13 aug 2026)
 
 Knop **📋 Als sjabloon** op elke wedstrijdkaart in de organisatie-omgeving
