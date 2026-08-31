@@ -371,6 +371,16 @@
         <button type="submit" class="btn primary">Aanmelden</button>
         <p id="join-fout" class="fout" hidden></p>
       </form>
+      <div id="join-herstel">
+        <p class="muted klein">🔑 <b>Al aangemeld</b> (of per ongeluk uitgelogd)? Log hier weer in
+        met je persoonlijke inlogcode; meld je niet opnieuw aan.</p>
+        <form id="form-herstel" class="herstel-rij">
+          <input id="herstel-code" type="text" maxlength="8" autocapitalize="characters"
+            autocomplete="off" spellcheck="false" placeholder="bijv. AB2CD3">
+          <button type="submit" class="btn">Inloggen</button>
+        </form>
+        <p id="herstel-fout" class="fout" hidden></p>
+      </div>
     </div>
 
     <div class="card" id="team-card" hidden>

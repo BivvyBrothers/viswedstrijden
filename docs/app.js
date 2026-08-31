@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 76; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 77; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -2552,6 +2552,32 @@ function initWedstrijd() {
       await laadState(false);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
+  $('#form-herstel')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const foutEl = $('#herstel-fout'); foutEl.hidden = true;
+    const code = $('#herstel-code').value.trim().toUpperCase();
+    if (!code) return;
+    try {
+      const login = await rpc('w_login_deelnemer', { p_code: code });
+      if (!login) {
+        foutEl.textContent = 'Deze code is niet gevonden. Let op: dit is je PERSOONLIJKE inlogcode (6 tekens), niet de wedstrijdcode.';
+        foutEl.hidden = false;
+        return;
+      }
+      sessie.zetTeam(login.wedstrijd_code, {
+        id: login.team_id, token: login.token, naam: login.naam, code: login.deelnemer_code,
+      });
+      $('#herstel-code').value = '';
+      if (login.wedstrijd_code === CODE) {
+        toast(`Welkom terug, ${login.naam}!`);
+        await laadState(true);
+      } else {
+        // de code hoort bij een andere wedstrijd: daar naartoe
+        location.hash = '#/w/' + login.wedstrijd_code;
+      }
+    } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+  });
+
   $('#duo-code-deel')?.addEventListener('click', async () => {
     if (!DUO_MAAT || DUO_MAAT.code !== CODE) return;
     const naam = STATE?.wedstrijd?.naam || 'de viswedstrijd';

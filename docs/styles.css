@@ -469,3 +469,9 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 }
 .avatar.k { width: 22px; height: 22px; font-size: 10px; margin-right: 6px; }
 .avatar.mini { width: 18px; height: 18px; font-size: 8px; margin-right: 5px; }
+
+/* inloggen met je persoonlijke code, onderaan de meedoen-kaart */
+#join-herstel { border-top: 1px solid var(--zand); margin-top: 16px; padding-top: 12px; }
+.herstel-rij { display: flex; gap: 8px; }
+.herstel-rij input { flex: 1 1 auto; min-width: 0; text-transform: uppercase; letter-spacing: 2px; }
+.herstel-rij .btn { flex: 0 0 auto; }
