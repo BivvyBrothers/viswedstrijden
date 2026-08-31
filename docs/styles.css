@@ -475,3 +475,10 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .herstel-rij { display: flex; gap: 8px; }
 .herstel-rij input { flex: 1 1 auto; min-width: 0; text-transform: uppercase; letter-spacing: 2px; }
 .herstel-rij .btn { flex: 0 0 auto; }
+
+/* Beheer: wie loot samen (duo) */
+.duo-label {
+  display: inline-block; font-size: 12px; font-weight: 600;
+  color: #7a5510; background: #f6e7c8; border-radius: 999px;
+  padding: 1px 8px; white-space: nowrap;
+}

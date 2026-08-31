@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 77; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 78; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -3154,9 +3154,13 @@ async function renderBeheer(magPrefill) {
   $('#b-loting').disabled = w.status !== 'aanmelden';
   $('#b-reset').disabled = w.status === 'aanmelden';
 
+  const duoMaatVan = (t) => t.duo_id
+    ? STATE.teams.find((x) => x.duo_id === t.duo_id && x.id !== t.id) : null;
   $('#b-teams').innerHTML = STATE.teams.length ? STATE.teams.map((t) => `
     <div class="b-rij">
-      <span class="naam">${teamNaamHtml(t)}</span>
+      <span class="naam">${teamNaamHtml(t)}${duoMaatVan(t)
+        ? ` <span class="duo-label">🎣 duo met ${esc(duoMaatVan(t).naam)}</span>`
+        : ''}</span>
       <span class="muted klein">${t.lot_nummer ? 'lot ' + t.lot_nummer : ''} ${t.zone ? '· ' + esc(zoneLabel(t.zone)) : (t.stekken || []).length ? '· stek ' + t.stekken.join('+') : ''}</span>
       <span class="muted klein">🔑 <b class="codegroot klein-code" data-team-code="${t.id}">·····</b></span>
       ${w.status === 'stekkeuze' && !(t.stekken || []).length ? `<button class="btn klein-btn" data-team-kies="${t.id}">📍 geef plek</button>` : ''}
