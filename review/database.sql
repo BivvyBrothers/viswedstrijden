@@ -1,7 +1,8 @@
 -- =====================================================================
 -- Viswedstrijden Plas van der Ende: database-export (schema `wedstrijd`)
 -- Eerste export 8 jul 2026 (app v22); daarna bijgewerkt bij elke migratie,
--- laatst op 13 aug 2026 (app v66, Codex-review v11).
+-- laatst op 31 aug 2026 (app v79, migratie wedstrijd_reset_gate_start;
+-- de duo-RPC's van v72/v73 zaten er al in).
 --
 -- WAT DIT BESTAND IS: de REVIEWBRON. De functiedefinities hieronder zijn de
 -- effectieve live definities (pg_get_functiondef) en worden bij elke migratie
@@ -726,10 +727,11 @@ begin
   select * into v_w from wedstrijd.wedstrijden
   where code = upper(trim(p_code)) and admin_pin = trim(p_pin) for update;
   if not found then raise exception 'pin_onjuist'; end if;
+  if pg_catalog.now() >= v_w.start_ts then raise exception 'reset_niet_na_start'; end if;
   -- opnieuw loten mag niet meer zodra er gevist is: de vangsten blijven staan
   -- en horen daarna bij teams zonder plek (Codex v11)
   if exists (select 1 from wedstrijd.vangsten v
-             where v.wedstrijd_id = v_w.id and v.status = 'actief') then
+             where v.wedstrijd_id = v_w.id and v.status in ('actief', 'wacht')) then
     raise exception 'reset_niet_mogelijk_vangsten';
   end if;
   update wedstrijd.teams set lot_nummer = null, stekken = '{}', zone = null

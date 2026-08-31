@@ -1,0 +1,36 @@
+Context: deze statische webapp (docs/app.js, vanilla JS, geen build) draait de
+eerste ECHTE viswedstrijd op zaterdag 12 september: aanmelden loopt NU al met
+echte deelnemers, om 08:00 die dag is de gezamenlijke loting via de app, om
+09:00 start de wedstrijd (loopt door tot zondag 11:30, dus een NACHTwedstrijd
+van ruim 26 uur). Er zijn al duo-aanmeldingen binnen (twee deelnemers die
+teams.duo_id delen: samen loten en zitten, ieder eigen score).
+
+De database-kant staat in review/database.sql (verse export van de live
+functiedefinities; RLS aan zonder policies, alles via SECURITY DEFINER RPC's
+w_*). De client staat in docs/app.js; tenant-markup in docs/nphv/index.html.
+
+Opdracht: review ALLE wedstrijd-kritieke paden alsof de wedstrijd morgen is.
+Zoek concreet naar fouten die op de wedstrijddag zelf pijn doen, per bevinding
+ernst hoog/middel/laag plus bestand en regel of functienaam. Loop minimaal na:
+
+1. Aanmelden incl. duo (w_join, p_duo-pad) en naam wijzigen tot de start
+   (w_wijzig_naam of hoe die heet), en de herstel-login met persoonlijke code
+   (w_login_deelnemer + het form-herstel-pad in app.js).
+2. De loting: w_start_stekkeuze (duo = een loteenheid), beurtvolgorde,
+   w_kies_zone / w_kies_stek, w_admin_kies (organisator wijst plek toe),
+   w_admin_verwijder_team tijdens elke fase, w_admin_reset_loting.
+   Let op randgevallen met duo's: verwijderen van een duolid VOOR, TIJDENS en
+   NA de loting; organisator wijst plek toe aan een duolid; wat als beide
+   duoleden tegelijk op verschillende telefoons een zone kiezen.
+3. Vangstregistratie tijdens de wedstrijd: w_registreer_vangst, de offline
+   wachtrij in app.js (IndexedDB vwa-wachtrij, verstuurWachtrij), de late
+   vangsten (w_registreer_vangst_laat, w_admin_vangst_beslis), de eindtijd-gate.
+4. Klassement en tiebreaks (klassementRijen), de kijker-state, polling/
+   SESSIE_GEN, en of een duo overal correct als twee losse scores verschijnt.
+5. De nachtwedstrijd: iets dat kapot gaat als een wedstrijd over middernacht
+   heen loopt (datumformattering, "vandaag"-aannames, de klok)?
+6. Beheer tijdens de wedstrijd: gewicht corrigeren, vangst verwijderen,
+   handmatige vangst, teamcodes opzoeken.
+
+Meld ook wat je NIET kon verifieren. Geef GEEN stijlcommentaar; alleen dingen
+die de wedstrijddag kunnen verstoren of data corrumperen.

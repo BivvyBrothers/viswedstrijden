@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 78; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 79; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -43,6 +43,8 @@ const FOUTEN = {
   reset_niet_mogelijk_vangsten: 'Opnieuw loten kan niet meer: er zijn al vangsten geregistreerd. Verwijder die eerst in Beheer als je echt opnieuw wilt loten.',
   kies_eerst_je_plek: 'Kies eerst je stek of zone; daarna kun je vangsten doorgeven.',
   geen_verbinding: 'Geen antwoord van de server. Controleer je bereik; de app probeert het vanzelf opnieuw.',
+  upload_mislukt: 'De foto kon tijdelijk niet worden opgeslagen. De app probeert het vanzelf opnieuw.',
+  reset_niet_na_start: 'De wedstrijd is al begonnen: de loting kan niet meer opnieuw. Wijs losse plekken toe via Deelnemers.',
   geen_deelnemers: 'Er zijn nog geen deelnemers aangemeld.',
   te_veel_teams_voor_zones: 'Meer teams dan zones: pas de zones of het aantal deelnemers aan voor je loot.',
   te_veel_teams_voor_stekken: 'Meer teams dan beschikbare stekken: verklein het aantal deelnemers voor je loot.',
@@ -140,8 +142,13 @@ async function uploadFoto(poging, blob, code) {
   });
   if (!r.ok) {
     const j = await r.json().catch(() => null);
-    throw new Error(j?.fout === 'te_veel_uploads' ? 'te_veel_uploads'
-      : j?.fout === 'geen_toegang' ? 'geen_toegang' : 'ongeldige_foto');
+    // Codex pre-wedstrijd: een storing (5xx/upload_mislukt) is GEEN kapotte
+    // foto; die fout mag nooit definitief worden, anders sneuvelt een goede
+    // vangst op een tijdelijk Storage-probleem
+    if (j?.fout === 'te_veel_uploads') throw new Error('te_veel_uploads');
+    if (j?.fout === 'geen_toegang') throw new Error('geen_toegang');
+    if (j?.fout === 'upload_mislukt' || r.status >= 500) throw new Error('upload_mislukt');
+    throw new Error('ongeldige_foto');
   }
   const j = await r.json();
   poging.pad = j.pad;
@@ -507,7 +514,10 @@ function initHome() {
         location.hash = '#/w/' + login.wedstrijd_code;
         return;
       }
-    } catch { /* geen persoonlijke code: probeer als wedstrijdcode */ }
+    } catch (err) {
+      if (err.message === 'geen_verbinding') { toast(foutTekst(err)); return; }
+      /* geen persoonlijke code: probeer als wedstrijdcode */
+    }
     location.hash = '#/w/' + code;
   });
   $('#form-kijker').addEventListener('submit', (e) => {
@@ -2163,9 +2173,13 @@ async function wachtrijAlles() {
   } catch { return []; }   // privémodus of geen IndexedDB: dan werkt de app als vroeger
 }
 
+let FALLBACK_POGING = null;  // upload-poging van de directe route (geen IndexedDB)
+
 // serverfouten die NIET vanzelf overgaan: opnieuw proberen heeft geen zin
+// kies_eerst_je_plek staat hier bewust NIET in: zodra de organisator alsnog
+// een plek toewijst moet de wachtende vangst vanzelf doorkomen (Codex)
 const WACHTRIJ_DEFINITIEF = ['ongeldig_gewicht', 'ongeldige_foto', 'team_niet_gevonden',
-                             'kies_eerst_je_plek', 'foto_al_gebruikt', 'geen_toegang'];
+                             'foto_al_gebruikt', 'geen_toegang'];
 
 async function verstuurWachtrij() {
   if (WACHTRIJ_BEZIG) return;
@@ -2175,12 +2189,10 @@ async function verstuurWachtrij() {
     for (const item of await wachtrijAlles()) {
       if (item.status) continue;   // te_laat of geweigerd: wacht op de gebruiker
       const team = sessie.team(item.code);
-      if (!team) {
-        item.status = 'geweigerd';
-        item.fout = 'Je bent uitgelogd bij dit team, dus deze vangst kan niet meer worden verstuurd.';
-        await wachtrijZet(item);
-        continue;
-      }
+      // de vangst hoort bij het team dat hem invoerde; na uitloggen of een
+      // herstel-login als iemand anders blijft hij WACHTEN in plaats van met
+      // andermans token te versturen (Codex pre-wedstrijd, hoog 1)
+      if (!team || (item.team_id && team.id !== item.team_id)) continue;
       try {
         if (!item.pad) {
           const poging = { pad: null };
@@ -2206,9 +2218,21 @@ async function verstuurWachtrij() {
             await wachtrijWeg(item.id);
             toast('De wedstrijd was al afgelopen. Je vangst is doorgegeven aan de organisator.');
           } catch (err2) {
-            item.status = 'te_laat';
-            item.fout = foutTekst(err2);
-            await wachtrijZet(item);
+            const c2 = err2.message || '';
+            const laatDefinitief = ['te_lang_geleden', 'buiten_wedstrijdtijd',
+              'ongeldig_gewicht', 'ongeldige_foto', 'team_niet_gevonden',
+              'wedstrijd_niet_gevonden'];
+            if (laatDefinitief.includes(c2)) {
+              item.status = 'te_laat';
+              item.fout = foutTekst(err2);
+              await wachtrijZet(item);
+            } else if (c2 === 'foto_al_gebruikt') {
+              // zelfde foto, ander gewicht kan hier niet voorkomen: dit betekent
+              // dat een eerder verloren antwoord toch was aangekomen
+              await wachtrijWeg(item.id);
+            } else {
+              break;   // storing of tijd-race: later gewoon opnieuw proberen
+            }
           }
         } else if (WACHTRIJ_DEFINITIEF.includes(code)) {
           item.status = 'geweigerd';
@@ -2242,6 +2266,14 @@ async function renderWachtrij() {
     if (i.status === 'geweigerd') {
       return `<div class="wachtrij-rij te-laat">
         <span class="tekst">⚠️ <b>${fmtKg(i.gewicht_gram)}</b> van ${esc(wanneer)}: ${esc(i.fout || 'niet geaccepteerd')}</span>
+        <button class="btn klein-btn" data-wachtrij-weg="${esc(i.id)}">verwijderen</button></div>`;
+    }
+    const hier = sessie.team(i.code);
+    if (i.team_id && (!hier || hier.id !== i.team_id)) {
+      return `<div class="wachtrij-rij te-laat">
+        <span class="tekst">⏳ <b>${fmtKg(i.gewicht_gram)}</b> van ${esc(wanneer)} hoort bij
+        ${esc(i.team_naam || 'een andere deelnemer')}. Log daarmee weer in (met de persoonlijke
+        code) en de vangst wordt alsnog verstuurd.</span>
         <button class="btn klein-btn" data-wachtrij-weg="${esc(i.id)}">verwijderen</button></div>`;
     }
     return `<div class="wachtrij-rij">
@@ -2629,17 +2661,19 @@ function initWedstrijd() {
     const bestand = $('#v-foto').files[0];
     if (!gram) { foutEl.textContent = 'Vul een geldig gewicht in tussen 0,05 en 50 kg, bijv. 12,45.'; foutEl.hidden = false; return; }
     if (!bestand) { foutEl.textContent = 'Een foto is verplicht als bewijs van de vangst.'; foutEl.hidden = false; return; }
-    if (new Date(STATE.wedstrijd.eind_ts).getTime() - nu() < 15000) {
-      foutEl.textContent = 'De wedstrijd is (bijna) afgelopen: registreren kan niet meer op tijd verwerkt worden.';
-      foutEl.hidden = false; return;
-    }
+    // het indienmoment telt, niet het moment na de fotocompressie: op een trage
+    // telefoon zou een vangst van 11:29 anders een tijdstip na de eindtijd
+    // krijgen. En geen client-gate meer vlak voor de eindtijd: opslaan mag
+    // altijd, de server en het late-pad beslissen wat er nog mee kan (Codex)
+    const ingediendOp = Date.now();
     knop.disabled = true; knop.textContent = 'Bezig met uploaden…';
     try {
       const blob = await compressFoto(bestand);
       // eerst duurzaam vastleggen, dan pas versturen: valt het bereik weg of
       // sluit de visser de app, dan staat de vangst er nog steeds
       const item = { id: crypto.randomUUID(), code: CODE, gewicht_gram: gram,
-                     blob, gemaakt_op: Date.now(), pad: null };
+                     blob, gemaakt_op: ingediendOp, pad: null,
+                     team_id: t.id, team_naam: t.naam || '' };
       let inWachtrij = true;
       try { await wachtrijZet(item); } catch { inWachtrij = false; }
 
@@ -2662,9 +2696,17 @@ function initWedstrijd() {
           okEl.hidden = false;
         }
       } else {
-        // geen IndexedDB (bijvoorbeeld privémodus): de oude, directe weg
-        const pad = await uploadFoto({ pad: null }, blob);
+        // geen IndexedDB (bijvoorbeeld privémodus): de oude, directe weg.
+        // De poging overleeft een mislukte submit: een retry van dezelfde
+        // vangst hergebruikt het pad, dus de idempotente registratie kan
+        // nooit dubbel tellen (Codex pre-wedstrijd, hoog 6)
+        const kenmerk = gram + ':' + bestand.name + ':' + bestand.size;
+        if (!FALLBACK_POGING || FALLBACK_POGING.kenmerk !== kenmerk) {
+          FALLBACK_POGING = { kenmerk, pad: null };
+        }
+        const pad = FALLBACK_POGING.pad || await uploadFoto(FALLBACK_POGING, blob);
         await rpc('w_registreer_vangst', { p_code: CODE, p_token: t.token, p_gewicht_gram: gram, p_foto_path: pad });
+        FALLBACK_POGING = null;
         okEl.textContent = `Vangst van ${fmtKg(gram)} geregistreerd! 🎉`;
         okEl.hidden = false;
         $('#form-vangst').reset();
@@ -3166,7 +3208,7 @@ async function renderBeheer(magPrefill) {
       ${w.status === 'stekkeuze' && !(t.stekken || []).length ? `<button class="btn klein-btn" data-team-kies="${t.id}">📍 geef plek</button>` : ''}
       <button class="btn gevaar klein-btn" data-team-weg="${t.id}">verwijder</button>
     </div>`).join('') : '<p class="muted">Nog geen deelnemers.</p>';
-  const codesSleutel = CODE + ':' + STATE.teams.length;
+  const codesSleutel = CODE + ':' + STATE.teams.map((t) => t.id).sort().join(',');
   const vulCodes = (codes) => {
     for (const c of codes || []) {
       const el = $('#b-teams').querySelector(`[data-team-code="${c.team_id}"]`);
