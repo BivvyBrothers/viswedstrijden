@@ -29,7 +29,17 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
    voor het thuisfront.)
 3. **Vraag iedereen alvast aan te melden** en de app op het beginscherm te
    zetten (nodig voor pushmeldingen op iPhone). Bij het aanmelden krijgt
-   iedereen een **persoonlijke inlogcode**: laat ze die bewaren.
+   iedereen een **persoonlijke inlogcode**: laat ze die bewaren. Wie zijn code
+   kwijt is hoeft zich NIET opnieuw aan te melden: onderaan de aanmeldkaart
+   staat "Al aangemeld? Log hier weer in", en jij kunt elke code opzoeken in
+   Beheer → Deelnemers.
+   **Vissen er twee samen aan één stek?** Dan meldt één van de twee zich aan
+   met het vinkje "Wij vissen met z'n tweeën aan één stek" en de naam van de
+   maat erbij. De app maakt er twee deelnemers van met één gezamenlijk lot:
+   samen loten, samen op één plek, ieder een eigen score. Melden ze zich
+   allebei apart aan, dan trekt de loting ze uit elkaar; dat is achteraf
+   alleen op te lossen door er één te verwijderen en opnieuw aan te melden.
+   Deelnemers kunnen hun naam zelf nog aanpassen tot de start.
 4. Check in de organisatie-omgeving de teller: "compleet: klaar voor loting"
    betekent dat iedereen binnen is.
 
@@ -40,9 +50,12 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
    direct zijn lotnummer.
 6. **Kiezen:** om de beurt (lot 1 eerst) tikt iedere visser op de kaart een
    zoneletter aan en bevestigt. Oranje = selectie, groen = definitief,
-   rood = bezet.
+   rood = bezet. Een duo heeft samen één lot: kiest de een, dan staat de ander
+   automatisch op dezelfde plek en is die plek voor de rest bezet.
+   Doe de loting gewoon met z'n allen bij elkaar; alleen het briefjes trekken
+   is vervangen door de app.
 7. **Loopt het vast omdat iemand niet reageert?** (lege batterij, geen bereik,
-   te laat): open Beheer → Deelnemers → **📍 geef plek** bij dat team, tik op de
+   te laat, of hij is uitgelogd en zoekt zijn code): open Beheer → Deelnemers → **📍 geef plek** bij dat team, tik op de
    kaart een vrije zone aan en bevestig. De rest kiest gewoon verder.
 8. **Komt iemand echt niet opdagen?** Beheer → Deelnemers → verwijder. De zone
    komt dan weer vrij. (Kan alleen zolang het team nog geen vangsten heeft.)
@@ -58,7 +71,12 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
   toevoegen**. Werkt ook ná de eindtijd, foto is optioneel.
 - **Visser kwijtgeraakt op zijn telefoon?** (uitgelogd, nieuw toestel): zijn
   persoonlijke code staat in Beheer → Deelnemers (🔑). Daarmee logt hij overal
-  weer in onder zijn eigen naam.
+  weer in onder zijn eigen naam, via "Al aangemeld? Log hier weer in" onderaan
+  de wedstrijdpagina.
+- **Geen bereik op zijn stek?** Dat hoeft niemand op te lossen: de app bewaart
+  de vangst met foto op de telefoon en verstuurt hem zodra er weer verbinding
+  is. De visser ziet zelf staan wat er nog in de wachtrij staat. Pas als iemand
+  de hele dag zonder bereik zit, voer jij de vangst handmatig in.
 - De klok is de baas: na de eindtijd blokkeert de server elke registratie
   door deelnemers. Alleen jouw handmatige invoer kan er dan nog bij (voor
   aantoonbaar op tijd gevangen vis).

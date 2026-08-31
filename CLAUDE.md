@@ -489,7 +489,10 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
    (nieuwe tenants komen hier als kaart bij; nieuwe_tenant.py doet dat)
 3. `docs/nphv/index.html` + `docs/demo/index.html` | meta descriptions
 4. `docs/instructies.html` + `docs/nphv/instructies.html` +
-   `docs/demo/instructies.html` | intro-zin met de mogelijkheden
+   `docs/demo/instructies.html` | intro-zin met de mogelijkheden EN de sectie
+   "Meedoen met een wedstrijd" (sinds 31 aug ook: terug inloggen met de
+   persoonlijke code, naam aanpassen tot de start, en het duo-blok
+   "Vissen jullie met z'n tweeën aan één stek?")
 5. `beginscherm-a4.html` -> REGENEREREN: `beginscherm-instructie.pdf/.png` +
    kopie naar `docs/instructies-print.pdf` + `docs/nphv/instructies-print.pdf`
    (headless Chrome --print-to-pdf, PNG via pymupdf)
