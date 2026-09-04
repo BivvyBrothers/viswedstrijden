@@ -482,3 +482,9 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
   color: #7a5510; background: #f6e7c8; border-radius: 999px;
   padding: 1px 8px; white-space: nowrap;
 }
+
+/* verbinding verloren: oude stand in beeld, met tijdstip */
+.verbinding-banner {
+  position: sticky; top: 0; z-index: 60; background: #a63c2c; color: #fff;
+  font-weight: 700; font-size: 14px; padding: 8px 14px; text-align: center;
+}

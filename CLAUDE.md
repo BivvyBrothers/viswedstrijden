@@ -393,6 +393,34 @@ daarna weer op `klaar`. Client: het aanmeldformulier blijft zichtbaar met de
 uitleg "je krijgt het laatste lotnummer". De RPC-signatuur is ongewijzigd
 (alleen een extra `lot_nummer`-veld in het antwoord).
 
+## Wedstrijddag-hardening v81 (4 sep 2026, Codex pre-wedstrijd 2)
+
+- **Browserlock om de wachtrij**: `verstuurWachtrij` neemt `navigator.locks`
+  (`ifAvailable`) en roept `verstuurWachtrijKern` aan; de beginscherm-app en een
+  browsertab delen dezelfde IndexedDB en konden hetzelfde item tegelijk
+  uploaden (twee fotopaden = twee vangsten). Zonder locks-API: oude gedrag.
+- **Upload-timeout** `UPLOAD_TIMEOUT_MS` (60s) in `uploadFoto`; netwerkfout of
+  timeout wordt `upload_mislukt` (retry), nooit `ongeldige_foto`.
+- **Edge function `upload-vangstfoto` versie 3**: een storing bij de
+  autorisatie-RPC (netwerk of 5xx) geeft 503 `upload_mislukt` in plaats van
+  403 `geen_toegang`, want de client behandelt geen_toegang als definitief.
+- **Automatisch vernieuwen** in `checkVersie`: is `version.json` nieuwer, dan
+  reload zodra niemand typt en de wachtrij niet bezig is; één poging per
+  versie per tab (`sessionStorage.herlaad-poging`), daarna alleen de banner.
+- **Verbindingsbanner** (`verbindingBanner`, `STATE_OK_OP`): bij een mislukte
+  poll met bestaande STATE staat er "Geen verbinding, je ziet de stand van
+  HH:MM" bovenaan; verdwijnt bij de eerstvolgende goede poll.
+- **`w_admin_wis_plek`** (migratie `wedstrijd_admin_wis_plek`) + Beheer-knop
+  "🧹 plek wissen": plek van een team en zijn duo-maat weer vrij zolang er
+  geen vangst is; team houdt zijn lot; status `klaar` gaat terug naar
+  `stekkeuze`. Daarvoor was een verkeerde toewijzing alleen met een volledige
+  reset te herstellen, en na de start zelfs dat niet.
+- **Deelafbeelding** toont tot 16 rijen (was 10): een clubwedstrijd past er
+  helemaal op. Nulvangers blijven bewust buiten `klassementRijen`.
+- Home-login: elke fout van `w_login_deelnemer` is een storing (onbekende code
+  geeft null), dus nooit meer doorvallen naar "wedstrijd niet gevonden".
+- Indienmoment van een vangst met `nu()` (servergecorrigeerd) i.p.v. `Date.now()`.
+
 ## Wedstrijd als sjabloon (v67, 13 aug 2026)
 
 Knop **📋 Als sjabloon** op elke wedstrijdkaart in de organisatie-omgeving

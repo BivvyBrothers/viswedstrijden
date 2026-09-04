@@ -1,0 +1,41 @@
+Derde en laatste ronde, kort en scherp. Na jouw tweede review (review/codex-prewedstrijd2-uit.md)
+zijn er wijzigingen gedaan die NOG NIET gecommit zijn: bekijk `git diff HEAD` (client
+docs/app.js + docs/styles.css, en de gepatchte edge-functionkopie review/upload-vangstfoto.ts)
+plus de laatste commit `git show HEAD` (v80: laatkomer na de loting, w_join in review/database.sql).
+Nieuwe server-RPC: w_admin_wis_plek (nog niet in database.sql; definitie hieronder).
+
+Beoordeel UITSLUITEND op regressies en fouten die de wedstrijddag (za 12 sep) kunnen
+verstoren, per bevinding ernst + bestand/regel + concrete fix. Let vooral op:
+1. verstuurWachtrij met navigator.locks (ifAvailable): kan de rij blijven hangen, kan
+   WACHTRIJ_BEZIG vast blijven staan, en werkt de terugval zonder locks?
+2. uploadFoto met AbortController/timeout: wordt elke fout correct als retry of
+   definitief behandeld in verstuurWachtrij en in de directe route?
+3. checkVersie: het automatische location.reload() bij een nieuwere versie. Kan dit
+   een reload-lus geven (bijv. als GitHub Pages nog de oude app.js serveert), of een
+   vangst-invoer onderbreken? sessionStorage-guard 'herlaad-poging'.
+4. verbindingBanner in laadState: kan hij blijven staan of verkeerd getoond worden?
+5. w_admin_wis_plek (SQL hieronder) en de Beheer-knop 'plek wissen': locks, duo-maat,
+   statusovergang klaar->stekkeuze, interactie met w_registreer_vangst (kies_eerst_je_plek).
+6. Edge function: het nieuwe storing-pad (503 upload_mislukt) versus 403 geen_toegang.
+7. v80 w_join laatkomer: races met w_start_stekkeuze/w_kies_zone, lot_nummer max+1 bij
+   gelijktijdige laatkomers, capaciteitscheck.
+
+w_admin_wis_plek:
+CREATE OR REPLACE FUNCTION public.w_admin_wis_plek(p_code text, p_pin text, p_team_id uuid) RETURNS json LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+declare v_w wedstrijd.wedstrijden; v_team wedstrijd.teams;
+begin
+  select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code)) and admin_pin = trim(p_pin) for update;
+  if not found then raise exception 'pin_onjuist'; end if;
+  if v_w.status not in ('stekkeuze', 'klaar') then raise exception 'geen_stekkeuze_fase'; end if;
+  select t.* into v_team from wedstrijd.teams t where t.id = p_team_id and t.wedstrijd_id = v_w.id for update;
+  if not found then raise exception 'team_niet_gevonden'; end if;
+  if pg_catalog.cardinality(v_team.stekken) = 0 and v_team.zone is null then raise exception 'geen_plek'; end if;
+  if exists (select 1 from wedstrijd.vangsten v where v.wedstrijd_id = v_w.id and v.status in ('actief', 'wacht')
+             and v.team_id in (select id from wedstrijd.teams where wedstrijd_id = v_w.id and (id = v_team.id or (v_team.duo_id is not null and duo_id = v_team.duo_id)))) then
+    raise exception 'team_heeft_vangsten'; end if;
+  update wedstrijd.teams set stekken = '{}', zone = null where wedstrijd_id = v_w.id and (id = v_team.id or (v_team.duo_id is not null and duo_id = v_team.duo_id));
+  if v_w.status = 'klaar' then update wedstrijd.wedstrijden set status = 'stekkeuze' where id = v_w.id; end if;
+  return json_build_object('ok', true);
+end $function$;
+
+Geen stijlcommentaar. Maximaal 60 regels.

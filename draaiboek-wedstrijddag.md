@@ -45,6 +45,18 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
 
 ## De ochtend zelf
 
+**Vooraf, thuis:** print de deelnemerslijst uit Beheer (namen, wie een duo is)
+en de zone-kaart. Valt internet of de server om 08:00 weg, dan loot je op
+papier: briefjes met lotnummers, om de beurt een zone kiezen, noteren. Zodra
+de app terug is: **Start loting** en dan per team via **📍 geef plek** de op
+papier gekozen zone invoeren (de volgorde die de app loot doet er dan niet
+toe; geef plek mag in elke volgorde). Zo is er altijd een uitweg.
+
+**07:45, iedereen opent de app:** wie de app vorige week op zijn beginscherm
+zette, krijgt vanzelf de nieuwste versie zodra hij hem met bereik opent (de
+app vernieuwt zichzelf). Laat iedereen dus even openen VOOR jullie het water
+op gaan, niet pas op de stek.
+
 5. **Loting starten:** kan met de 🎲-knop in het organisatie-overzicht (ook als
    de wedstrijd al live is) of via Openen & beheren → Loting. Iedereen ziet
    direct zijn lotnummer.
@@ -54,6 +66,10 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
    automatisch op dezelfde plek en is die plek voor de rest bezet.
    Doe de loting gewoon met z'n allen bij elkaar; alleen het briefjes trekken
    is vervangen door de app.
+6b. **Verkeerde plek toegewezen of gekozen?** Beheer → Deelnemers → **🧹 plek
+   wissen** bij dat team: de plek komt vrij, het team houdt zijn lotnummer en
+   is meteen weer aan de beurt (of je geeft opnieuw een plek). Kan alleen
+   zolang dat team nog geen vangst heeft; bij een duo gaat de maat mee.
 7. **Loopt het vast omdat iemand niet reageert?** (lege batterij, geen bereik,
    te laat, of hij is uitgelogd en zoekt zijn code): open Beheer → Deelnemers → **📍 geef plek** bij dat team, tik op de
    kaart een vrije zone aan en bevestig. De rest kiest gewoon verder.
@@ -65,7 +81,9 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
    laatste lotnummer. Zodra de anderen gekozen hebben is hij aan de beurt; jij
    kunt hem ook direct een plek geven met **📍 geef plek**. Dus NOOIT de
    loting resetten voor een laatkomer. (Sinds app-versie 80; alleen als er nog
-   een zone vrij is.)
+   een zone vrij is.) Wil je na de start de deur dicht, zodat niemand met de
+   code zich nog kan aanmelden: zet in Beheer het **maximum aantal deelnemers**
+   op het huidige aantal.
 
 ## Tijdens de wedstrijd
 

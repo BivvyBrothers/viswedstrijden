@@ -1,4 +1,4 @@
-// Kopie van de edge function `upload-vangstfoto` (gedeployed 18 jul 2026,
+// Kopie van de edge function `upload-vangstfoto` (gedeployed 18 jul 2026, opnieuw 4 sep 2026,
 // verify_jwt = false; autorisatie zit in de functie zelf).
 //
 // Waarom: de browser uploadde eerder rechtstreeks naar storage met de publieke
@@ -54,16 +54,24 @@ function magNog(ip: string): boolean {
 }
 
 async function rpc(naam: string, params: Record<string, unknown>) {
-  const r = await fetch(`${SB_URL}/rest/v1/rpc/${naam}`, {
-    method: 'POST',
-    headers: {
-      apikey: SERVICE,
-      Authorization: `Bearer ${SERVICE}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(params),
-  });
-  return { ok: r.ok, data: await r.json().catch(() => null) };
+  // storing (netwerk of 5xx) is iets anders dan "credential klopt niet": de
+  // client behandelt geen_toegang als definitief, dus een hapering van de
+  // database mag daar nooit in belanden (Codex pre-wedstrijd 2, hoog 4)
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/rpc/${naam}`, {
+      method: 'POST',
+      headers: {
+        apikey: SERVICE,
+        Authorization: `Bearer ${SERVICE}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+    if (r.status >= 500 || [408, 425, 429].includes(r.status)) return { ok: false, storing: true, data: null };
+    return { ok: r.ok, storing: false, data: await r.json().catch(() => null) };
+  } catch {
+    return { ok: false, storing: true, data: null };
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -80,13 +88,17 @@ Deno.serve(async (req: Request) => {
 
   // autorisatie: teamtoken van een deelnemer OF de admin-pin van de wedstrijd
   let toegestaan = false;
+  let storing = false;
   if (token) {
     const r = await rpc('w_mijn_team', { p_code: code, p_token: token });
+    storing = r.storing;
     toegestaan = !!(r.ok && r.data && r.data.id);
   } else if (pin) {
     const r = await rpc('w_admin_check', { p_code: code, p_pin: pin });
+    storing = r.storing;
     toegestaan = !!(r.ok && r.data);
   }
+  if (storing) return json({ fout: 'upload_mislukt' }, 503);
   if (!toegestaan) return json({ fout: 'geen_toegang' }, 403);
 
   const body = new Uint8Array(await req.arrayBuffer());

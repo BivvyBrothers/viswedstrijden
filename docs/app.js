@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 80; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 81; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -44,6 +44,7 @@ const FOUTEN = {
   kies_eerst_je_plek: 'Kies eerst je stek of zone; daarna kun je vangsten doorgeven.',
   geen_verbinding: 'Geen antwoord van de server. Controleer je bereik; de app probeert het vanzelf opnieuw.',
   upload_mislukt: 'De foto kon tijdelijk niet worden opgeslagen. De app probeert het vanzelf opnieuw.',
+  geen_plek: 'Dit team heeft nog geen plek.',
   reset_niet_na_start: 'De wedstrijd is al begonnen: de loting kan niet meer opnieuw. Wijs losse plekken toe via Deelnemers.',
   geen_deelnemers: 'Er zijn nog geen deelnemers aangemeld.',
   te_veel_teams_voor_zones: 'Meer teams dan zones: pas de zones of het aantal deelnemers aan voor je loot.',
@@ -85,6 +86,7 @@ const foutTekst = (e) => FOUTEN[e.message]
 // het water) blijft fetch anders minutenlang hangen. Dan lijkt de app stil te
 // staan en loopt de poll-lus vol. Liever een nette fout en de volgende poll.
 const RPC_TIMEOUT_MS = 20000;
+const UPLOAD_TIMEOUT_MS = 60000;  // foto's zijn groter en het bereik trager
 
 async function rpc(fn, args, wachtMs) {
   const stop = new AbortController();
@@ -137,20 +139,32 @@ async function uploadFoto(poging, blob, code) {
   if (ROL === 'organisator' && pin) kop['x-w-pin'] = pin;
   else if (t?.token) kop['x-w-token'] = t.token;
   else if (pin) kop['x-w-pin'] = pin;
-  const r = await fetch(`${SB_URL}/functions/v1/upload-vangstfoto`, {
-    method: 'POST', headers: kop, body: blob,
-  });
+  // harde timeout: een hangende upload op half bereik mag de wachtrij niet
+  // voor altijd vasthouden (Codex pre-wedstrijd 2, hoog 3)
+  const stop = new AbortController();
+  const tik = setTimeout(() => stop.abort(), UPLOAD_TIMEOUT_MS);
+  let r, j;
+  try {
+    r = await fetch(`${SB_URL}/functions/v1/upload-vangstfoto`, {
+      method: 'POST', headers: kop, body: blob, signal: stop.signal,
+    });
+    // ook het LEZEN van het antwoord valt onder de timeout (Codex ronde 3)
+    j = await r.json().catch(() => null);
+  } catch (err) {
+    throw new Error('upload_mislukt');   // netwerk of timeout: later opnieuw
+  } finally {
+    clearTimeout(tik);
+  }
   if (!r.ok) {
-    const j = await r.json().catch(() => null);
-    // Codex pre-wedstrijd: een storing (5xx/upload_mislukt) is GEEN kapotte
-    // foto; die fout mag nooit definitief worden, anders sneuvelt een goede
-    // vangst op een tijdelijk Storage-probleem
+    // een storing (5xx/upload_mislukt) is GEEN kapotte foto; die fout mag
+    // nooit definitief worden, anders sneuvelt een goede vangst op een
+    // tijdelijk Storage-probleem
     if (j?.fout === 'te_veel_uploads') throw new Error('te_veel_uploads');
     if (j?.fout === 'geen_toegang') throw new Error('geen_toegang');
     if (j?.fout === 'upload_mislukt' || r.status >= 500) throw new Error('upload_mislukt');
     throw new Error('ongeldige_foto');
   }
-  const j = await r.json();
+  if (!j || !j.pad) throw new Error('upload_mislukt');
   poging.pad = j.pad;
   return j.pad;
 }
@@ -368,12 +382,30 @@ async function checkVersie() {
   try {
     const r = await fetch('version.json?_=' + APP_VERSION + '-' + Math.floor(nu() / 600000), { cache: 'no-store' });
     const j = await r.json();
-    if (j.v > APP_VERSION) $('#update-banner').hidden = false;
+    if (j.v > APP_VERSION) {
+      $('#update-banner').hidden = false;
+      // wedstrijddag: iedereen moet op de laatste versie zitten zonder zelf op
+      // een banner te hoeven tikken; vernieuw vanzelf, maar niet midden in het
+      // typen of tijdens een lopende wachtrij-verzending (Codex pre-wedstrijd 2)
+      const ae = document.activeElement;
+      const typt = !!ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
+      const alGeprobeerd = sessionStorage.getItem('herlaad-poging') === String(j.v);
+      // een half ingevuld of nog te verwerken vangstformulier (foto gekozen,
+      // compressie bezig, directe route zonder IndexedDB) mag nooit verloren
+      // gaan door een herlaad (Codex ronde 3)
+      const vangstBezig = FORMULIER_BEZIG
+        || !!($('#v-gewicht')?.value) || !!($('#v-foto')?.files?.length);
+      if (!typt && !alGeprobeerd && !WACHTRIJ_BEZIG && !vangstBezig) {
+        sessionStorage.setItem('herlaad-poging', String(j.v));
+        location.reload();
+      }
+    }
   } catch { /* offline of tijdelijk onbereikbaar: stil houden */ }
 }
 
 function route() {
   SESSIE_GEN += 1;   // alles wat nog onderweg is, hoort bij het vorige scherm
+  STATE_OK_OP = 0; verbindingBanner(false);   // de banner hoort bij het vorige scherm
   DUO_MAAT_GEZOCHT = false;
   const mW = location.hash.match(/^#\/w\/([A-Za-z0-9]{4,8})/);
   const mK = location.hash.match(/^#\/k\/([A-Za-z0-9]{4,8})/);
@@ -515,8 +547,9 @@ function initHome() {
         return;
       }
     } catch (err) {
-      if (err.message === 'geen_verbinding') { toast(foutTekst(err)); return; }
-      /* geen persoonlijke code: probeer als wedstrijdcode */
+      // een onbekende code geeft null (geen fout); elke fout is dus een storing
+      // en mag niet doorvallen naar "dan is het wel een wedstrijdcode"
+      toast(foutTekst(new Error('geen_verbinding'))); return;
     }
     location.hash = '#/w/' + code;
   });
@@ -636,7 +669,20 @@ let DUO_MAAT = null;        // {code, naam, deelnemer_code, token?}: maat-gegeve
 let DUO_MAAT_GEZOCHT = false;  // eenmalige herstelpoging via w_mijn_team na herladen
 
 /* ---------- wedstrijd: state laden ---------- */
-let STATE_BEZIG = false;   // er loopt al een state-verzoek: sla deze poll over
+let STATE_BEZIG = false;
+let STATE_OK_OP = 0;         // wanneer de state voor het laatst met succes is opgehaald
+function verbindingBanner(aan) {
+  let el = document.getElementById('verbinding-banner');
+  if (!aan) { if (el) el.hidden = true; return; }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'verbinding-banner'; el.className = 'verbinding-banner';
+    document.body.prepend(el);
+  }
+  const sinds = STATE_OK_OP ? fmtTijd(new Date(STATE_OK_OP).toISOString()) : '--:--';
+  el.textContent = `⚠️ Geen verbinding. Je ziet de stand van ${sinds}; de app probeert het vanzelf opnieuw.`;
+  el.hidden = false;
+}   // er loopt al een state-verzoek: sla deze poll over
 
 async function laadState(eerste) {
   if (!CODE) return;
@@ -680,6 +726,8 @@ async function laadState(eerste) {
       renderTabs();
     }
     meldNieuweVangsten();
+    STATE_OK_OP = Date.now();
+    verbindingBanner(false);
     renderAlles(eerste);
     INIT_KLAAR = true;
     if (eerste && ROL === 'deelnemer' && !sessie.team(mijnCode) && s.wedstrijd.status === 'aanmelden') {
@@ -689,6 +737,7 @@ async function laadState(eerste) {
   } catch (err) {
     // hier komen we alleen bij netwerk-/serverfouten; "bestaat niet" loopt via toonNietGevonden
     if (verouderd()) return;
+    if (STATE) verbindingBanner(true);   // oude gegevens in beeld: zeg hoe oud
     if (eerste && !STATE) {
       $('#w-naam').textContent = 'Geen verbinding';
       $('#klok').textContent = '--:--:--';
@@ -1710,7 +1759,7 @@ function renderKlassement() {
 function tekenUitslag() {
   const w = STATE.wedstrijd;
   const rijen = klSorteer(klassementRijen());
-  const top = rijen.slice(0, 10);
+  const top = rijen.slice(0, 16);   // een clubwedstrijd past er helemaal op
   const rest = rijen.length - top.length;
   const kampioenVis = klGrootsteWinnaar(rijen);
 
@@ -2174,6 +2223,7 @@ async function wachtrijAlles() {
 }
 
 let FALLBACK_POGING = null;  // upload-poging van de directe route (geen IndexedDB)
+let FORMULIER_BEZIG = false;  // vangstformulier wordt verwerkt (compressie/opslag/verzenden)
 
 // serverfouten die NIET vanzelf overgaan: opnieuw proberen heeft geen zin
 // kies_eerst_je_plek staat hier bewust NIET in: zodra de organisator alsnog
@@ -2184,6 +2234,19 @@ const WACHTRIJ_DEFINITIEF = ['ongeldig_gewicht', 'ongeldige_foto', 'team_niet_ge
 async function verstuurWachtrij() {
   if (WACHTRIJ_BEZIG) return;
   if (navigator.onLine === false) { await renderWachtrij(); return; }
+  // de beginscherm-app en een browsertab delen dezelfde IndexedDB: een
+  // browserlock voorkomt dat twee vensters hetzelfde item tegelijk uploaden
+  // en zo twee fotopaden (= twee vangsten) maken (Codex pre-wedstrijd 2)
+  if (navigator.locks && navigator.locks.request) {
+    return navigator.locks.request('vwa-wachtrij', { ifAvailable: true }, async (lock) => {
+      if (lock) await verstuurWachtrijKern();
+    });
+  }
+  return verstuurWachtrijKern();
+}
+
+async function verstuurWachtrijKern() {
+  if (WACHTRIJ_BEZIG) return;
   WACHTRIJ_BEZIG = true;
   try {
     for (const item of await wachtrijAlles()) {
@@ -2665,8 +2728,9 @@ function initWedstrijd() {
     // telefoon zou een vangst van 11:29 anders een tijdstip na de eindtijd
     // krijgen. En geen client-gate meer vlak voor de eindtijd: opslaan mag
     // altijd, de server en het late-pad beslissen wat er nog mee kan (Codex)
-    const ingediendOp = Date.now();
+    const ingediendOp = nu();   // servergecorrigeerd: een scheve telefoonklok mag een late vangst niet afkeuren
     knop.disabled = true; knop.textContent = 'Bezig met uploaden…';
+    FORMULIER_BEZIG = true;
     try {
       const blob = await compressFoto(bestand);
       // eerst duurzaam vastleggen, dan pas versturen: valt het bereik weg of
@@ -2715,6 +2779,7 @@ function initWedstrijd() {
       }
       await laadState(false);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+    FORMULIER_BEZIG = false;
     knop.disabled = false; knop.textContent = 'Registreer vangst';
   });
 
@@ -3212,6 +3277,7 @@ async function renderBeheer(magPrefill) {
       <span class="muted klein">${t.lot_nummer ? 'lot ' + t.lot_nummer : ''} ${t.zone ? '· ' + esc(zoneLabel(t.zone)) : (t.stekken || []).length ? '· stek ' + t.stekken.join('+') : ''}</span>
       <span class="muted klein">🔑 <b class="codegroot klein-code" data-team-code="${t.id}">·····</b></span>
       ${w.status === 'stekkeuze' && !(t.stekken || []).length ? `<button class="btn klein-btn" data-team-kies="${t.id}">📍 geef plek</button>` : ''}
+      ${w.status !== 'aanmelden' && ((t.stekken || []).length || t.zone) ? `<button class="btn klein-btn" data-team-wis="${t.id}" title="plek weer vrijgeven (alleen zonder vangsten)">🧹 plek wissen</button>` : ''}
       <button class="btn gevaar klein-btn" data-team-weg="${t.id}">verwijder</button>
     </div>`).join('') : '<p class="muted">Nog geen deelnemers.</p>';
   const codesSleutel = CODE + ':' + STATE.teams.map((t) => t.id).sort().join(',');
@@ -3233,6 +3299,10 @@ async function renderBeheer(magPrefill) {
     const geloot = w.status !== 'aanmelden';
     b.onclick = () => tikNogmaals(b, geloot ? '⚠️ incl. vangsten, zeker?' : 'zeker?', () =>
       beheerActie('w_admin_verwijder_team', { p_team_id: b.dataset.teamWeg }));
+  });
+  $('#b-teams').querySelectorAll('[data-team-wis]').forEach((b) => {
+    b.onclick = () => tikNogmaals(b, 'plek vrijgeven, zeker?', () =>
+      beheerActie('w_admin_wis_plek', { p_team_id: b.dataset.teamWis }));
   });
   $('#b-teams').querySelectorAll('[data-team-kies]').forEach((b) => {
     b.onclick = () => {

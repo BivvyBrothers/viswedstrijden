@@ -1,7 +1,7 @@
 -- =====================================================================
 -- Viswedstrijden Plas van der Ende: database-export (schema `wedstrijd`)
 -- Eerste export 8 jul 2026 (app v22); daarna bijgewerkt bij elke migratie,
--- laatst op 4 sep 2026 (app v80, migratie wedstrijd_laatkomer_na_loting).
+-- laatst op 4 sep 2026 (app v81, migraties wedstrijd_laatkomer_na_loting + wedstrijd_admin_wis_plek).
 --
 -- WAT DIT BESTAND IS: de REVIEWBRON. De functiedefinities hieronder zijn de
 -- effectieve live definities (pg_get_functiondef) en worden bij elke migratie
@@ -910,6 +910,24 @@ begin
   if not exists (select 1 from wedstrijd.teams where wedstrijd_id = v_w.id and cardinality(stekken) = 0) then
     update wedstrijd.wedstrijden set status = 'klaar' where id = v_w.id;
   end if;
+  return json_build_object('ok', true);
+end $function$;
+
+-- v81 (4 sep 2026): plek van een team (en zijn duo-maat) weer vrijgeven, zolang er geen vangst is
+CREATE OR REPLACE FUNCTION public.w_admin_wis_plek(p_code text, p_pin text, p_team_id uuid) RETURNS json LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+declare v_w wedstrijd.wedstrijden; v_team wedstrijd.teams;
+begin
+  select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code)) and admin_pin = trim(p_pin) for update;
+  if not found then raise exception 'pin_onjuist'; end if;
+  if v_w.status not in ('stekkeuze', 'klaar') then raise exception 'geen_stekkeuze_fase'; end if;
+  select t.* into v_team from wedstrijd.teams t where t.id = p_team_id and t.wedstrijd_id = v_w.id for update;
+  if not found then raise exception 'team_niet_gevonden'; end if;
+  if pg_catalog.cardinality(v_team.stekken) = 0 and v_team.zone is null then raise exception 'geen_plek'; end if;
+  if exists (select 1 from wedstrijd.vangsten v where v.wedstrijd_id = v_w.id and v.status in ('actief', 'wacht')
+             and v.team_id in (select id from wedstrijd.teams where wedstrijd_id = v_w.id and (id = v_team.id or (v_team.duo_id is not null and duo_id = v_team.duo_id)))) then
+    raise exception 'team_heeft_vangsten'; end if;
+  update wedstrijd.teams set stekken = '{}', zone = null where wedstrijd_id = v_w.id and (id = v_team.id or (v_team.duo_id is not null and duo_id = v_team.duo_id));
+  if v_w.status = 'klaar' then update wedstrijd.wedstrijden set status = 'stekkeuze' where id = v_w.id; end if;
   return json_build_object('ok', true);
 end $function$;
 
