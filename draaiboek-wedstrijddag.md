@@ -59,6 +59,13 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
    kaart een vrije zone aan en bevestig. De rest kiest gewoon verder.
 8. **Komt iemand echt niet opdagen?** Beheer → Deelnemers → verwijder. De zone
    komt dan weer vrij. (Kan alleen zolang het team nog geen vangsten heeft.)
+9. **Staat er iemand aan het water die zich NIET heeft aangemeld?** Dat kan
+   gewoon nog, ook nadat de loting is gestart of zelfs al klaar is: hij meldt
+   zich aan via de wedstrijdlink (ook als duo) en krijgt automatisch het
+   laatste lotnummer. Zodra de anderen gekozen hebben is hij aan de beurt; jij
+   kunt hem ook direct een plek geven met **📍 geef plek**. Dus NOOIT de
+   loting resetten voor een laatkomer. (Sinds app-versie 80; alleen als er nog
+   een zone vrij is.)
 
 ## Tijdens de wedstrijd
 

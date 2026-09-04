@@ -1,8 +1,7 @@
 -- =====================================================================
 -- Viswedstrijden Plas van der Ende: database-export (schema `wedstrijd`)
 -- Eerste export 8 jul 2026 (app v22); daarna bijgewerkt bij elke migratie,
--- laatst op 31 aug 2026 (app v79, migratie wedstrijd_reset_gate_start;
--- de duo-RPC's van v72/v73 zaten er al in).
+-- laatst op 4 sep 2026 (app v80, migratie wedstrijd_laatkomer_na_loting).
 --
 -- WAT DIT BESTAND IS: de REVIEWBRON. De functiedefinities hieronder zijn de
 -- effectieve live definities (pg_get_functiondef) en worden bij elke migratie
@@ -332,10 +331,15 @@ declare
   v_maat wedstrijd.teams;
   v_duo uuid;
   v_plekken int;
+  v_laat boolean;
+  v_lot int;
+  v_eenheden int;
+  v_capaciteit int;
 begin
   select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code)) for update;
   if not found then raise exception 'wedstrijd_niet_gevonden'; end if;
-  if v_w.status <> 'aanmelden' then raise exception 'aanmelden_gesloten'; end if;
+  if v_w.status not in ('aanmelden', 'stekkeuze', 'klaar') then raise exception 'aanmelden_gesloten'; end if;
+  v_laat := v_w.status <> 'aanmelden';
   -- Codex v10: ook een nooit-gelote wedstrijd sluit bij de eindtijd
   if pg_catalog.now() >= v_w.eind_ts then raise exception 'wedstrijd_afgelopen'; end if;
   -- v73: duo kan alleen EXPLICIET (p_duo) en alleen bij individueel; een
@@ -346,6 +350,23 @@ begin
   if v_w.max_teams is not null and
      (select count(*) from wedstrijd.teams where wedstrijd_id = v_w.id) + v_plekken > v_w.max_teams then
     raise exception 'wedstrijd_vol';
+  end if;
+  if v_laat then
+    -- laatkomer na de loting (v80): er moet nog een plek vrij zijn voor EEN extra loteenheid
+    select count(distinct coalesce(duo_id::text, id::text)) into v_eenheden
+    from wedstrijd.teams where wedstrijd_id = v_w.id;
+    if v_w.zones is not null then
+      v_capaciteit := jsonb_array_length(v_w.zones);
+      if v_eenheden + 1 > v_capaciteit then raise exception 'te_veel_teams_voor_zones'; end if;
+    else
+      if v_w.mode = 'koppel' then
+        v_capaciteit := wedstrijd.max_koppels(v_w.klant_id);
+      else
+        select count(*) into v_capaciteit from wedstrijd.stek_ring where klant_id = v_w.klant_id;
+      end if;
+      if v_eenheden + 1 > v_capaciteit then raise exception 'te_veel_teams_voor_stekken'; end if;
+    end if;
+    select coalesce(max(lot_nummer), 0) + 1 into v_lot from wedstrijd.teams where wedstrijd_id = v_w.id;
   end if;
   if coalesce(trim(p_naam),'') = '' or length(p_naam) > 40 then raise exception 'ongeldige_naam'; end if;
   if v_w.mode = 'koppel' and (coalesce(trim(p_naam2),'') = '' or length(p_naam2) > 40) then
@@ -374,26 +395,32 @@ begin
   if p_duo then
     -- duo: twee losse deelnemers die samen loten
     v_duo := gen_random_uuid();
-    insert into wedstrijd.teams (wedstrijd_id, naam, deelnemer_code, duo_id)
-    values (v_w.id, trim(p_naam), wedstrijd.nieuwe_team_code(), v_duo)
+    insert into wedstrijd.teams (wedstrijd_id, naam, deelnemer_code, duo_id, lot_nummer)
+    values (v_w.id, trim(p_naam), wedstrijd.nieuwe_team_code(), v_duo, v_lot)
     returning * into v_team;
-    insert into wedstrijd.teams (wedstrijd_id, naam, deelnemer_code, duo_id)
-    values (v_w.id, trim(p_naam2), wedstrijd.nieuwe_team_code(), v_duo)
+    insert into wedstrijd.teams (wedstrijd_id, naam, deelnemer_code, duo_id, lot_nummer)
+    values (v_w.id, trim(p_naam2), wedstrijd.nieuwe_team_code(), v_duo, v_lot)
     returning * into v_maat;
+    if v_laat and v_w.status = 'klaar' then
+      update wedstrijd.wedstrijden set status = 'stekkeuze' where id = v_w.id;
+    end if;
     return json_build_object('team_id', v_team.id, 'token', v_team.token,
-      'deelnemer_code', v_team.deelnemer_code,
+      'deelnemer_code', v_team.deelnemer_code, 'lot_nummer', v_lot,
       'duo', json_build_object('naam', v_maat.naam,
         'deelnemer_code', v_maat.deelnemer_code, 'token', v_maat.token));
   end if;
 
-  insert into wedstrijd.teams (wedstrijd_id, naam, naam2, team_naam, deelnemer_code)
+  insert into wedstrijd.teams (wedstrijd_id, naam, naam2, team_naam, deelnemer_code, lot_nummer)
   values (v_w.id, trim(p_naam),
           case when v_w.mode = 'koppel' then trim(p_naam2) end,
           nullif(trim(coalesce(p_team_naam,'')), ''),
-          wedstrijd.nieuwe_team_code())
+          wedstrijd.nieuwe_team_code(), v_lot)
   returning * into v_team;
+  if v_laat and v_w.status = 'klaar' then
+    update wedstrijd.wedstrijden set status = 'stekkeuze' where id = v_w.id;
+  end if;
   return json_build_object('team_id', v_team.id, 'token', v_team.token,
-                           'deelnemer_code', v_team.deelnemer_code);
+                           'deelnemer_code', v_team.deelnemer_code, 'lot_nummer', v_lot);
 end $function$;
 
 CREATE OR REPLACE FUNCTION public.w_login_deelnemer(p_code text)

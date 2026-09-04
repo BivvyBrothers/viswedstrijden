@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 79; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 80; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -11,7 +11,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
 
 const FOUTEN = {
   wedstrijd_niet_gevonden: 'Wedstrijd niet gevonden. Controleer de code.',
-  aanmelden_gesloten: 'Het aanmelden is gesloten: de loting is al gestart.',
+  aanmelden_gesloten: 'Het aanmelden is gesloten voor deze wedstrijd.',
   ongeldige_naam: 'Vul een geldige naam in (max. 40 tekens).',
   tweede_naam_verplicht: 'Dit is een koppelwedstrijd: vul ook de naam van je koppelmaat in.',
   naam_bestaat_al: 'Deze naam is al aangemeld. Ben jij dat en wil je verder onder deze naam? Gebruik dan je herstel-link, of vraag de organisator die voor je op te zoeken in Beheer.',
@@ -2856,7 +2856,11 @@ function renderTeamTab() {
   if (!t || !mijn) {
     teamCard.hidden = true; regCard.hidden = true; mvCard.hidden = true;
     joinCard.hidden = false;
-    const kanJoinen = w.status === 'aanmelden';
+    // na de loting mag een laatkomer zich nog aanmelden zolang de wedstrijd
+    // niet voorbij is: hij krijgt het laatste lot (server v80, w_join)
+    const laat = w.status !== 'aanmelden';
+    const kanJoinen = w.status === 'aanmelden'
+      || ((w.status === 'stekkeuze' || w.status === 'klaar') && fase() !== 'voorbij');
     $('#form-join').hidden = !kanJoinen;
     // duo (alleen individueel): samen loten en zitten, ieder een eigen score
     const duoLabel = $('#join-duo-label');
@@ -2867,9 +2871,11 @@ function renderTeamTab() {
     const naam2Tekst = $('#join-naam2-tekst');
     if (naam2Tekst) naam2Tekst.textContent = w.mode === 'koppel' ? 'Naam koppelmaat' : 'Naam van je maat';
     $('#join-teamnaam-label').hidden = w.mode !== 'koppel';
-    $('#join-uitleg').textContent = kanJoinen
-      ? (w.mode === 'koppel' ? 'Vul eerst jullie gegevens in: beide namen, en eventueel een teamnaam.' : 'Vul eerst je naam in om mee te doen.')
-      : 'Het aanmelden is gesloten (de loting is al geweest). Vraag de organisator om hulp als je mee had moeten doen.';
+    $('#join-uitleg').textContent = !kanJoinen
+      ? 'Het aanmelden is gesloten: de wedstrijd is afgelopen.'
+      : laat
+        ? 'De loting is al geweest, maar je kunt nog meedoen: je krijgt het laatste lotnummer en kiest daarna je stek of zone (of de organisator wijst er een toe).'
+        : (w.mode === 'koppel' ? 'Vul eerst jullie gegevens in: beide namen, en eventueel een teamnaam.' : 'Vul eerst je naam in om mee te doen.');
     dichtCard.hidden = true;
     return;
   }

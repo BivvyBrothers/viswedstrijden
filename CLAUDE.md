@@ -378,6 +378,21 @@ seizoen en deelafbeeldingen raken; dit raakt alleen aanmelden en loting.
 heet bij individuele wedstrijden "Mijn deelname" (bij koppels "Mijn team",
 dynamisch in renderTabs). De data-tab-namen zijn ONgewijzigd (kaart/team).
 
+## Laatkomer na de loting (v80, 4 sep 2026)
+
+Uit de tweede pre-wedstrijd review: wie zich na "Start loting" nog wilde
+aanmelden liep dood (`aanmelden_gesloten`), en de organisator had geen knop om
+iemand toe te voegen; alleen de hele loting resetten. Migratie
+`wedstrijd_laatkomer_na_loting`: `w_join` accepteert ook bij status
+`stekkeuze` en `klaar` (zolang de wedstrijd niet is afgelopen), controleert de
+capaciteit per LOTEENHEID zoals `w_start_stekkeuze`, geeft de nieuwe deelnemer
+(of het duo) `max(lot_nummer)+1`, en zet een wedstrijd die al op `klaar` stond
+terug op `stekkeuze` tot de laatkomer gekozen heeft. De andere teams hebben hun
+plek al en merken daar niets van; `w_kies_zone`/`w_admin_kies` zetten de status
+daarna weer op `klaar`. Client: het aanmeldformulier blijft zichtbaar met de
+uitleg "je krijgt het laatste lotnummer". De RPC-signatuur is ongewijzigd
+(alleen een extra `lot_nummer`-veld in het antwoord).
+
 ## Wedstrijd als sjabloon (v67, 13 aug 2026)
 
 Knop **📋 Als sjabloon** op elke wedstrijdkaart in de organisatie-omgeving
@@ -459,8 +474,9 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
    levert het een beeld met te grote tekst, een halve tabbalk en afgekapte
    kolommen | precies daarom leken de eerste mockups (860x1440, 1:1,67) op
    tablets. Bronnen: klassement = /demo/#/k/KIJKJE, home = /demo/, kaart = de
-   ECHTE NPHV-dieptekaart via `/nphv/#/w/499QWP?t=<teamtoken uit de DB>`
-   (testwedstrijd "Voorjaarswedstrijd", klik "Kaart" + "Inzoomen"). Op die
+   ECHTE NPHV-dieptekaart via een WEGWERPwedstrijd in de nphv-klant
+   (`/nphv/#/w/<code>?t=<teamtoken>`; de oude testwedstrijd 499QWP is op 31 aug
+   2026 opgeruimd), klik "Kaart" + "Inzoomen". Op die
    kaartopname `#topcode` leegmaken (de wedstrijdcode geeft toegang tot de
    deelnemerslijst) en vanaf scrollTop 0 fotograferen, zodat "Loting & volgorde"
    met de deelnemersnamen NIET in beeld komt.
@@ -542,7 +558,9 @@ Bij elke release controleren:
 ## Lokaal draaien en testen
 
 - Preview-server "viswedstrijden" in de launch.json van de cowork-map (poort 8642).
-- Testwedstrijd in de database: code `EWVNEV`, pin `test1234` (testdata, mag weg).
+- Geen vaste testwedstrijd meer: maak voor een test een WEGWERPwedstrijd in de
+  demo-klant via SQL (zie de memory), test, en verwijder hem daarna weer.
+  Nooit testen op een wedstrijd van een echte klant.
 - Volledige flow testen: wedstrijd aanmaken → 2+ teams aanmelden → loting →
   stekkeuze (check: beurtvolgorde, bezette stek, aangrenzendheid) → tijden verzetten
   met `w_admin_tijden` → vangst registreren → klassement → eindtijd-gate.

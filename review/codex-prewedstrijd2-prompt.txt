@@ -1,0 +1,53 @@
+Context: statische webapp (docs/app.js vanilla JS, tenant-markup docs/nphv/index.html,
+service worker docs/nphv/sw.js, database-RPC's in review/database.sql = verse export
+van de live SECURITY DEFINER functies, edge functions in review/*.ts). Op zaterdag
+12 september draait de EERSTE echte viswedstrijd via deze app (Carpclassic,
+individueel met 19 zones, max 15 deelnemers). Stand nu: 13 aangemelde deelnemers,
+waarvan 3 duo's (twee deelnemers die teams.duo_id delen: samen loten en zitten,
+ieder een eigen score) en 7 solo's = 10 loteenheden. Aanmelden loopt nog door.
+
+Programma op de dag: 08:00 iedereen fysiek bij elkaar, korte uitleg, dan de
+gezamenlijke loting via de app (organisator drukt Start loting; iedereen kiest op
+zijn beurt een zone op de kaart op zijn eigen telefoon), 09:00 start, de wedstrijd
+loopt door de nacht tot zondag 11:30, daarna prijsuitreiking met de deeluitslag.
+
+Op 31 augustus is er al een review gedaan (review/codex-prewedstrijd-uit.md) en
+zijn zeven hoge bevindingen gefixt in de laatste twee commits (git log -2, zie
+review/codex-prewedstrijd-status.md). Dit is de TWEEDE, onafhankelijke ronde.
+
+Opdracht, twee delen:
+
+DEEL A: regressie-review van de laatste twee commits (`git diff HEAD~2 HEAD`).
+Hebben de fixes zelf nieuwe fouten geintroduceerd? Kijk vooral naar
+verstuurWachtrij (de nieuwe continue/break-logica: kan een item de rij voor
+altijd blokkeren? wordt een item ooit dubbel verstuurd?), FALLBACK_POGING,
+de laatDefinitief-lijst, uploadFoto's foutvertaling, en de nieuwe gate in
+w_admin_reset_loting.
+
+DEEL B: loop de wedstrijddag als tijdlijn door en zoek per stap naar wat er mis
+kan gaan, met concrete verwijzing naar bestand/functie/regel:
+ 1. 07:45: deelnemers openen de app die ze vorige week op hun beginscherm zetten
+    (toen app-versie 74 of 77). Krijgen ze gegarandeerd de huidige versie 79?
+    Kijk naar sw.js (cache-strategie), checkVersie/update-banner in app.js en
+    de HTTP-cache van GitHub Pages. Wat als iemand offline opent?
+ 2. 08:05: iemand staat aan het water maar heeft zich NIET aangemeld, of een
+    duo-maat blijkt toch niet te komen, of iemand wil alsnog als duo. Wat kan
+    de organisator dan nog, voor en na het drukken op Start loting? Welke
+    paden zijn dood? (w_join, w_admin_verwijder_team, w_admin_reset_loting,
+    w_admin_kies)
+ 3. 08:10 loting: 10 loteenheden, 19 zones. Beurtvolgorde, wat ziet de
+    duo-maat op zijn eigen telefoon terwijl zijn partner kiest, wat ziet
+    iedereen als iemand niet reageert, en de organisator die namens iemand
+    kiest (ADMIN_KIES-pad in app.js + w_admin_kies).
+ 4. 09:00-11:30 (26 uur): vangsten met foto, offline wachtrij, pushmeldingen
+    's nachts (push-vangst.ts), de klok en het klassement, de kijkerpagina
+    (w_get_state_kijker), duo's als twee losse scores.
+ 5. Zondag 11:30: eindtijd-gate, late vangsten (wacht-status + beslissen door
+    de organisator), "Deel de einduitslag" (tekenUitslag) met 13 deelnemers,
+    en wat er gebeurt met deelnemers zonder vangst.
+ 6. Storingen: wat ziet de organisator bij een Supabase-storing tijdens de
+    loting, en is er een handmatige uitweg?
+
+Geef per bevinding ernst hoog/middel/laag, bestand + regel of functienaam, en
+een concrete oplossing. Meld expliciet wat je niet kon verifieren. Geen
+stijlcommentaar; alleen wat de wedstrijddag kan verstoren of data corrumperen.
