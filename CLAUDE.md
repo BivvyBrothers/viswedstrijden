@@ -640,3 +640,12 @@ hele codebase rekent in grammen en "grootste vis", en een tweede scoremodel
 raakt klassement, seizoen, deelafbeelding, kaart en export tegelijk. Zolang
 niemand het vraagt, is het gok-scope die de rest vertraagt. Op het moment dat
 er een klantvraag komt, kunnen we het alsnog inbouwen.
+
+## Verbeterlijst na de Carpclassic (13 sep 2026)
+
+Patricks waarnemingen van de eerste echte wedstrijd staan in
+`verbeteringen-na-carpclassic.md` (kijkers, deelnemers, organisator, met een
+eerste inschatting per punt). **Afspraak: eerst de Forms-evaluatie afwachten,
+dan één geprioriteerd plan maken. Tot die tijd niets uit die lijst bouwen.**
+Hoogste kandidaat is het onverklaarde uitloggen na een paar uur inactiviteit
+(D1): eerst oorzaak bewijzen, dan fixen.
