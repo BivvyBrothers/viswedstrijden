@@ -554,7 +554,10 @@ Migratie `wedstrijd_organisator_v90` (oude signaturen van `w_admin_vangst`,
   de state sorteert daarop.
 - `teams.foto_toestemming` (default false) via `w_join(p_foto_toestemming)`;
   vinkje `#join-foto-ok` in het aanmeldformulier ("mijn vangstfoto's mogen op
-  de socials van de viswedstrijdapp"). Bij een duo geldt het alleen voor de
+  de socials van de viswedstrijdapp"). **Staat sinds v91 standaard AAN**
+  (keuze Patrick 14 sep, met de kanttekening dat een vooraf aangevinkt hokje
+  onder de AVG geen geldige toestemming is; de tekst zegt daarom expliciet
+  "vink uit als je dat niet wilt"). Bij een duo geldt het alleen voor de
   aanmelder. Zichtbaar in Beheer bij de deelnemers als "📸 socials ok"; alleen
   `w_get_state` geeft het mee (niet de kijker). Patrick ziet het via
   "Openen & beheren" vanuit de beheerdersomgeving.
