@@ -108,6 +108,15 @@
   .privacy-blok h2 { color: #fff; }
   .privacy-blok p, .privacy-blok li { color: #e7e9d8; }
   .privacy-blok ul { padding-left: 20px; }
+  .praktijk .telefoon { max-width: 360px; }
+  .praktijk .telefoon::before, .praktijk .telefoon::after { display: none; }
+  .praktijk .telefoon img { border-radius: 18px; box-shadow: 0 6px 24px rgba(42,39,33,.18); }
+  .citaat { margin: 18px 0 0; padding: 14px 18px; border-left: 4px solid var(--oranje); background: #f3f1e4; border-radius: 0 12px 12px 0; font-size: 17px; line-height: 1.45; }
+  .citaat footer { margin-top: 6px; font-size: 14px; color: var(--grijs); }
+  .cijfers { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-top: 26px; max-width: none; }
+  .cijfer { background: #fff; border: 1px solid var(--zand-donker); border-radius: 14px; padding: 16px 18px; }
+  .cijfer b { display: block; font-size: 32px; line-height: 1.1; color: var(--blauw-donker); }
+  .cijfer span { display: block; margin-top: 6px; font-size: 14px; color: var(--grijs); line-height: 1.35; }
   .faq details {
     border-bottom: 1px solid var(--zand); padding: 4px 0;
   }
@@ -180,7 +189,7 @@
   .duo > .tekstkolom { max-width: 56ch; }
   /* leesbare regellengte in secties zonder twee kolommen; beeldblokken en de
      duo-indeling hebben hun eigen breedte */
-  .sectie > *:not(.duo):not(.scan-figuur):not(.fotostrook) { max-width: 74ch; }
+  .sectie > *:not(.duo):not(.scan-figuur):not(.fotostrook):not(.cijfers) { max-width: 74ch; }
   .stap-rij p { max-width: 70ch; }
 
   /* losse figuren niet over de volle 1120px uitrekken */
@@ -358,6 +367,30 @@
       tijdstip van de prijsuitreiking, de einduitslag gaat met één tik de groepsapp in en de
       prijsuitreiking kan direct beginnen. Telt de wedstrijd mee voor de competitie, dan staat
       ook de seizoensstand meteen bijgewerkt in de app.</p></div>
+    </div>
+  </section>
+
+  <section class="card sectie praktijk">
+    <div class="duo">
+      <div class="tekstkolom">
+        <span class="eyebrow">In de praktijk</span>
+        <h2>25 uur wedstrijd, alles via de app</h2>
+        <p>De Carpclassic Nootdorp van de NPHV, september 2026: 14 vissers, een loting
+        via de telefoon, zones kiezen op de dieptekaart, en 13 karpers die met foto
+        het klassement in gingen. Thuis werd er vanaf ruim 100 telefoons live meegekeken,
+        van de eerste vis op zaterdagochtend tot de weging op zondag.</p>
+        <p>Na afloop vulden deelnemers en kijkers een evaluatie in. De cijfers hieronder
+        komen daar rechtstreeks uit.</p>
+        <blockquote class="citaat">"Grote complimenten voor het maken van deze app,
+        echt een verrijking."<footer>Berry, deelnemer</footer></blockquote>
+      </div>
+      <div class="telefoon"><img src="schermen/uitslag-carpclassic-2026.png" alt="De einduitslag van de Carpclassic Nootdorp 2026 zoals de app die deelt: top 3, grootste vis, aantal deelnemers en kijkers" width="1080" height="1080" loading="lazy"></div>
+    </div>
+    <div class="cijfers">
+      <div class="cijfer"><b>8,6</b><span>rapportcijfer van de deelnemers</span></div>
+      <div class="cijfer"><b>88%</b><span>van de deelnemers wil de volgende wedstrijd zeker weer via de app</span></div>
+      <div class="cijfer"><b>100%</b><span>van de kijkers kijkt de volgende keer weer mee</span></div>
+      <div class="cijfer"><b>0</b><span>klachten over loting, meldingen of bereik</span></div>
     </div>
   </section>
 
