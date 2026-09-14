@@ -140,3 +140,16 @@ op gaan, niet pas op de stek.
 - **Oranje balk "Nieuwe versie beschikbaar":** gewoon aantikken.
 - Alles wat telt (tijden, keuzes, vangsten) staat op de server, niet op
   telefoons. Een gesneuvelde telefoon kost dus nooit data.
+
+
+## Einde van de wedstrijd (sinds v88, 14 sep 2026)
+
+- Vul bij het aanmaken (of later in Beheer, bij de tijden) de **prijsuitreiking**
+  in. Die tijd staat dan in de kop van de wedstrijd, in de melding bij het einde
+  en op het afsluitscherm.
+- Op de eindtijd gebeurt automatisch: registreren sluit (server), binnen vijf
+  minuten krijgt iedereen met meldingen aan één push met de winnaar en de
+  prijsuitreiking, en wie de app opent ziet het afsluitscherm met de top 3 en
+  de deelknop voor de uitslag. Jij hoeft niets te doen.
+- Verzet je de eindtijd naar later, dan gaat de melding opnieuw bij de nieuwe
+  eindtijd. Verzet je hem naar eerder (naar nu), dan komt hij binnen vijf minuten.

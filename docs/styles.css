@@ -245,6 +245,24 @@ table.klassement th.r { text-align: right; }
 .lightbox .sluit { position: absolute; top: 14px; right: 20px; color: #fff; font-size: 26px; cursor: pointer;
   background: none; border: none; padding: 6px 10px; line-height: 1; }
 .lightbox .sluit:focus-visible { outline: 2px solid #fff; border-radius: 8px; }
+/* afsluiting van de wedstrijd (v88) */
+.afsluit { background: rgba(53,61,42,.94); }
+.afsluit #confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.afsluit-kaart { position: relative; max-width: 440px; width: 92vw; text-align: center; padding: 28px 22px 20px;
+  max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; }
+.afsluit-kaart .sluit { color: var(--grijs); top: 6px; right: 8px; }
+.afsluit-vlag { font-size: 44px; line-height: 1; }
+.afsluit-kaart h2 { margin: 8px 0 2px; }
+.afsluit-podium { margin: 16px 0 6px; }
+.afsluit-winnaar { background: var(--oranje); color: #29271e; border-radius: 16px; padding: 14px 16px; }
+.afsluit-winnaar .label { font-size: 13px; letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
+.afsluit-winnaar .naam { font-size: 26px; font-weight: 800; margin-top: 4px; word-break: break-word; }
+.afsluit-winnaar .kg { font-size: 20px; font-weight: 700; margin-top: 2px; }
+.afsluit-rest { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+.afsluit-rest div { flex: 1; background: var(--zand); border-radius: 12px; padding: 8px 10px; font-size: 14px; }
+.afsluit-rest b { display: block; font-size: 15px; word-break: break-word; }
+.afsluit-prijs { font-weight: 700; margin: 8px 0 0; }
+.afsluit-knoppen { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 
 .codegroot { font-family: ui-monospace, Menlo, monospace; font-size: 20px; letter-spacing: 3px; color: var(--blauw-donker); }
 

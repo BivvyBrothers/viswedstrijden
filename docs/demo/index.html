@@ -162,6 +162,9 @@
           <input id="nw-eind" type="datetime-local" required>
         </label>
       </div>
+      <label>Prijsuitreiking <span class="muted">(optioneel; staat in de melding bij het einde)</span>
+        <input id="nw-prijs" type="datetime-local">
+      </label>
       <button type="submit" class="btn primary">Wedstrijd aanmaken</button>
       <p id="nieuw-fout" class="fout" hidden></p>
     </form>
@@ -486,6 +489,7 @@
           <label>Start <input id="b-start" type="datetime-local"></label>
           <label>Einde <input id="b-eind" type="datetime-local"></label>
         </div>
+        <label>Prijsuitreiking <span class="muted">(optioneel)</span> <input id="b-prijs" type="datetime-local"></label>
         <button id="b-tijden" class="btn">Tijden opslaan</button>
         <p id="b-fout" class="fout" hidden></p>
       </div>
@@ -556,6 +560,23 @@
 <div id="foto-groot" class="lightbox" role="dialog" aria-modal="true" aria-label="Afbeelding vergroot" hidden><img alt="vangstfoto"><button type="button" class="sluit" aria-label="Sluiten">✕</button></div>
 
 <!-- deel-melding direct na het aanmaken van een wedstrijd -->
+<!-- afsluiting van de wedstrijd (v88): eenmalig scherm met winnaar en confetti -->
+<div id="afsluit" class="lightbox afsluit" role="dialog" aria-modal="true" aria-labelledby="afsluit-titel" hidden>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+  <div class="card afsluit-kaart">
+    <button class="sluit" id="afsluit-sluit" aria-label="Sluiten">×</button>
+    <div class="afsluit-vlag" aria-hidden="true">🏁</div>
+    <h2 id="afsluit-titel">De wedstrijd is afgelopen</h2>
+    <p class="muted klein" id="afsluit-sub">Registreren is gesloten.</p>
+    <div id="afsluit-podium" class="afsluit-podium"></div>
+    <p id="afsluit-prijs" class="afsluit-prijs" hidden></p>
+    <div class="afsluit-knoppen">
+      <button id="afsluit-deel" class="btn primary breed">📤 Deel de uitslag</button>
+      <button id="afsluit-ok" class="btn breed">Naar het klassement</button>
+    </div>
+  </div>
+</div>
+
 <div id="deel-nieuw" class="lightbox" hidden>
   <div class="card" style="max-width:440px; width:92vw; text-align:left">
     <h2>🎉 <span id="dn-naam"></span> staat klaar!</h2>

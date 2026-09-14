@@ -16,7 +16,7 @@ geen besluit.
 | K3 | Op de pagina van een lopende wedstrijd hoort een link te staan voor wie de app zelf wil gebruiken | Klein; promotieregel onderaan de kijkersweergave, naar viswedstrijdapp.nl |
 | K4 | Kijkers moeten de kijklink makkelijk kunnen doorsturen | Klein; deelknop met Web Share API, zoals bij vangst delen (v45) |
 | K5 | Bij einde wedstrijd een melding: winnaar groot met confetti, nummer 2 en 3 klein | Zelfde bouwsteen als D7; einde-detectie in de client (eindtijd staat in de state) plus één push via de edge function. Middel |
-| K6 | Thuisblijvers hebben niets aan de kaart, zones en wie-zit-waar; dieptekaart alleen voor deelnemers | **Forms beslist: kijkers willen juist de kaart met wie waar zit (3 van 12) en de foto van de vis (2 van 12).** Kaart alleen-lezen tonen voor kijkers (de state bevat stekken en zones al), geen dieptekaart-3D. Middel |
+| K6 | **GEBOUWD in v88 (14 sep).** Thuisblijvers hebben niets aan de kaart, zones en wie-zit-waar; dieptekaart alleen voor deelnemers | **Forms beslist: kijkers willen juist de kaart met wie waar zit (3 van 12) en de foto van de vis (2 van 12).** Kaart alleen-lezen tonen voor kijkers (de state bevat stekken en zones al), geen dieptekaart-3D. Middel |
 | K7 | Kijkers willen het totaal aantal deelnemers zien (1x Forms) | Tellertje boven het klassement, ook nulvangers meetellen. Klein |
 
 ## Deelnemers
@@ -29,11 +29,11 @@ geen besluit.
 | D4 | Code opslaan als wachtwoord bij eerste inlog, zodat je hem makkelijk terugvult na uitloggen | **GEBOUWD in v86/v87 (14 sep), na een proefpagina met vijf varianten op Patricks iPhone.** Knop 'bewaar in de wachtwoorden van je telefoon' op de teamkaart plus het herstelveld als wachtwoordveld; iOS vraagt nu wél om te bewaren. Was: het inlogformulier met `autocomplete="username"` en `autocomplete="current-password"` markeren zodat iOS/Android aanbieden hem in de wachtwoordmanager te zetten. Geen account nodig. Hangt samen met D1 |
 | D5 | Vangst registreren kan op vier plekken (oranje knop bij Kaart en Klassement, groene knop bij Vangsten, "Mijn deelname"); verwarrend. De oranje knop is duidelijk | Ontwerpkeuze: één vaste oranje knop op alle tabbladen, groene knop en de ingang in Mijn deelname weg. Middel; raakt instructies en site (doc-oppervlakken) |
 | D6 | Melding bij einde wedstrijd: vangsten registreren kan niet meer | Klein bovenop K5/D7: één push "Wedstrijd afgelopen" met de uitslag erin |
-| D7 | Bij einde wedstrijd: winnaar groot met confetti, 2 en 3 klein | Zie K5, zelfde component voor deelnemer en kijker |
-| D8 | Laatste uur: de tijd kleurt rood | Klein; klok-render in app.js |
-| D9 | Na de eindtijd een melding hoe laat de prijsuitreiking is | Klein als het een veld op de wedstrijd wordt (organisator vult tijd in bij aanmaken); meld het in dezelfde einde-push als D6 |
-| D10 | Deelnemer kan aan het einde de uitslag delen op socials, met duidelijke link naar de site (promotie) | Bestaat deels: "Uitslag delen als afbeelding" (v41) en vangst delen (v45). Ontbreekt: prominente knop aan het einde en een link naar viswedstrijdapp.nl in de deeltekst. Klein |
-| D11 | Bij aanmelden (vóór de start) vragen of de vangstfoto's gebruikt mogen worden voor de socials van de viswedstrijdapp (toegevoegd 14 sep) | Vinkje in het aanmeldformulier, opgeslagen per team (`teams.foto_toestemming`), zichtbaar in Beheer en in de beheerdersomgeving zodat Patrick weet welke foto's hij mag gebruiken. Standaard UIT. Klein |
+| D7 | **GEBOUWD in v88 (14 sep).** Bij einde wedstrijd: winnaar groot met confetti, 2 en 3 klein | Zie K5, zelfde component voor deelnemer en kijker |
+| D8 | **GEBOUWD in v88 (14 sep).** Laatste uur: de tijd kleurt rood | Klein; klok-render in app.js |
+| D9 | **GEBOUWD in v88 (14 sep).** Na de eindtijd een melding hoe laat de prijsuitreiking is | Klein als het een veld op de wedstrijd wordt (organisator vult tijd in bij aanmaken); meld het in dezelfde einde-push als D6 |
+| D10 | **GEBOUWD in v88 (14 sep).** Deelnemer kan aan het einde de uitslag delen op socials, met duidelijke link naar de site (promotie) | Bestaat deels: "Uitslag delen als afbeelding" (v41) en vangst delen (v45). Ontbreekt: prominente knop aan het einde en een link naar viswedstrijdapp.nl in de deeltekst. Klein |
+| D11 | **GEBOUWD in v88 (14 sep).** Bij aanmelden (vóór de start) vragen of de vangstfoto's gebruikt mogen worden voor de socials van de viswedstrijdapp (toegevoegd 14 sep) | Vinkje in het aanmeldformulier, opgeslagen per team (`teams.foto_toestemming`), zichtbaar in Beheer en in de beheerdersomgeving zodat Patrick weet welke foto's hij mag gebruiken. Standaard UIT. Klein |
 | D12 | Persoonlijke code beter meegeven na aanmelden (uit Forms: "wachtwoord had ik nog niet eerder gekregen") | **GEBOUWD in v82.** Code groot tonen direct na aanmelden met "bewaar hem" en een deelknop naar jezelf; hoort bij D4. Klein |
 | D13 | Tweede foto per vis (andere zijde), 1x gevraagd in Forms | Later; raakt upload, opslag en deelafbeelding. Pas bij meer vraag |
 

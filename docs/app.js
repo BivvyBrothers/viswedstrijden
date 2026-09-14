@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 87; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 88; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -522,6 +522,7 @@ function route(initieel) {
     STATE = null;
     BEKENDE_VANGSTEN = null;
     VANGSTEN_SIG = null; MIJN_VANGSTEN_SIG = null;
+    sluitAfsluiting(false);   // een open afsluitscherm hoort bij de vorige wedstrijd
     INIT_KLAAR = false;
     ADMIN_KIES = null;
     POLL_TELLER = 0;
@@ -725,6 +726,7 @@ function initHome() {
         p_regels: $('#nw-regels').value.trim() || null,
         p_klant: typeof TENANT !== 'undefined' ? TENANT : null,
         p_client_id: NIEUW_POGING.id,
+        p_prijsuitreiking: $('#nw-prijs')?.value ? new Date($('#nw-prijs').value).toISOString() : null,
       });
       NIEUW_POGING = null;
       sessie.zetPin(res.code, res.pin);
@@ -829,6 +831,7 @@ async function laadState(eerste) {
     STATE_OK_OP = Date.now();
     verbindingBanner(false);
     renderAlles(eerste);
+    checkAfsluiting();
     INIT_KLAAR = true;
     if (eerste && ROL === 'deelnemer' && !sessie.team(mijnCode) && s.wedstrijd.status === 'aanmelden') {
       // deelnemer met een gedeelde link start bij het invoeren van eigen gegevens
@@ -1475,7 +1478,8 @@ function renderKop() {
   $('#w-tijden').textContent =
     `${fmtDatumTijd(w.start_ts)} tot ${fmtDatumTijd(w.eind_ts)}` +
     (w.mode === 'koppel' ? ' · koppelwedstrijd' : ' · individueel') +
-    (heeftZones() ? ' · zones' : '');
+    (heeftZones() ? ' · zones' : '') +
+    (w.prijsuitreiking_ts ? ` · prijsuitreiking ${fmtDatumTijd(w.prijsuitreiking_ts)}` : '');
   const chip = $('#w-status');
   const f = fase();
   chip.className = 'chip';
@@ -1503,7 +1507,7 @@ function tikKlok() {
   const p = (n) => String(n).padStart(2, '0');
   el.textContent = u > 99 ? `${u}u ${p(m)}m` : `${p(u)}:${p(m)}:${p(s)}`;
   sub.textContent = label;
-  if (f === 'live' && rest < 15 * 60000) el.classList.add('bijna');
+  if (f === 'live' && rest < 60 * 60000) el.classList.add('bijna');   // laatste uur rood (v88, klantvraag)
   if (rest === 0) laadState(false);
 }
 
@@ -1956,12 +1960,14 @@ function canvasHulp(ctx) {
 const naarBestandsnaam = (voorvoegsel, naam) => voorvoegsel + '-' + String(naam).toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) + '.png';
 
-async function deelPng(canvas, bestandsnaam, titel) {
+async function deelPng(canvas, bestandsnaam, titel, tekst) {
   const blob = await new Promise((klaar) => canvas.toBlob(klaar, 'image/png'));
   if (!blob) throw new Error('afbeelding_mislukt');
   const bestand = new File([blob], bestandsnaam, { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [bestand] })) {
-    await navigator.share({ files: [bestand], title: titel });
+    // tekst met de site erbij (v88): apps die tekst bij een afbeelding tonen
+    // (WhatsApp, Telegram) laten zo zien waar de app te vinden is
+    await navigator.share({ files: [bestand], title: titel, ...(tekst ? { text: tekst } : {}) });
   } else {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2096,18 +2102,133 @@ function koppelVangstDelen() {
   });
 }
 
+let DEEL_BEZIG = false;
 async function deelUitslag() {
-  const knop = $('#btn-deel-uitslag');
-  if (knop) knop.disabled = true;
+  if (DEEL_BEZIG) return;   // dubbel tikken (klassement én afsluitscherm) start geen tweede share-sheet
+  DEEL_BEZIG = true;
+  const knoppen = [$('#btn-deel-uitslag'), $('#afsluit-deel')].filter(Boolean);
+  knoppen.forEach((k) => { k.disabled = true; });
   try {
     await wachtOpVoetLogo();
     await deelPng(tekenUitslag(), naarBestandsnaam('uitslag', STATE.wedstrijd.naam),
-      `Uitslag ${STATE.wedstrijd.naam}`);
+      `Uitslag ${STATE.wedstrijd.naam}`,
+      `Uitslag ${STATE.wedstrijd.naam} 🎣 Live gevolgd met viswedstrijdapp.nl`);
   } catch (err) {
     if (err && err.name !== 'AbortError') toast('Delen lukte niet: ' + (err.message || err));
   } finally {
-    if (knop) knop.disabled = false;
+    knoppen.forEach((k) => { k.disabled = false; });
+    DEEL_BEZIG = false;
   }
+}
+
+/* ---------- afsluiting van de wedstrijd (v88) ---------- */
+// Klantvraag na de Carpclassic: bij het einde een scherm met de winnaar groot
+// (confetti), nummer 2 en 3 klein, "registreren is gesloten", de tijd van de
+// prijsuitreiking en een deelknop. Eén keer per wedstrijd per toestel, alleen
+// als de eindtijd hooguit een dag geleden is (oude wedstrijden niet). De push
+// bij het einde komt van de server (wedstrijd.meld_afgelopen, pg_cron elke 5 min).
+// sleutel: kijkcode (staat in de state van deelnemer én kijker, dus één keer per
+// toestel ongeacht de route) plus de eindtijd (verlengt de organisator, dan is
+// dat een nieuwe afsluiting en mag het scherm opnieuw)
+let AFSLUIT_GETOOND_VOOR = null;
+const afsluitSleutel = () => `afsluit:${STATE.wedstrijd.kijk_code || CODE}:${STATE.wedstrijd.eind_ts}`;
+function checkAfsluiting() {
+  if (!STATE?.wedstrijd || ROL === 'organisator') return;
+  const box = $('#afsluit');
+  if (fase() !== 'voorbij') {
+    // de organisator heeft verlengd terwijl het scherm openstond
+    if (box && !box.hidden) sluitAfsluiting(false);
+    return;
+  }
+  if (box && !box.hidden) { vulAfsluiting(); return; }   // open: bijwerken met de laatste stand
+  const sleutel = afsluitSleutel();
+  if (AFSLUIT_GETOOND_VOOR === sleutel) return;
+  const eind = new Date(STATE.wedstrijd.eind_ts).getTime();
+  if (nu() - eind > 24 * 3600 * 1000) return;
+  try { if (localStorage.getItem(sleutel)) return; } catch { /* opslag geblokkeerd: dan gewoon tonen */ }
+  if (!toonAfsluiting()) return;
+  AFSLUIT_GETOOND_VOOR = sleutel;
+  try { localStorage.setItem(sleutel, '1'); } catch { /* niet erg */ }
+}
+// podium met dezelfde rangregels als het klassement: gelijke rangsleutel = gedeelde plaats
+function vulAfsluiting() {
+  const w = STATE.wedstrijd;
+  const rijen = klSorteer(klassementRijen());
+  const podium = $('#afsluit-podium');
+  let rang = 0, vorige = null;
+  const metRang = rijen.map((r, i) => {
+    const s = klRangSleutel(r);
+    if (s !== vorige) { rang = i + 1; vorige = s; }
+    return { r, rang };
+  });
+  const opRang = (n) => metRang.filter((x) => x.rang === n).map((x) => x.r);
+  const namen = (rs) => rs.map((r) => teamNaamHtml(r.team)).join(' &amp; ');
+  const rij = (rs) => `<b>${namen(rs)}</b>${fmtKg(rs[0].totaal)}`;
+  if (!rijen.length) {
+    podium.innerHTML = '<p class="muted">Er is niets gevangen. Volgende keer beter!</p>';
+  } else {
+    const w1 = opRang(1), w2 = opRang(2), w3 = opRang(3);
+    podium.innerHTML = `<div class="afsluit-winnaar"><div class="label">🏆 ${w1.length > 1 ? 'Gedeelde eerste plaats' : 'Winnaar'}</div>
+        <div class="naam">${namen(w1)}</div>
+        <div class="kg">${fmtKg(w1[0].totaal)}${w1.length === 1 ? ` · ${w1[0].aantal} ${w1[0].aantal === 1 ? 'vis' : 'vissen'}` : ''}</div></div>`
+      + ((w2.length || w3.length) ? `<div class="afsluit-rest">${w2.length ? `<div>🥈 ${rij(w2)}</div>` : ''}${w3.length ? `<div>🥉 ${rij(w3)}</div>` : ''}</div>` : '');
+  }
+  $('#afsluit-titel').textContent = `${w.naam} is afgelopen`;
+  $('#afsluit-sub').textContent = rijen.length
+    ? 'Voorlopige uitslag. Registreren is gesloten; de organisator kan een late vangst nog beoordelen.'
+    : 'Registreren is gesloten.';
+  const prijs = $('#afsluit-prijs');
+  prijs.hidden = !w.prijsuitreiking_ts;
+  if (w.prijsuitreiking_ts) prijs.textContent = `🏅 Prijsuitreiking: ${fmtDatumTijd(w.prijsuitreiking_ts)}`;
+  $('#afsluit-deel').hidden = !rijen.length;
+  return rijen.length;
+}
+function toonAfsluiting() {
+  const box = $('#afsluit');
+  if (!box) return false;
+  const aantal = vulAfsluiting();
+  box.hidden = false;
+  startConfetti($('#confetti'), aantal ? 4500 : 0);
+  return true;
+}
+function sluitAfsluiting(naarKlassement) {
+  const box = $('#afsluit');
+  if (!box) return;
+  box.hidden = true;
+  if (naarKlassement) activateTab('klassement');
+}
+// lichte confetti op een canvas, zonder library
+function startConfetti(canvas, duurMs) {
+  if (!canvas || !duurMs) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = canvas.clientWidth * dpr; canvas.height = canvas.clientHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  const kleuren = ['#E8871E', '#d9dcc2', '#fff', '#6d7355', '#f2c14e'];
+  const deeltjes = Array.from({ length: 140 }, () => ({
+    x: Math.random() * W, y: -20 - Math.random() * H * 0.5,
+    vx: (Math.random() - 0.5) * 1.6, vy: 2 + Math.random() * 3,
+    w: 6 + Math.random() * 6, h: 4 + Math.random() * 4,
+    hoek: Math.random() * Math.PI, draai: (Math.random() - 0.5) * 0.2,
+    kleur: kleuren[Math.floor(Math.random() * kleuren.length)],
+  }));
+  const start = performance.now();
+  let vorige = start;
+  const stap = (t) => {
+    const verstreken = t - start;
+    const dt = Math.min((t - vorige) / 16.7, 3); vorige = t;   // beweging per 60Hz-frame, ook op 120Hz
+    ctx.clearRect(0, 0, W, H);
+    for (const d of deeltjes) {
+      d.x += d.vx * dt; d.y += d.vy * dt; d.hoek += d.draai * dt;
+      ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.hoek);
+      ctx.fillStyle = d.kleur; ctx.fillRect(-d.w / 2, -d.h / 2, d.w, d.h);
+      ctx.restore();
+    }
+    if (verstreken < duurMs && !canvas.closest('.lightbox')?.hidden) requestAnimationFrame(stap);
+    else ctx.clearRect(0, 0, W, H);
+  };
+  requestAnimationFrame(stap);
 }
 
 /* ---------- seizoensklassement ---------- */
@@ -2548,6 +2669,9 @@ function initWedstrijd() {
   $('#kl-totaal').addEventListener('click', () => { KLASSEMENT_MODE = 'totaal'; renderKlassement(); });
   $('#kl-grootste').addEventListener('click', () => { KLASSEMENT_MODE = 'grootste'; renderKlassement(); });
   $('#btn-deel-uitslag')?.addEventListener('click', deelUitslag);
+  $('#afsluit-deel')?.addEventListener('click', deelUitslag);
+  $('#afsluit-ok')?.addEventListener('click', () => sluitAfsluiting(true));
+  $('#afsluit-sluit')?.addEventListener('click', () => sluitAfsluiting(false));
   $('#btn-deel-seizoen')?.addEventListener('click', deelSeizoen);
   $('#dn-sluit')?.addEventListener('click', () => { $('#deel-nieuw').hidden = true; });
   $('#dn-deel')?.addEventListener('click', async () => {
@@ -3226,9 +3350,12 @@ function initBeheerKnoppen() {
   $('#b-reset').addEventListener('click', () =>
     tikNogmaals($('#b-reset'), '⚠️ Tik nogmaals: alles wissen', () => beheerActie('w_admin_reset_loting', {})));
   $('#b-tijden').addEventListener('click', async () => {
+    const prijs = $('#b-prijs')?.value || '';
     await beheerActie('w_admin_tijden', {
       p_start: new Date($('#b-start').value).toISOString(),
       p_eind: new Date($('#b-eind').value).toISOString(),
+      p_prijsuitreiking: prijs ? new Date(prijs).toISOString() : null,
+      p_wis_prijsuitreiking: !prijs,
     });
   });
   $('#b-kopieer').addEventListener('click', async () => {
@@ -3440,12 +3567,15 @@ async function renderBeheer(magPrefill) {
     maxEl.value = w.max_teams ?? '';
   }
   naamEl.onfocus = maxEl.onfocus = () => { naamEl.dataset.geraakt = '1'; };
-  const startEl = $('#b-start'), eindEl = $('#b-eind');
-  if (magPrefill || (document.activeElement !== startEl && document.activeElement !== eindEl && !startEl.dataset.geraakt)) {
+  const startEl = $('#b-start'), eindEl = $('#b-eind'), prijsEl = $('#b-prijs');
+  if (magPrefill || (document.activeElement !== startEl && document.activeElement !== eindEl
+      && document.activeElement !== prijsEl && !startEl.dataset.geraakt)) {
     startEl.value = naarLocalInput(w.start_ts);
     eindEl.value = naarLocalInput(w.eind_ts);
+    if (prijsEl) prijsEl.value = w.prijsuitreiking_ts ? naarLocalInput(w.prijsuitreiking_ts) : '';
   }
   startEl.onfocus = eindEl.onfocus = () => { startEl.dataset.geraakt = '1'; };
+  if (prijsEl) prijsEl.onfocus = () => { startEl.dataset.geraakt = '1'; };
 
   const zonesEl = $('#b-zones');
   if ((magPrefill || !zonesEl.dataset.geraakt) && document.activeElement !== zonesEl) {

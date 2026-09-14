@@ -518,6 +518,64 @@ code vraagt: de terugknop `#btn-terug` (voor iedereen behalve de organisator
     om beurten pollen.
   Toesteltest op iPhone (wachtwoordmanager, PWA-herstart) staat open bij Patrick.
 
+## Afsluiting van de wedstrijd (v88, 14 sep 2026, uit de Carpclassic-evaluatie)
+
+Migratie `wedstrijd_afsluiting_v88` (bron: `review/migraties/wedstrijd_afsluiting_v88.sql`):
+- `wedstrijden.prijsuitreiking_ts` (optioneel) en `wedstrijden.eind_gemeld_op`.
+  `w_maak_wedstrijd` kreeg `p_prijsuitreiking` en `w_admin_tijden` kreeg
+  `p_prijsuitreiking` + `p_wis_prijsuitreiking` (null = ongewijzigd laten,
+  zodat oude clients niets wissen); de OUDE signaturen zijn gedropt, anders
+  ziet PostgREST twee kandidaten. `w_get_state` en de kijker-variant geven
+  `prijsuitreiking_ts` mee. Eindtijd naar de toekomst verzetten reset
+  `eind_gemeld_op`, dus de melding komt dan opnieuw.
+- `wedstrijd.meld_afgelopen()` (security definer, niet via PostgREST): kiest
+  wedstrijden met `eind_ts` in de afgelopen 3 uur en `eind_gemeld_op is null`,
+  zet die vlag, bepaalt de winnaar (totaalgewicht, dan grootste vis, dan
+  vroegste vangst) en stuurt via `extensions.http_post_ignore` (bestaande
+  pg_net-route naar de edge function push-vangst, team_id null = iedereen)
+  één push: "🏁 <naam> is afgelopen" met winnaar, "registreren is gesloten"
+  en de prijsuitreiking (tijdzone Europe/Amsterdam, zie bewuste beperkingen).
+- **pg_cron `wedstrijd_meld_afgelopen`, elke 5 minuten.** NOOIT per minuut
+  (storing 16 aug 2026). Het venster van 3 uur voorkomt pushes over oude
+  wedstrijden als de job een tijd niet liep.
+
+Client:
+- `tikKlok`: de klok kleurt rood (`.bijna`) in het laatste UUR (was 15 min).
+- `renderKop` toont "· prijsuitreiking <tijd>"; organisator vult hem in bij
+  Nieuwe wedstrijd (`#nw-prijs`) of in Beheer bij de tijden (`#b-prijs`; leeg
+  opslaan = wissen via `p_wis_prijsuitreiking`).
+- Afsluitscherm `#afsluit` (lightbox): `checkAfsluiting()` na elke render,
+  toont `toonAfsluiting()` één keer per wedstrijd per toestel (localStorage
+  `afsluit:<code>` + `AFSLUIT_GETOOND_VOOR`) voor deelnemer én kijker, niet
+  voor de organisator, en alleen als de eindtijd hooguit 24 uur geleden is
+  (oude wedstrijden openen zonder scherm). Inhoud: winnaar groot (`klSorteer(
+  klassementRijen())`, dus dezelfde dagregel als het klassement), 2 en 3 klein,
+  prijsuitreiking, knop "Deel de uitslag" (bestaande `deelUitslag`) en "Naar
+  het klassement". Confetti = eigen canvas (`startConfetti`), geen library.
+- `deelPng` accepteert een `tekst`; de uitslag deelt nu met "Live gevolgd met
+  viswedstrijdapp.nl" erbij (WhatsApp/Telegram tonen die tekst bij de foto).
+
+Codex-review v88 (`review/codex-v88-uit.md`, 10 bevindingen) gaf migratie
+`wedstrijd_afsluiting_v88b` en client-fixes in dezelfde release:
+- de push gebruikt nu DEZELFDE dagregel en tiebreaks als het klassement
+  (`rank()` over totaal, bij karper het aantal, dan grootste vis, dan tijd van
+  de grootste; bij sportvisunie alleen totaal), noemt gedeelde winnaars ("X en
+  Y delen de eerste plaats") en heet "voorlopige uitslag": een late vangst
+  (`w_registreer_vangst_laat`, 24 uur marge) kan de uitslag nog wijzigen;
+- het afsluitscherm rangschikt met `klRangSleutel` (gedeelde plaatsen), ververst
+  zolang het openstaat, sluit bij een routewissel en zodra de wedstrijd weer
+  live is (verlenging), en de eenmaligheidssleutel is `afsluit:<kijk_code>:<eind_ts>`
+  (deelnemer en kijker delen dezelfde sleutel; een nieuwe eindtijd = opnieuw);
+- `w_admin_tijden` valideert de UITEINDELIJKE prijsuitreiking, ook als een oude
+  client de parameter niet meestuurt; `notify pgrst, 'reload schema'` na de
+  signatuurwissel;
+- kaart scrolt binnen de viewport, `role="dialog"`, één bezigvlag voor beide
+  deelknoppen, confetti tijdgebaseerd (120 Hz).
+- **Bewust geaccepteerd:** de einde-push is best effort, net als de
+  vangst-pushes (pg_net is fire-and-forget, geen retry per abonnee); na meer
+  dan 3 uur cron-uitval vervalt een melding stilzwijgend; een organisator die
+  ook meevist ziet het afsluitscherm niet (hij ziet Beheer en het klassement).
+
 ## Wedstrijd als sjabloon (v67, 13 aug 2026)
 
 Knop **📋 Als sjabloon** op elke wedstrijdkaart in de organisatie-omgeving
