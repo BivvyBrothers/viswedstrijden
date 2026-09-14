@@ -468,9 +468,16 @@ code vraagt: de terugknop `#btn-terug` (voor iedereen behalve de organisator
   router matcht op prefix, geen hashchange nodig), bij een andere wedstrijd de
   gewone hash-navigatie. `herstelFormTerug()` zet het formulier terug zodra de
   aanmeldkaart weer in beeld komt. Het home-veld `#deelnemer-code` blijft
-  `type=text` (openbare wedstrijdcode). Variant F (vooringevulde code direct
-  na het aanmelden) staat nog op de proefpagina; werkt die, dan kan een
-  bewaar-knop op de teamkaart alsnog. Na het aanmelden zet de join-handler
+  `type=text` (openbare wedstrijdcode). **Variant F (vooringevulde code, alleen
+  op Bewaren tikken) werkte ook op de iPhone, dus sinds v87 staat op de
+  teamkaart `#form-bewaar-code`**: offscreen username, een zichtbaar
+  `type=password`-veld dat `zetTeamCode()` met de persoonlijke code vult, knop
+  "bewaar in de wachtwoorden van je telefoon". De handler doet preventDefault,
+  haalt het formulier uit de DOM (`BEWAAR_FORM`, `BEWAAR_VOOR_CODE`) en
+  pushState naar `#/w/CODE?bewaard`; `bewaarFormTerug()` zet het terug bij een
+  andere wedstrijd of na opnieuw aanmelden of inloggen. In-app bevestigd door
+  Patrick: herstelveld (v86) en bewaar-knop (v87) geven allebei de
+  iOS-bewaarvraag. Na het aanmelden zet de join-handler
   `TOON_CODE_NA_RENDER`; `renderTeamTab` consumeert die zodra de teamkaart
   zichtbaar wordt (`toonCodeNaAanmelden()`: scroll + `.flits`), ook als er op
   dat moment een poll onderweg was. Knop "stuur naar jezelf" (`#btn-code-deel`)

@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 86; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 87; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -2746,6 +2746,7 @@ function initWedstrijd() {
         p_duo: duoAan,
       });
       sessie.zetTeam(CODE, { id: res.team_id, token: res.token, naam: $('#join-naam').value.trim(), code: res.deelnemer_code });
+      BEWAAR_VOOR_CODE = null;   // nieuwe deelname: bewaar-knop weer tonen
       DUO_MAAT = res.duo ? { code: CODE, ...res.duo } : null;
       if (res.deelnemer_code) toast(`🔑 Bewaar je persoonlijke inlogcode: ${res.deelnemer_code}`);
       TOON_CODE_NA_RENDER = true;   // renderTeamTab pakt dit op zodra de teamkaart zichtbaar wordt
@@ -2771,6 +2772,7 @@ function initWedstrijd() {
       // halen en de URL laten veranderen; herstelFormTerug() zet het formulier
       // later weer terug (uitloggen, andere wedstrijd)
       herstelFormWeg();
+      BEWAAR_VOOR_CODE = null;   // opnieuw ingelogd: bewaar-knop weer tonen
       if (login.wedstrijd_code === CODE) {
         history.pushState(null, '', location.pathname + '#/w/' + CODE + '?ingelogd');
         toast(`Welkom terug, ${login.naam}!`);
@@ -2899,11 +2901,20 @@ function initWedstrijd() {
     $('#btn-herstel').textContent = ok ? '✅ gekopieerd' : 'kopiëren mislukt';
     setTimeout(() => { $('#btn-herstel').textContent = 'kopieer'; }, 2500);
   });
-  // (v86) wachtwoordmanager: het recept dat op iOS WEL een bewaarvraag geeft is
-  // met de proefpagina (docs/proef-wachtwoord.html) op Patricks iPhone bewezen:
-  // de ingevulde code NIET wissen, het formulier echt uit de DOM halen en de URL
-  // laten veranderen (pushState of hashchange). Alleen verbergen zonder
-  // URL-wijziging (v83) gaf niets. Een verborgen username-veld is prima.
+  // (v86/v87) wachtwoordmanager: het recept dat op iOS WEL een bewaarvraag geeft
+  // is met een proefpagina op Patricks iPhone bewezen: de ingevulde code NIET
+  // wissen, het formulier echt uit de DOM halen en de URL laten veranderen
+  // (pushState of hashchange). Alleen verbergen zonder URL-wijziging gaf niets.
+  // Een verborgen username-veld is prima, en een vooringevulde code ook (F).
+  $('#form-bewaar-code')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.currentTarget;
+    if (!f.querySelector('#bewaar-code-ww').value) return;
+    BEWAAR_FORM = f; BEWAAR_VOOR_CODE = CODE;
+    f.remove();
+    history.pushState(null, '', location.pathname + '#/w/' + CODE + '?bewaard');
+    const klaar = $('#bewaar-code-klaar'); if (klaar) klaar.hidden = false;
+  });
   // code naar jezelf sturen (WhatsApp, notities): 4 van de 8 Carpclassic-deelnemers waren hem kwijt
   $('#btn-code-deel')?.addEventListener('click', async () => {
     const code = $('#team-code').textContent;
@@ -3100,7 +3111,14 @@ function renderTeamTab() {
       }).catch(() => {});
     }
   }
-  const zetTeamCode = (code) => { $('#team-code').textContent = code; };
+  const zetTeamCode = (code) => {
+    $('#team-code').textContent = code;
+    // bewaar-formulier: vullen met de code; na een tik blijft het weg voor DEZE
+    // wedstrijd, bij een andere wedstrijd of na opnieuw inloggen komt het terug
+    if (BEWAAR_FORM && BEWAAR_VOOR_CODE !== CODE) bewaarFormTerug();
+    const bw = $('#bewaar-code-ww'); if (bw) bw.value = code === '…' ? '' : code;
+    const f = $('#form-bewaar-code'); if (f) f.hidden = code === '…';
+  };
   if (t.code) {
     zetTeamCode(t.code);
   } else {
@@ -3168,6 +3186,15 @@ function renderTeamTab() {
 // v86-notitie bij de submit-handler) en hier weer teruggezet zodra de
 // aanmeldkaart opnieuw in beeld komt
 let HERSTEL_FORM = null;
+// zelfde mechaniek voor het bewaar-formulier op de teamkaart (v87)
+let BEWAAR_FORM = null, BEWAAR_VOOR_CODE = null;
+function bewaarFormTerug() {
+  if (!BEWAAR_FORM || document.contains(BEWAAR_FORM)) return;
+  const klaar = $('#bewaar-code-klaar');
+  if (!klaar) return;
+  klaar.hidden = true;
+  klaar.parentNode.insertBefore(BEWAAR_FORM, klaar);
+}
 function herstelFormWeg() {
   const f = $('#form-herstel');
   if (f) { HERSTEL_FORM = f; f.remove(); }
