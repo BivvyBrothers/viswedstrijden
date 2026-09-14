@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 82; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 83; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -305,11 +305,13 @@ let BEKENDE_VANGSTEN = null; // Set van vangst-ids voor in-app meldingen
 // elke poll (6s) opnieuw en "flikkeren" ze (Carpclassic 2026)
 let VANGSTEN_SIG = null, MIJN_VANGSTEN_SIG = null;
 function vangstenHandtekening(vangsten, teamsBijId) {
-  return vangsten.map((v) => {
+  return JSON.stringify(vangsten.map((v) => {
     const t = teamsBijId?.get(v.team_id);
-    return `${v.id}:${v.gewicht_gram}:${v.foto_path || ''}:${v.created_at}:${t ? t.naam + '|' + (t.naam2 || '') + '|' + (t.team_naam || '') : ''}`;
-  }).join('\n');
+    return [v.id, v.gewicht_gram, v.foto_path || null, v.created_at, t ? [t.naam, t.naam2 || null, t.team_naam || null] : null];
+  }));
 }
+// een foto die bij slecht bereik mislukte blijft anders voor altijd kapot staan
+const kapotteFotos = (el) => [...el.querySelectorAll('img')].some((i) => i.complete && i.naturalWidth === 0);
 let PENDING_TOKEN = null;    // token uit een teamlink (#/w/CODE?t=...)
 let INIT_KLAAR = false;      // eerste state-load gelukt (anders blijft de poll 'eerste' proberen)
 let POLL_TELLER = 0;         // voor tragere polling met het scherm op de achtergrond
@@ -318,7 +320,7 @@ let TEAMCODES_CACHE = { sleutel: null, codes: [] };
 
 const sessie = {
   team(code) { try { return JSON.parse(localStorage.getItem('team:' + code)); } catch { return null; } },
-  zetTeam(code, t) { localStorage.setItem('team:' + code, JSON.stringify(t)); },
+  zetTeam(code, t) { localStorage.setItem('team:' + code, JSON.stringify(t)); HERSTEL_ONDERDRUKT.delete(code); },
   pin(code) { return sessionStorage.getItem('pin:' + code); },
   zetPin(code, pin) { sessionStorage.setItem('pin:' + code, pin); },
   orgWw() { return sessionStorage.getItem('orgww'); },
@@ -344,13 +346,15 @@ const VERDER_MARGE_MS = 7 * 24 * 3600 * 1000;  // tot een week na de eindtijd de
 function laatsteGeldig() {
   const l = sessie.laatste();
   if (!l?.code || !/^[A-Z0-9]{4,8}$/.test(l.code)) { sessie.wisLaatste(); return null; }
-  const eind = l.eind_ts ? new Date(l.eind_ts).getTime() : Infinity;
-  if (Date.now() > eind + VERDER_MARGE_MS) { sessie.wisLaatste(); return null; }
-  return { ...l, eind };
+  const eind = new Date(l.eind_ts || NaN).getTime();
+  // een ontbrekende of kapotte eindtijd is geen vrijbrief om eeuwig terug te springen
+  if (!Number.isFinite(eind) || Date.now() > eind + VERDER_MARGE_MS) { sessie.wisLaatste(); return null; }
+  return { ...l, kijker: !!l.kijker, eind };
 }
 // true = de app is doorgestuurd naar de laatste wedstrijd (de home-route stopt dan)
+const HOME_BEWUST = () => 'home-bewust:' + KLANT();
 function hervatLaatste() {
-  if (sessionStorage.getItem('home-bewust')) return false;
+  if (sessionStorage.getItem(HOME_BEWUST())) return false;
   const l = laatsteGeldig();
   if (!l || Date.now() > l.eind + HERVAT_MARGE_MS) return false;
   // replace, geen push: anders komt de browser-terugknop (Android-veeg) op het
@@ -372,17 +376,24 @@ function renderVerderKaart() {
       : `🎣 Je was bezig met <b>${esc(l.naam || l.code)}</b>.`;
   $('#verder-knop').onclick = () => { location.hash = (l.kijker ? '#/k/' : '#/w/') + l.code; };
 }
+// wedstrijden waar de gebruiker bewust bij is uitgelogd: niet meer onthouden tot
+// hij zich opnieuw aanmeldt of met zijn code inlogt (sessie.zetTeam wist dit)
+const HERSTEL_ONDERDRUKT = new Set();
 function onthoudLaatste(s, code, kijker) {
-  if (!s?.wedstrijd) return;
-  if (!kijker && ROL === 'organisator') return;   // organisator komt via zijn eigen overzicht terug
-  if (kijker) {
-    // een deelnemer die even de kijklink uit de groepsapp opent, blijft deelnemer:
-    // een lopende deelnemersessie (met token) niet overschrijven met een kijkersessie
+  try {
+    if (!s?.wedstrijd) return;
+    if (!kijker && ROL === 'organisator') return;   // organisator komt via zijn eigen overzicht terug
+    const token = !kijker && !!sessie.team(code)?.token;
+    if (!kijker && !token && HERSTEL_ONDERDRUKT.has(code)) return;
     const h = sessie.laatste();
-    if (h && !h.kijker && h.code !== code && sessie.team(h.code)?.token
-        && Date.now() <= new Date(h.eind_ts || 0).getTime() + HERVAT_MARGE_MS) return;
-  }
-  sessie.zetLaatste({ code, kijker: !!kijker, naam: s.wedstrijd.naam, eind_ts: s.wedstrijd.eind_ts });
+    // een ACTIEVE deelname (met token, wedstrijd nog niet langer dan een dag voorbij)
+    // wordt niet verdrongen door even meekijken of even een andere wedstrijd openen
+    if (h && !h.kijker && h.code !== code && !token && sessie.team(h.code)?.token
+        && Date.now() <= new Date(h.eind_ts || NaN).getTime() + HERVAT_MARGE_MS) return;
+    const nieuw = { code, kijker: !!kijker, naam: s.wedstrijd.naam, eind_ts: s.wedstrijd.eind_ts };
+    if (h && h.code === nieuw.code && h.kijker === nieuw.kijker && h.naam === nieuw.naam && h.eind_ts === nieuw.eind_ts) return;
+    sessie.zetLaatste(nieuw);
+  } catch { /* volle of geblokkeerde opslag mag het scherm nooit tegenhouden */ }
 }
 
 const nu = () => Date.now() + TIJD_OFFSET;
@@ -432,10 +443,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // organisator in een wedstrijd -> terug naar het organisatie-overzicht; anders naar het startscherm
     if (CODE && ROL === 'organisator' && sessie.orgWw()) { location.hash = '#/org'; return; }
     // bewust naar het startscherm: dan niet meteen weer terugsturen (sessie-herstel)
-    sessionStorage.setItem('home-bewust', '1');
+    sessionStorage.setItem(HOME_BEWUST(), '1');
     location.hash = '';
   });
-  document.querySelector('.brand')?.addEventListener('click', () => sessionStorage.setItem('home-bewust', '1'));
+  document.querySelector('.brand')?.addEventListener('click', () => sessionStorage.setItem(HOME_BEWUST(), '1'));
   // code-velden: type=password zodat de telefoon hem in de wachtwoordmanager wil zetten; oogje toont hem
   document.querySelectorAll('[data-toon-code]').forEach((b) => b.addEventListener('click', () => {
     const veld = $(b.dataset.toonCode);
@@ -499,7 +510,8 @@ function route(initieel) {
   if (mW || mK) {
     KIJKER = !!mK;
     CODE = (mW || mK)[1].toUpperCase();
-    sessionStorage.removeItem('home-bewust');   // in een wedstrijd: herstel bij een herstart weer aan
+    sessionStorage.removeItem(HOME_BEWUST());   // in een wedstrijd: herstel bij een herstart weer aan
+    BEWAAR_VERBORGEN_TOT = 0; { const u = $('#bewaar-code-uitleg'); if (u) u.hidden = true; }
     // wachtwoordmanager: per wedstrijd een eigen regel (username = tenant + wedstrijdcode)
     document.querySelectorAll('.ww-username').forEach((u) => { u.value = `${KLANT() || 'wedstrijd'}-${CODE}`; });
     $('#topcode').textContent = CODE;
@@ -2233,7 +2245,7 @@ function renderVangsten() {
   const el = $('#vangsten-feed');
   const teamsBijId = new Map(STATE.teams.map((t) => [t.id, t]));
   const sig = vangstenHandtekening(STATE.vangsten, teamsBijId);
-  if (sig === VANGSTEN_SIG) return;   // niets veranderd: DOM (en foto's) met rust laten
+  if (sig === VANGSTEN_SIG && !kapotteFotos(el)) return;   // niets veranderd: DOM (en foto's) met rust laten
   VANGSTEN_SIG = sig;
   if (!STATE.vangsten.length) {
     el.innerHTML = '<p class="muted">Nog geen vangsten. De eerste vis komt eraan…</p>';
@@ -2890,18 +2902,18 @@ function initWedstrijd() {
   $('#form-bewaar-code')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const f = e.currentTarget;
+    BEWAAR_VERBORGEN_TOT = Date.now() + 60000;   // renderTeamTab respecteert dit bij elke poll
     f.hidden = true;
     const uitleg = $('#bewaar-code-uitleg');
     if (uitleg) uitleg.hidden = false;
     toast('Kies "Bewaren" als je telefoon dat vraagt.');
-    setTimeout(() => { f.hidden = false; }, 60000);   // later nog eens kunnen proberen
   });
   // code naar jezelf sturen (WhatsApp, notities): 4 van de 8 Carpclassic-deelnemers waren hem kwijt
   $('#btn-code-deel')?.addEventListener('click', async () => {
     const code = $('#team-code').textContent;
     if (!code || code === '…') return;
     const naam = STATE?.wedstrijd?.naam || 'de viswedstrijd';
-    const tekst = `Mijn persoonlijke inlogcode voor ${naam}: ${code}\nInloggen: ${location.origin}${location.pathname}`;
+    const tekst = `Mijn persoonlijke inlogcode voor ${naam}: ${code}\nInloggen: ${location.origin}${location.pathname}#/w/${CODE}`;
     if (navigator.share) {
       try { await navigator.share({ text: tekst }); } catch { /* geannuleerd */ }
     } else {
@@ -2948,7 +2960,9 @@ function initWedstrijd() {
   $('#btn-team-uitloggen').addEventListener('click', () =>
     tikNogmaals($('#btn-team-uitloggen'), '⚠️ Zeker? Bewaar eerst je inlogcode', () => {
       localStorage.removeItem('team:' + CODE);
-      sessie.wisLaatste();   // bewust uitgelogd: niet automatisch terugzetten
+      // bewust uitgelogd: niet automatisch terugzetten, ook niet door de volgende poll
+      if (sessie.laatste()?.code === CODE) sessie.wisLaatste();
+      HERSTEL_ONDERDRUKT.add(CODE);
       DUO_MAAT = null;
       toast('Uitgelogd bij dit team. Met je persoonlijke code log je weer in.');
       laadState(false);
@@ -3079,10 +3093,14 @@ function renderTeamTab() {
       $('#duo-maat-naam').textContent = maatVanDeze.naam;
       $('#duo-maat-code').textContent = maatVanDeze.deelnemer_code;
     } else if (mijn.duo_id && !DUO_MAAT_GEZOCHT) {
-      // na herladen: de maatcode eenmalig terughalen via het eigen token
+      // na herladen: de maatcode eenmalig terughalen via het eigen token.
+      // Wedstrijd, sessie en token vastleggen: een laat antwoord mag nooit in
+      // een andere wedstrijd of na uitloggen landen (Codex v82, hoog)
       DUO_MAAT_GEZOCHT = true;
-      rpc('w_mijn_team', { p_code: CODE, p_token: t.token }).then((mt) => {
-        if (mt?.duo) { DUO_MAAT = { code: CODE, ...mt.duo }; renderTeamTab(); }
+      const mijnCode = CODE, mijnGen = SESSIE_GEN, mijnToken = t.token;
+      rpc('w_mijn_team', { p_code: mijnCode, p_token: mijnToken }).then((mt) => {
+        if (mijnCode !== CODE || mijnGen !== SESSIE_GEN || sessie.team(mijnCode)?.token !== mijnToken) return;
+        if (mt?.duo) { DUO_MAAT = { code: mijnCode, ...mt.duo }; renderTeamTab(); }
       }).catch(() => {});
     }
   }
@@ -3090,15 +3108,18 @@ function renderTeamTab() {
   const zetTeamCode = (code) => {
     $('#team-code').textContent = code;
     const bw = $('#bewaar-code-ww'); if (bw) bw.value = code === '…' ? '' : code;
-    const f = $('#form-bewaar-code'); if (f) f.hidden = code === '…';
+    const f = $('#form-bewaar-code'); if (f) f.hidden = code === '…' || Date.now() < BEWAAR_VERBORGEN_TOT;
   };
   if (t.code) {
     zetTeamCode(t.code);
   } else {
     zetTeamCode('…');
-    rpc('w_mijn_team', { p_code: CODE, p_token: t.token }).then((mt) => {
+    const mijnCode = CODE, mijnGen = SESSIE_GEN, mijnToken = t.token;
+    rpc('w_mijn_team', { p_code: mijnCode, p_token: mijnToken }).then((mt) => {
+      // zelfde race als hierboven: alleen opslaan als we nog in dezelfde sessie zitten
+      if (mijnCode !== CODE || mijnGen !== SESSIE_GEN || sessie.team(mijnCode)?.token !== mijnToken) return;
       if (mt && mt.deelnemer_code) {
-        sessie.zetTeam(CODE, { ...t, code: mt.deelnemer_code });
+        sessie.zetTeam(mijnCode, { ...t, code: mt.deelnemer_code });
         zetTeamCode(mt.deelnemer_code);
       }
     }).catch(() => {});
@@ -3137,7 +3158,7 @@ function renderTeamTab() {
   const eigen = STATE.vangsten.filter((v) => v.team_id === mijn.id);
   mvCard.hidden = eigen.length === 0;
   const mijnSig = vangstenHandtekening(eigen, null);
-  if (mijnSig === MIJN_VANGSTEN_SIG) return;   // zelfde reden als in renderVangsten
+  if (mijnSig === MIJN_VANGSTEN_SIG && !kapotteFotos($('#mijn-vangsten'))) return;   // zelfde reden als in renderVangsten
   MIJN_VANGSTEN_SIG = mijnSig;
   $('#mijn-vangsten').innerHTML = eigen.map((v) => `
     <div class="vangst-kaart">
@@ -3154,6 +3175,7 @@ function renderTeamTab() {
 
 // direct na het aanmelden: de code in beeld brengen en even laten oplichten
 let TOON_CODE_NA_RENDER = false;
+let BEWAAR_VERBORGEN_TOT = 0;   // tot wanneer het bewaar-formulier verborgen blijft na een tik
 function toonCodeNaAanmelden() {
   const kaart = $('#team-card');
   if (!kaart || kaart.hidden) return;

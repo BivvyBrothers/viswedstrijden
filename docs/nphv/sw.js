@@ -34,7 +34,9 @@ self.addEventListener('fetch', (e) => {
       }
       return r;
     }).catch(() =>
-      caches.match(req, { ignoreSearch: true }).then((m) => m
+      // alleen de EIGEN tenantcache: caches.match zonder cache zoekt door alle caches
+      // en kan zo een oudere gedeelde app.js van de andere tenant teruggeven
+      caches.open(CACHE).then((c) => c.match(req, { ignoreSearch: true })).then((m) => m
         || (req.mode === 'navigate'
           ? caches.match('./').then((thuis) => thuis || caches.match('index.html'))
           : Response.error())))

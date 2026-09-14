@@ -469,11 +469,38 @@ code vraagt: de terugknop `#btn-terug` (voor iedereen behalve de organisator
 - Flikkerende foto's op Vangsten en Mijn deelname: de lijsten werden bij elke
   poll herbouwd. `vangstenHandtekening()` + `VANGSTEN_SIG`/`MIJN_VANGSTEN_SIG`
   slaan de render over als er niets veranderd is (reset in `route()`).
-- Review: Codex was 14 sep niet bruikbaar (CLI 0.147 kent het ingestelde model
-  niet, upgrade vereist sudo); een onafhankelijke Claude-subagent met schone
-  context deed de review (`review/claude-review-v82.md`), 7 bevindingen, alle
-  verwerkt. Toesteltest op iPhone (wachtwoordmanager, PWA-herstart) staat nog
-  open bij Patrick.
+- Review v82: Codex CLI 0.147 was even onbruikbaar (model niet gekend,
+  upgrade vereist sudo); een Claude-subagent met schone context deed de eerste
+  review (`review/claude-review-v82.md`, 7 bevindingen, verwerkt). Na de
+  upgrade naar 0.154 draaide Codex alsnog op v82 (`review/codex-v82-uit.md`,
+  14 bevindingen) en dat werd **v83, de herstelrelease (14 sep)**:
+  - de `w_mijn_team`-callbacks in `renderTeamTab` leggen wedstrijdcode,
+    `SESSIE_GEN` en token vast en slaan niets op als een daarvan veranderd is
+    (bestond al vóór v82: een laat antwoord kon `team:B` vullen met A's token);
+  - `HERSTEL_ONDERDRUKT` (Set): na bewust uitloggen onthoudt de volgende poll
+    de wedstrijd niet opnieuw; `sessie.zetTeam` (aanmelden of herstel-login)
+    heft dat op;
+  - een ACTIEVE deelname (token, eindtijd hooguit een dag voorbij) wordt niet
+    verdrongen door meekijken of door even een andere wedstrijd zonder team
+    te openen; `onthoudLaatste` schrijft alleen bij een wijziging en in een
+    try/catch (volle opslag mag de render nooit tegenhouden); een niet-eindige
+    eindtijd wist het record;
+  - `home-bewust` is per tenant (`home-bewust:<tenant>`);
+  - service workers vallen alleen terug op de EIGEN tenantcache
+    (`caches.open(CACHE).then(c => c.match(...))`; `caches.match` zonder cache
+    zocht door alle caches en kon een oudere gedeelde app.js van de andere
+    tenant teruggeven);
+  - handtekening als JSON (geen botsing op scheidingstekens) en kapotte
+    foto's (`complete && naturalWidth === 0`) forceren wel een render;
+  - bewaar-formulier: `BEWAAR_VERBORGEN_TOT` i.p.v. een setTimeout die door de
+    volgende poll werd overschreven; eerlijke uitleg ("wij kunnen niet zien of
+    je telefoon de code heeft bewaard"); deel-link wijst naar `#/w/CODE`.
+  - Bewust NIET gedaan: organisator-met-pin die ook deelnemer is wordt niet
+    onthouden (na een herstart is de pin weg en is hij gewoon deelnemer); de
+    username van het herstelveld kan bij een code van een andere wedstrijd
+    verkeerd gelabeld raken (praktijkgeval te zeldzaam); twee tabbladen die
+    om beurten pollen.
+  Toesteltest op iPhone (wachtwoordmanager, PWA-herstart) staat open bij Patrick.
 
 ## Wedstrijd als sjabloon (v67, 13 aug 2026)
 
