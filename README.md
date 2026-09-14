@@ -2,8 +2,11 @@
 
 Webapp voor viswedstrijden: digitale loting, stekkeuze op de interactieve
 waterkaart, vangstregistratie met foto, live klassement en seizoensklassement
-(naar de Sportvisunie-reglementen). Uitslagen, seizoensstanden en vangsten zijn
-direct te delen op social media. Multi-tenant: eigen omgeving per organisatie.
+(naar de Sportvisunie-reglementen), pushmeldingen bij elke vangst en bij het
+einde (winnaar, prijsuitreiking), een kijkersweergave voor het thuisfront (kaart,
+vangsten, klassement) en correcties door de organisator met een zichtbare ster.
+Uitslagen, seizoensstanden en vangsten zijn direct te delen op social media.
+Multi-tenant: eigen omgeving per organisatie.
 
 ## Structuur
 
