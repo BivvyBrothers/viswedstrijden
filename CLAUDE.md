@@ -421,6 +421,60 @@ uitleg "je krijgt het laatste lotnummer". De RPC-signatuur is ongewijzigd
   geeft null), dus nooit meer doorvallen naar "wedstrijd niet gevonden".
 - Indienmoment van een vangst met `nu()` (servergecorrigeerd) i.p.v. `Date.now()`.
 
+## Sessie-herstel (v82, 14 sep 2026, uit de Carpclassic-evaluatie)
+
+Op de Carpclassic 2026 "raakten" 6 van de 8 deelnemers uitgelogd en waren 4 van
+de 8 daardoor hun code kwijt. Het was geen uitloggen: het teamtoken stond
+gewoon in localStorage, maar twee routes landden op het inlogscherm, dat om een
+code vraagt: de terugknop `#btn-terug` (voor iedereen behalve de organisator
+`location.hash = ''`) en een herstart van de beginscherm-app door iOS
+(`start_url` = tenantroot = home).
+
+- `sessie.laatste()` (localStorage **`laatste:<tenant>`**, want /nphv/ en
+  /demo/ delen dezelfde origin; inhoud: code, kijker, naam, eind_ts) wordt bij
+  elke geslaagde `laadState` gezet via `onthoudLaatste()` voor een deelnemer
+  (ook zonder team: die landt dan weer op het aanmeldformulier) en voor een
+  kijker; nooit voor de organisator. Een kijklink overschrijft GEEN lopende
+  deelnemersessie met token (een deelnemer die even de kijklink uit de
+  groepsapp opent blijft deelnemer).
+- `route(initieel)`: ALLEEN bij de start van de app (`route(true)` vanuit
+  DOMContentLoaded) roept de home-route `hervatLaatste()` aan; bij een
+  hashchange niet, anders wordt de browser-terugknop (Android-veeg) een
+  verborgen herlaad en gooit "uitloggen" de organisator een wedstrijd in.
+  Voorwaarden: geen `home-bewust`-vlag in sessionStorage, een geldige laatste
+  wedstrijd (codepatroon gecontroleerd) en de eindtijd hooguit
+  `HERVAT_MARGE_MS` (24 uur) geleden; dan `location.replace(...)` (geen push,
+  anders een lus via de terugknop) naar `#/w/CODE` of `#/k/CODE`.
+- Terugknop en het logo in de balk zetten `home-bewust`; het openen van een
+  wedstrijd wist die vlag weer. Op het startscherm toont `renderVerderKaart()`
+  `#verder-kaart` ("Je bent nog ingelogd als X bij Y" of "Je was bezig met Y",
+  knop Verder) tot `VERDER_MARGE_MS` (7 dagen) na de eindtijd. Bewust
+  uitloggen (`#btn-team-uitloggen`) en "wedstrijd niet gevonden" wissen
+  `laatste`, anders blijft de app terugspringen.
+- Wachtwoordmanager: het home-veld `#deelnemer-code` blijft `type=text` (daar
+  wordt meestal de OPENBARE wedstrijdcode getypt; als password zou die het
+  slot van de persoonlijke code overschrijven). `#herstel-code` is wel
+  `type=password` + `autocomplete="current-password"` met een verborgen
+  username-veld `.ww-username` dat `route()` per wedstrijd vult
+  (`<tenant>-<wedstrijdcode>`), zodat elke wedstrijd een eigen regel krijgt;
+  het oogje (`[data-toon-code]`) toont de code. Op de teamkaart staat
+  `#form-bewaar-code`: een formulier met datzelfde username-veld en een
+  verborgen, vooringevuld `new-password`-veld; indienen (preventDefault, er
+  gaat niets naar de server) is het enige wat iOS en Android als "wachtwoord
+  bewaren?" herkennen. Na het aanmelden zet de join-handler
+  `TOON_CODE_NA_RENDER`; `renderTeamTab` consumeert die zodra de teamkaart
+  zichtbaar wordt (`toonCodeNaAanmelden()`: scroll + `.flits`), ook als er op
+  dat moment een poll onderweg was. Knop "stuur naar jezelf" (`#btn-code-deel`)
+  deelt code + inloglink via de share-sheet.
+- Flikkerende foto's op Vangsten en Mijn deelname: de lijsten werden bij elke
+  poll herbouwd. `vangstenHandtekening()` + `VANGSTEN_SIG`/`MIJN_VANGSTEN_SIG`
+  slaan de render over als er niets veranderd is (reset in `route()`).
+- Review: Codex was 14 sep niet bruikbaar (CLI 0.147 kent het ingestelde model
+  niet, upgrade vereist sudo); een onafhankelijke Claude-subagent met schone
+  context deed de review (`review/claude-review-v82.md`), 7 bevindingen, alle
+  verwerkt. Toesteltest op iPhone (wachtwoordmanager, PWA-herstart) staat nog
+  open bij Patrick.
+
 ## Wedstrijd als sjabloon (v67, 13 aug 2026)
 
 Knop **📋 Als sjabloon** op elke wedstrijdkaart in de organisatie-omgeving

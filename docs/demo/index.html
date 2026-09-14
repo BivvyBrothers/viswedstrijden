@@ -61,6 +61,12 @@
     <a href="mailto:info@kemblinck.nl?subject=Wedstrijd-app%20voor%20onze%20wedstrijden">info@kemblinck.nl</a>.</p>
   </section>
 
+  <section class="card verder-kaart" id="verder-kaart" hidden>
+    <p id="verder-tekst"></p>
+    <button id="verder-knop" class="btn primary breed" type="button">▶ Verder met de wedstrijd</button>
+    <p class="muted klein">Andere wedstrijd of andere rol? Log hieronder in.</p>
+  </section>
+
   <section class="card">
     <h2>Inloggen</h2>
     <div class="rolknoppen">
@@ -73,7 +79,7 @@
       <p class="muted klein">Nieuw? Vul de wedstrijdcode van de organisator in.
       Al aangemeld? Vul je persoonlijke code in en je gaat verder onder je eigen naam.</p>
       <div class="row">
-        <input id="deelnemer-code" type="text" placeholder="wedstrijd- of persoonlijke code" maxlength="6" autocapitalize="characters" autocomplete="off" required>
+        <input id="deelnemer-code" type="text" placeholder="wedstrijd- of persoonlijke code" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
         <button type="submit" class="btn primary">Meedoen</button>
       </div>
     </form>
@@ -390,8 +396,10 @@
         <p class="muted klein">🔑 <b>Al aangemeld</b> (of per ongeluk uitgelogd)? Log hier weer in
         met je persoonlijke inlogcode; meld je niet opnieuw aan.</p>
         <form id="form-herstel" class="herstel-rij">
-          <input id="herstel-code" type="text" maxlength="8" autocapitalize="characters"
-            autocomplete="off" spellcheck="false" placeholder="bijv. AB2CD3">
+          <input class="vh ww-username" type="text" name="username" autocomplete="username" value="wedstrijd" tabindex="-1" aria-hidden="true">
+          <input id="herstel-code" type="password" maxlength="8" autocapitalize="characters"
+            autocomplete="current-password" spellcheck="false" placeholder="bijv. AB2CD3">
+          <button type="button" class="btn klein-btn oog" data-toon-code="#herstel-code" aria-label="toon code">👁</button>
           <button type="submit" class="btn">Inloggen</button>
         </form>
         <p id="herstel-fout" class="fout" hidden></p>
@@ -404,7 +412,15 @@
       <p class="muted klein">🔑 Jouw persoonlijke inlogcode (bewaar hem goed; hiermee log je op
       elk toestel weer in onder je eigen naam, ook in de beginscherm-app):</p>
       <p><b id="team-code" class="codegroot"></b>
-      <button id="btn-herstel" class="btn klein-btn">kopieer</button></p>
+      <button id="btn-herstel" class="btn klein-btn">kopieer</button>
+      <button id="btn-code-deel" class="btn klein-btn">📤 stuur naar jezelf</button></p>
+      <form id="form-bewaar-code" class="bewaar-code">
+        <input class="vh ww-username" type="text" name="username" autocomplete="username" value="wedstrijd" tabindex="-1" aria-hidden="true">
+        <input id="bewaar-code-ww" class="vh" type="password" name="password" autocomplete="new-password" readonly tabindex="-1" aria-hidden="true">
+        <button type="submit" class="btn klein-btn">🔐 bewaar in de wachtwoorden van je telefoon</button>
+      </form>
+      <p id="bewaar-code-uitleg" class="muted klein" hidden>Vroeg je telefoon niets? Dan staat de code
+      al bewaard, of bewaart je browser geen wachtwoorden. Kopieer hem dan, of stuur hem naar jezelf.</p>
       <div id="duo-code-blok" class="duo-code" hidden>
         <p class="muted klein">🎣 Jullie vissen samen aan één stek. Geef deze inlogcode aan
           <b id="duo-maat-naam"></b>; daarmee doet die op de eigen telefoon mee (eigen score):</p>
