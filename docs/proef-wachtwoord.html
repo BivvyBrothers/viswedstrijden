@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Proef: wachtwoord bewaren op iOS</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 16px; background: #e6e4d0; color: #29271e; }
+  h1 { font-size: 20px; }
+  .kaart { background: #fff; border-radius: 14px; padding: 14px 16px; margin: 14px 0; }
+  .kaart h2 { font-size: 16px; margin: 0 0 6px; }
+  .kaart p { margin: 4px 0 10px; font-size: 14px; color: #6b6853; }
+  label { display: block; font-size: 13px; margin: 8px 0 3px; }
+  input { width: 100%; box-sizing: border-box; font-size: 17px; padding: 10px; border: 1px solid #cfccb0; border-radius: 8px; }
+  button { margin-top: 10px; font-size: 16px; padding: 10px 16px; border: 0; border-radius: 10px; background: #4d5839; color: #fff; }
+  .ok { background: #d9dcc2; border-radius: 10px; padding: 10px; font-weight: 700; }
+  .vh { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+</style>
+</head>
+<body>
+<h1>Proef: vraagt iOS "wachtwoord bewaren"?</h1>
+<p>Vier varianten. Tik per variant een willekeurige code van 6 tekens in het codeveld en tik Inloggen. Noteer bij welke variant iOS bovenaan vraagt om het wachtwoord te bewaren. Er gaat niets naar een server.</p>
+
+<div class="kaart" id="kaart-a">
+  <h2>A: zichtbare gebruikersnaam, formulier weg, URL verandert</h2>
+  <p>Zichtbaar username-veld, wachtwoordveld, na Inloggen: formulier uit de pagina en history.pushState.</p>
+  <form id="form-a" autocomplete="on">
+    <label>Wedstrijd (gebruikersnaam)</label>
+    <input type="text" name="username" autocomplete="username" value="proef-a">
+    <label>Persoonlijke code</label>
+    <input type="password" name="password" autocomplete="current-password" placeholder="6 tekens">
+    <button type="submit">Inloggen</button>
+  </form>
+</div>
+
+<div class="kaart" id="kaart-b">
+  <h2>B: verborgen gebruikersnaam (zoals in de app), formulier weg, URL verandert</h2>
+  <p>Username-veld offscreen, verder als A.</p>
+  <form id="form-b" autocomplete="on">
+    <input class="vh" type="text" name="username" autocomplete="username" value="proef-b" tabindex="-1" aria-hidden="true">
+    <label>Persoonlijke code</label>
+    <input type="password" name="password" autocomplete="current-password" placeholder="6 tekens">
+    <button type="submit">Inloggen</button>
+  </form>
+</div>
+
+<div class="kaart" id="kaart-c">
+  <h2>C: zichtbare gebruikersnaam, formulier alleen verborgen, URL blijft gelijk</h2>
+  <p>Als A, maar het formulier wordt alleen verborgen (display:none) en de URL verandert niet.</p>
+  <form id="form-c" autocomplete="on">
+    <label>Wedstrijd (gebruikersnaam)</label>
+    <input type="text" name="username" autocomplete="username" value="proef-c">
+    <label>Persoonlijke code</label>
+    <input type="password" name="password" autocomplete="current-password" placeholder="6 tekens">
+    <button type="submit">Inloggen</button>
+  </form>
+</div>
+
+<div class="kaart" id="kaart-d">
+  <h2>D: zichtbare gebruikersnaam, echte hash-navigatie</h2>
+  <p>Als A, maar met location.hash (echte hashchange) in plaats van pushState.</p>
+  <form id="form-d" autocomplete="on">
+    <label>Wedstrijd (gebruikersnaam)</label>
+    <input type="text" name="username" autocomplete="username" value="proef-d">
+    <label>Persoonlijke code</label>
+    <input type="password" name="password" autocomplete="current-password" placeholder="6 tekens">
+    <button type="submit">Inloggen</button>
+  </form>
+</div>
+
+<script>
+  function klaar(kaart, tekst) {
+    const p = document.createElement('p'); p.className = 'ok'; p.textContent = tekst; kaart.appendChild(p);
+  }
+  document.getElementById('form-a').addEventListener('submit', (e) => {
+    e.preventDefault(); const f = e.currentTarget; const k = document.getElementById('kaart-a');
+    setTimeout(() => { f.remove(); history.pushState(null, '', '#a-ingelogd'); klaar(k, 'A: ingelogd (formulier weg, URL #a-ingelogd)'); }, 150);
+  });
+  document.getElementById('form-b').addEventListener('submit', (e) => {
+    e.preventDefault(); const f = e.currentTarget; const k = document.getElementById('kaart-b');
+    setTimeout(() => { f.remove(); history.pushState(null, '', '#b-ingelogd'); klaar(k, 'B: ingelogd (formulier weg, URL #b-ingelogd)'); }, 150);
+  });
+  document.getElementById('form-c').addEventListener('submit', (e) => {
+    e.preventDefault(); const f = e.currentTarget; const k = document.getElementById('kaart-c');
+    setTimeout(() => { f.style.display = 'none'; klaar(k, 'C: ingelogd (formulier verborgen, URL gelijk)'); }, 150);
+  });
+  document.getElementById('form-d').addEventListener('submit', (e) => {
+    e.preventDefault(); const f = e.currentTarget; const k = document.getElementById('kaart-d');
+    setTimeout(() => { f.remove(); location.hash = '#d-ingelogd'; klaar(k, 'D: ingelogd (formulier weg, hash-navigatie)'); }, 150);
+  });
+</script>
+</body>
+</html>
