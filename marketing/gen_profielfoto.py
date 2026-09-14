@@ -27,12 +27,12 @@ schaal = 660 / vw; fw, fh = vw * schaal, vh * schaal
 fx, fy = cx - fw / 2, 640 - fh / 2         # vis iets onder het midden
 # boog van links (200 graden) via boven naar rechts (340 graden), met de klok mee
 def pt(deg): return (cx + R * math.cos(math.radians(deg)), cy + R * math.sin(math.radians(deg)))
-x1, y1 = pt(190); x2, y2 = pt(350)
+x1, y1 = pt(185); x2, y2 = pt(355)
 svg = f"""<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='{W}' height='{W}' viewBox='0 0 {W} {W}'>
   <rect width='{W}' height='{W}' fill='rgb{GROEN}'/>
   <defs><path id='boog' d='M {x1:.1f} {y1:.1f} A {R} {R} 0 0 1 {x2:.1f} {y2:.1f}'/></defs>
-  <text font-family="'Avenir Next','Segoe UI',Arial,sans-serif" font-weight='800' font-size='96' fill='#ffffff' letter-spacing='6'>
-    <textPath xlink:href='#boog' startOffset='50%' text-anchor='middle'>viswedstrijd<tspan fill='rgb{ORANJE}'>app</tspan></textPath>
+  <text font-family="'Avenir Next','Segoe UI',Arial,sans-serif" font-weight='800' font-size='88' fill='rgb{ORANJE}' letter-spacing='6'>
+    <textPath xlink:href='#boog' startOffset='50%' text-anchor='middle'>viswedstrijd<tspan fill='#ffffff'>app</tspan>.nl</textPath>
   </text>
   <image xlink:href='data:image/png;base64,{vis64}' x='{fx:.1f}' y='{fy:.1f}' width='{fw:.1f}' height='{fh:.1f}'/>
 </svg>"""
