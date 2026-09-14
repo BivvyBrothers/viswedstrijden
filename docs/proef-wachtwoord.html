@@ -69,6 +69,18 @@
   </form>
 </div>
 
+<div class="kaart" id="kaart-e">
+  <h2>E: zichtbare gebruikersnaam, daarna echte herlaad van de pagina</h2>
+  <p>Als A, maar na Inloggen laadt de pagina opnieuw met ?klaar=e in het adres (een nieuw document, zoals een klassieke website). De code komt niet in het adres.</p>
+  <form id="form-e" autocomplete="on">
+    <label for="e-user">Deelnemersnaam (gebruikersnaam)</label>
+    <input id="e-user" type="text" name="username" autocomplete="username" value="proef-e">
+    <label for="e-pw">Persoonlijke code</label>
+    <input id="e-pw" type="password" name="password" autocomplete="current-password" placeholder="6 tekens">
+    <button type="submit">Inloggen</button>
+  </form>
+</div>
+
 <script>
   function klaar(kaart, tekst) {
     const p = document.createElement('p'); p.className = 'ok'; p.textContent = tekst; kaart.appendChild(p);
@@ -85,6 +97,16 @@
     e.preventDefault(); const f = e.currentTarget; const k = document.getElementById('kaart-c');
     setTimeout(() => { f.style.display = 'none'; klaar(k, 'C: ingelogd (formulier verborgen, URL gelijk)'); }, 150);
   });
+  document.getElementById('form-e').addEventListener('submit', (e) => {
+    e.preventDefault();
+    // waarden NIET wissen, formulier NIET verbergen: alleen navigeren naar een nieuw document
+    location.assign(location.pathname + '?klaar=e');
+  });
+  if (new URLSearchParams(location.search).get('klaar') === 'e') {
+    const k = document.getElementById('kaart-e'); document.getElementById('form-e').remove();
+    klaar(k, 'E: ingelogd (pagina opnieuw geladen). Vroeg iOS om te bewaren?');
+    k.scrollIntoView();
+  }
   document.getElementById('form-d').addEventListener('submit', (e) => {
     e.preventDefault(); const f = e.currentTarget; const k = document.getElementById('kaart-d');
     setTimeout(() => { f.remove(); location.hash = '#d-ingelogd'; klaar(k, 'D: ingelogd (formulier weg, hash-navigatie)'); }, 150);
