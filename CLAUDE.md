@@ -457,11 +457,12 @@ code vraagt: de terugknop `#btn-terug` (voor iedereen behalve de organisator
   `type=password` + `autocomplete="current-password"` met een verborgen
   username-veld `.ww-username` dat `route()` per wedstrijd vult
   (`<tenant>-<wedstrijdcode>`), zodat elke wedstrijd een eigen regel krijgt;
-  het oogje (`[data-toon-code]`) toont de code. Op de teamkaart staat
-  `#form-bewaar-code`: een formulier met datzelfde username-veld en een
-  verborgen, vooringevuld `new-password`-veld; indienen (preventDefault, er
-  gaat niets naar de server) is het enige wat iOS en Android als "wachtwoord
-  bewaren?" herkennen. Na het aanmelden zet de join-handler
+  het oogje (`[data-toon-code]`) toont de code. **v84 (14 sep): de knop
+  "bewaar in de wachtwoorden" op de teamkaart is weer verwijderd.** Toesteltest
+  Patrick: iOS toonde geen bewaarvraag bij een formulier dat alleen
+  preventDefault doet (Codex had dat voorspeld). De wachtwoordmanager leert de
+  code nu alleen via het herstelveld, de eerste keer dat iemand hem daar echt
+  intikt; de teamkaart verwijst naar "stuur naar jezelf". Na het aanmelden zet de join-handler
   `TOON_CODE_NA_RENDER`; `renderTeamTab` consumeert die zodra de teamkaart
   zichtbaar wordt (`toonCodeNaAanmelden()`: scroll + `.flits`), ook als er op
   dat moment een poll onderweg was. Knop "stuur naar jezelf" (`#btn-code-deel`)

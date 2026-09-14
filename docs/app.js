@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 83; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 84; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -511,7 +511,6 @@ function route(initieel) {
     KIJKER = !!mK;
     CODE = (mW || mK)[1].toUpperCase();
     sessionStorage.removeItem(HOME_BEWUST());   // in een wedstrijd: herstel bij een herstart weer aan
-    BEWAAR_VERBORGEN_TOT = 0; { const u = $('#bewaar-code-uitleg'); if (u) u.hidden = true; }
     // wachtwoordmanager: per wedstrijd een eigen regel (username = tenant + wedstrijdcode)
     document.querySelectorAll('.ww-username').forEach((u) => { u.value = `${KLANT() || 'wedstrijd'}-${CODE}`; });
     $('#topcode').textContent = CODE;
@@ -2896,18 +2895,10 @@ function initWedstrijd() {
     $('#btn-herstel').textContent = ok ? '✅ gekopieerd' : 'kopiëren mislukt';
     setTimeout(() => { $('#btn-herstel').textContent = 'kopieer'; }, 2500);
   });
-  // code in de wachtwoordmanager van de telefoon zetten: een formulier met een
-  // vooringevuld wachtwoordveld indienen is het enige wat iOS en Android als
-  // "wachtwoord bewaren?" herkennen; er gaat niets naar de server
-  $('#form-bewaar-code')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const f = e.currentTarget;
-    BEWAAR_VERBORGEN_TOT = Date.now() + 60000;   // renderTeamTab respecteert dit bij elke poll
-    f.hidden = true;
-    const uitleg = $('#bewaar-code-uitleg');
-    if (uitleg) uitleg.hidden = false;
-    toast('Kies "Bewaren" als je telefoon dat vraagt.');
-  });
+  // (v84) de knop "bewaar in de wachtwoorden" is weer weg: een formulier dat
+  // alleen preventDefault doet herkent iOS niet als inlog en er verscheen geen
+  // bewaarvraag (toesteltest Patrick 14 sep). De wachtwoordmanager leert de code
+  // nu via het herstelveld, de eerste keer dat iemand hem daar echt intikt.
   // code naar jezelf sturen (WhatsApp, notities): 4 van de 8 Carpclassic-deelnemers waren hem kwijt
   $('#btn-code-deel')?.addEventListener('click', async () => {
     const code = $('#team-code').textContent;
@@ -3104,12 +3095,7 @@ function renderTeamTab() {
       }).catch(() => {});
     }
   }
-  // de code ook in het verborgen wachtwoordveld van "bewaar in de wachtwoorden"
-  const zetTeamCode = (code) => {
-    $('#team-code').textContent = code;
-    const bw = $('#bewaar-code-ww'); if (bw) bw.value = code === '…' ? '' : code;
-    const f = $('#form-bewaar-code'); if (f) f.hidden = code === '…' || Date.now() < BEWAAR_VERBORGEN_TOT;
-  };
+  const zetTeamCode = (code) => { $('#team-code').textContent = code; };
   if (t.code) {
     zetTeamCode(t.code);
   } else {
@@ -3175,7 +3161,6 @@ function renderTeamTab() {
 
 // direct na het aanmelden: de code in beeld brengen en even laten oplichten
 let TOON_CODE_NA_RENDER = false;
-let BEWAAR_VERBORGEN_TOT = 0;   // tot wanneer het bewaar-formulier verborgen blijft na een tik
 function toonCodeNaAanmelden() {
   const kaart = $('#team-card');
   if (!kaart || kaart.hidden) return;
