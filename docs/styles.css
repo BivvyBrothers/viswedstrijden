@@ -71,6 +71,10 @@ h2 { font-size: 17px; margin: 0 0 10px; color: var(--blauw-donker); }
 .merk-links a { color: var(--blauw); text-decoration: none; }
 .merk-links a:hover { text-decoration: underline; }
 .merk-links span { color: var(--zand-donker); margin: 0 8px; }
+.merk-social { display: flex; justify-content: center; gap: 18px; margin: 12px 0 0; }
+.merk-social a { display: inline-flex; align-items: center; gap: 6px; color: var(--blauw); font-weight: 600; font-size: 13px; text-decoration: none; }
+.merk-social a:hover { text-decoration: underline; }
+.merk-social svg { width: 20px; height: 20px; }
 
 input, select, button { font: inherit; }
 input, select {
