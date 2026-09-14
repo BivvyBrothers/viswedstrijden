@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 85; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 86; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -447,6 +447,14 @@ window.addEventListener('DOMContentLoaded', () => {
     location.hash = '';
   });
   document.querySelector('.brand')?.addEventListener('click', () => sessionStorage.setItem(HOME_BEWUST(), '1'));
+  // herstelveld is type=password (wachtwoordmanager); het oogje toont de code
+  document.querySelectorAll('[data-toon-code]').forEach((b) => b.addEventListener('click', () => {
+    const veld = $(b.dataset.toonCode);
+    if (!veld) return;
+    veld.type = veld.type === 'password' ? 'text' : 'password';
+    b.textContent = veld.type === 'password' ? '\ud83d\udc41' : '\ud83d\ude48';
+    b.setAttribute('aria-label', veld.type === 'password' ? 'toon code' : 'verberg code');
+  }));
   initHome(); initWedstrijd(); route(true);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   checkVersie();
@@ -503,6 +511,8 @@ function route(initieel) {
     KIJKER = !!mK;
     CODE = (mW || mK)[1].toUpperCase();
     sessionStorage.removeItem(HOME_BEWUST());   // in een wedstrijd: herstel bij een herstart weer aan
+    // wachtwoordmanager: per wedstrijd een eigen regel (username = tenant + wedstrijdcode)
+    document.querySelectorAll('.ww-username').forEach((u) => { u.value = `${KLANT() || 'wedstrijd'}-${CODE}`; });
     $('#topcode').textContent = CODE;
     toonView('wedstrijd');
     ROL = KIJKER ? 'kijker' : 'deelnemer';
@@ -2757,12 +2767,16 @@ function initWedstrijd() {
       sessie.zetTeam(login.wedstrijd_code, {
         id: login.team_id, token: login.token, naam: login.naam, code: login.deelnemer_code,
       });
-      $('#herstel-code').value = '';
+      // wachtwoordmanager (v86): de code NIET wissen, het formulier uit de DOM
+      // halen en de URL laten veranderen; herstelFormTerug() zet het formulier
+      // later weer terug (uitloggen, andere wedstrijd)
+      herstelFormWeg();
       if (login.wedstrijd_code === CODE) {
+        history.pushState(null, '', location.pathname + '#/w/' + CODE + '?ingelogd');
         toast(`Welkom terug, ${login.naam}!`);
         await laadState(true);
       } else {
-        // de code hoort bij een andere wedstrijd: daar naartoe
+        // de code hoort bij een andere wedstrijd: daar naartoe (echte hashchange)
         location.hash = '#/w/' + login.wedstrijd_code;
       }
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
@@ -2885,11 +2899,11 @@ function initWedstrijd() {
     $('#btn-herstel').textContent = ok ? '✅ gekopieerd' : 'kopiëren mislukt';
     setTimeout(() => { $('#btn-herstel').textContent = 'kopieer'; }, 2500);
   });
-  // (v84/v85) de wachtwoordmanager-route is geschrapt: noch een bewaar-formulier
-  // noch een echte inlog via het herstelveld (type=password) leverde op iOS een
-  // bewaarvraag op (toesteltests Patrick 14 sep, iPhone en iPad). Zonder echte
-  // navigatie na het inloggen herkent Safari het niet. De code bewaren gaat via
-  // "stuur naar jezelf" en kopiëren; sessie-herstel maakt hem zelden nog nodig.
+  // (v86) wachtwoordmanager: het recept dat op iOS WEL een bewaarvraag geeft is
+  // met de proefpagina (docs/proef-wachtwoord.html) op Patricks iPhone bewezen:
+  // de ingevulde code NIET wissen, het formulier echt uit de DOM halen en de URL
+  // laten veranderen (pushState of hashchange). Alleen verbergen zonder
+  // URL-wijziging (v83) gaf niets. Een verborgen username-veld is prima.
   // code naar jezelf sturen (WhatsApp, notities): 4 van de 8 Carpclassic-deelnemers waren hem kwijt
   $('#btn-code-deel')?.addEventListener('click', async () => {
     const code = $('#team-code').textContent;
@@ -3036,7 +3050,7 @@ function renderTeamTab() {
 
   if (!t || !mijn) {
     teamCard.hidden = true; regCard.hidden = true; mvCard.hidden = true;
-    joinCard.hidden = false;
+    joinCard.hidden = false; herstelFormTerug();
     // na de loting mag een laatkomer zich nog aanmelden zolang de wedstrijd
     // niet voorbij is: hij krijgt het laatste lot (server v80, w_join)
     const laat = w.status !== 'aanmelden';
@@ -3148,6 +3162,24 @@ function renderTeamTab() {
     </div>`).join('') +
     '<p class="muted klein">Fout gemaakt? Alleen de organisator kan een vangst aanpassen of verwijderen.</p>';
   koppelVangstDelen();
+}
+
+// het herstelformulier wordt na een geslaagde inlog uit de DOM gehaald (zie de
+// v86-notitie bij de submit-handler) en hier weer teruggezet zodra de
+// aanmeldkaart opnieuw in beeld komt
+let HERSTEL_FORM = null;
+function herstelFormWeg() {
+  const f = $('#form-herstel');
+  if (f) { HERSTEL_FORM = f; f.remove(); }
+}
+function herstelFormTerug() {
+  if (!HERSTEL_FORM || document.contains(HERSTEL_FORM)) return;
+  const fout = $('#herstel-fout');
+  if (!fout) return;
+  HERSTEL_FORM.querySelector('#herstel-code').value = '';
+  const u = HERSTEL_FORM.querySelector('.ww-username');
+  if (u) u.value = `${KLANT() || 'wedstrijd'}-${CODE}`;   // het formulier was los toen route() de username zette
+  fout.parentNode.insertBefore(HERSTEL_FORM, fout);
 }
 
 // direct na het aanmelden: de code in beeld brengen en even laten oplichten

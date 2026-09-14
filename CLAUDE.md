@@ -451,18 +451,26 @@ code vraagt: de terugknop `#btn-terug` (voor iedereen behalve de organisator
   knop Verder) tot `VERDER_MARGE_MS` (7 dagen) na de eindtijd. Bewust
   uitloggen (`#btn-team-uitloggen`) en "wedstrijd niet gevonden" wissen
   `laatste`, anders blijft de app terugspringen.
-- **Wachtwoordmanager: GESCHRAPT (v84 en v85, 14 sep).** Geprobeerd: (a) een
-  bewaar-formulier op de teamkaart met een vooringevuld `new-password`-veld en
-  preventDefault, (b) het herstelveld als `type=password` +
-  `current-password` met een username per wedstrijd. Toesteltests van Patrick
-  op iPhone én iPad: in geen van beide gevallen vroeg iOS "wachtwoord
-  bewaren?", ook niet bij een echte inlog met de code. Zonder echte navigatie
-  na het inloggen herkent Safari het formulier niet als login. Alle velden
-  zijn weer `type=text`, `autocomplete="off"`; de enige belofte in de app is
-  "kopieer" en "stuur naar jezelf". NIET opnieuw proberen zonder een
-  concreet ander mechanisme (bijv. echte accounts of de Credential Management
-  API, die Safari niet ondersteunt). Sessie-herstel maakt de code zelden nog
-  nodig. Na het aanmelden zet de join-handler
+- **Wachtwoordmanager (v82 tot v86, 14 sep): het recept is met een
+  proefpagina op Patricks iPhone BEWEZEN.** `docs/proef-wachtwoord.html`
+  (tijdelijk, noindex) had vijf varianten; uitslag: A ja (zichtbare username,
+  formulier uit de DOM, pushState), B ja (username offscreen), **C nee (alleen
+  display:none, URL gelijk)**, D ja (hashchange), E ja (echte herlaad). Dus:
+  de ingevulde code NIET wissen, het formulier echt uit de DOM halen en de URL
+  laten veranderen. v83 wiste het veld en verborg alleen de kaart, vandaar
+  geen bewaarvraag; v84/v85 hadden het daarom (te vroeg) geschrapt.
+  Sinds v86: `#herstel-code` is `type=password` + `current-password` met
+  `name="password"`, een offscreen username `.ww-username`
+  (`<tenant>-<wedstrijdcode>`, gezet in `route()` en in `herstelFormTerug()`)
+  en het oogje `[data-toon-code]`. De submit-handler wist niets, roept
+  `herstelFormWeg()` (formulier uit de DOM, bewaard in `HERSTEL_FORM`) en doet
+  bij dezelfde wedstrijd `history.pushState` naar `#/w/CODE?ingelogd` (de
+  router matcht op prefix, geen hashchange nodig), bij een andere wedstrijd de
+  gewone hash-navigatie. `herstelFormTerug()` zet het formulier terug zodra de
+  aanmeldkaart weer in beeld komt. Het home-veld `#deelnemer-code` blijft
+  `type=text` (openbare wedstrijdcode). Variant F (vooringevulde code direct
+  na het aanmelden) staat nog op de proefpagina; werkt die, dan kan een
+  bewaar-knop op de teamkaart alsnog. Na het aanmelden zet de join-handler
   `TOON_CODE_NA_RENDER`; `renderTeamTab` consumeert die zodra de teamkaart
   zichtbaar wordt (`toonCodeNaAanmelden()`: scroll + `.flits`), ook als er op
   dat moment een poll onderweg was. Knop "stuur naar jezelf" (`#btn-code-deel`)

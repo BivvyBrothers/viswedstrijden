@@ -81,6 +81,17 @@
   </form>
 </div>
 
+<div class="kaart" id="kaart-f">
+  <h2>F: code staat al ingevuld (niet getypt), formulier weg, URL verandert</h2>
+  <p>Als B, maar de code is door de pagina ingevuld. Tik alleen op Bewaren. Werkt dit, dan kan de app de code direct na het aanmelden laten bewaren.</p>
+  <form id="form-f" autocomplete="on">
+    <input class="vh" type="text" name="username" autocomplete="username" value="proef-f" tabindex="-1" aria-hidden="true">
+    <label for="f-pw">Persoonlijke code (al ingevuld)</label>
+    <input id="f-pw" type="password" name="password" autocomplete="current-password" value="AB2CD3">
+    <button type="submit">Bewaren</button>
+  </form>
+</div>
+
 <script>
   function klaar(kaart, tekst) {
     const p = document.createElement('p'); p.className = 'ok'; p.textContent = tekst; kaart.appendChild(p);
@@ -107,6 +118,10 @@
     klaar(k, 'E: ingelogd (pagina opnieuw geladen). Vroeg iOS om te bewaren?');
     k.scrollIntoView();
   }
+  document.getElementById('form-f').addEventListener('submit', (e) => {
+    e.preventDefault(); const f = e.currentTarget; const k = document.getElementById('kaart-f');
+    setTimeout(() => { f.remove(); history.pushState(null, '', '#f-bewaard'); klaar(k, 'F: klaar (formulier weg, URL #f-bewaard)'); }, 150);
+  });
   document.getElementById('form-d').addEventListener('submit', (e) => {
     e.preventDefault(); const f = e.currentTarget; const k = document.getElementById('kaart-d');
     setTimeout(() => { f.remove(); location.hash = '#d-ingelogd'; klaar(k, 'D: ingelogd (formulier weg, hash-navigatie)'); }, 150);
