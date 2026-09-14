@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 88; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 90; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -14,6 +14,8 @@ const FOUTEN = {
   aanmelden_gesloten: 'Het aanmelden is gesloten voor deze wedstrijd.',
   ongeldige_naam: 'Vul een geldige naam in (max. 40 tekens).',
   tweede_naam_verplicht: 'Dit is een koppelwedstrijd: vul ook de naam van je koppelmaat in.',
+  ongeldige_tijd: 'De vangsttijd moet tussen de start en het einde van de wedstrijd liggen, en niet in de toekomst.',
+  prijsuitreiking_voor_start: 'De prijsuitreiking kan niet vóór de start van de wedstrijd zijn.',
   naam_bestaat_al: 'Deze naam is al aangemeld. Ben jij dat en wil je verder onder deze naam? Gebruik dan je herstel-link, of vraag de organisator die voor je op te zoeken in Beheer.',
   wedstrijd_vol: 'De wedstrijd zit vol: het maximale aantal deelnemers is bereikt.',
   ongeldig_maximum: 'Het maximum moet tussen 2 en 200 liggen.',
@@ -307,8 +309,20 @@ let VANGSTEN_SIG = null, MIJN_VANGSTEN_SIG = null;
 function vangstenHandtekening(vangsten, teamsBijId) {
   return JSON.stringify(vangsten.map((v) => {
     const t = teamsBijId?.get(v.team_id);
-    return [v.id, v.gewicht_gram, v.foto_path || null, v.created_at, t ? [t.naam, t.naam2 || null, t.team_naam || null] : null];
+    return [v.id, v.gewicht_gram, v.foto_path || null, v.created_at, v.gevangen_op || null, v.gewijzigd_op || null, t ? [t.naam, t.naam2 || null, t.team_naam || null] : null];
   }));
+}
+// tijdstip van de vangst: wat de organisator of de telefoon zegt, anders de servertijd
+const vangstTijd = (v) => v.gevangen_op || v.created_at;
+// ★ bij een vangst waar de organisator aan zat (v90): zichtbaar voor iedereen
+const WAT_UITLEG = { gewicht: 'gewicht', team: 'visser', tijd: 'tijd', handmatig: 'handmatig ingevoerd', verwijderd: 'verwijderd' };
+function sterHtml(v) {
+  if (!v.gewijzigd_op) return '';
+  const wat = String(v.gewijzigd_wat || '').split(',').filter(Boolean).map((w) => WAT_UITLEG[w] || w);
+  const titel = wat.length === 1 && wat[0] === 'handmatig ingevoerd'
+    ? 'handmatig ingevoerd door de organisator'
+    : `aangepast door de organisator (${wat.join(', ') || 'correctie'}) op ${fmtDatumTijd(v.gewijzigd_op)}`;
+  return `<span class="ster" title="${esc(titel)}" aria-label="${esc(titel)}">★</span>`;
 }
 // een foto die bij slecht bereik mislukte blijft anders voor altijd kapot staan
 const kapotteFotos = (el) => [...el.querySelectorAll('img')].some((i) => i.complete && i.naturalWidth === 0);
@@ -517,12 +531,20 @@ function route(initieel) {
     toonView('wedstrijd');
     ROL = KIJKER ? 'kijker' : 'deelnemer';
     renderTabs();
+    if (KIJKER) activateTab('klassement');   // kijkers landen op het klassement, niet op de kaart
     SELECTIE = []; SELECTIE_ZONE = null;
     ADMIN_OPEN = false;
     STATE = null;
     BEKENDE_VANGSTEN = null;
     VANGSTEN_SIG = null; MIJN_VANGSTEN_SIG = null;
     sluitAfsluiting(false);   // een open afsluitscherm hoort bij de vorige wedstrijd
+    // oude inhoud van de vorige wedstrijd meteen weg (Codex v89): tot de nieuwe
+    // state er is mag een kijker de deelnemerstab met codes van de vorige
+    // sessie niet meer bereiken
+    document.querySelectorAll('#tab-team .card').forEach((c) => { c.hidden = true; });
+    $('#form-join')?.reset();   // ook het foto-toestemmingsvinkje: geldt per wedstrijd
+    ['#team-code', '#duo-maat-code', '#vangsten-feed', '#mijn-vangsten', '#klassement-inhoud', '#loting-lijst']
+      .forEach((sel) => { const el = $(sel); if (el) el.innerHTML = ''; });
     INIT_KLAAR = false;
     ADMIN_KIES = null;
     POLL_TELLER = 0;
@@ -572,13 +594,18 @@ function toonView(naam) {
   $('#btn-terug').hidden = naam === 'home';
 }
 function activateTab(naam) {
+  // alleen tabs die bij de huidige rol horen (Codex v89: een oude knop mocht
+  // een kijker naar de deelnemerstab sturen)
+  if (!(TABS_PER_ROL[ROL] || TABS_PER_ROL.deelnemer).includes(naam)) return;
   const b = document.querySelector(`#tabs button[data-tab=${naam}]`);
   if (b) b.click();
 }
 
 // welke tabs elke rol ziet
 const TABS_PER_ROL = {
-  kijker: ['klassement', 'seizoen'],
+  // kijkers (v89, uit de Carpclassic-evaluatie): ook de kaart (wie zit waar) en
+  // de vangsten met foto's; alleen lezen, geen team-tab
+  kijker: ['klassement', 'kaart', 'vangsten', 'seizoen'],
   deelnemer: ['kaart', 'klassement', 'vangsten', 'team', 'seizoen'],
   organisator: ['kaart', 'klassement', 'vangsten', 'seizoen', 'beheer'],
 };
@@ -592,14 +619,14 @@ function renderTabs() {
   // de seizoen-tab bestaat alleen als deze wedstrijd bij een seizoen hoort
   const zichtbaar = (TABS_PER_ROL[ROL] || TABS_PER_ROL.deelnemer)
     .filter((naam) => naam !== 'seizoen' || !!SEIZOEN);
-  $('#tabs').hidden = ROL === 'kijker' && !SEIZOEN;
+  $('#tabs').hidden = false;
+  document.body.classList.toggle('rol-kijker', ROL === 'kijker');
   document.querySelectorAll('#tabs button').forEach((b) => {
     b.hidden = !zichtbaar.includes(b.dataset.tab);
   });
-  if (ROL === 'kijker' && !SEIZOEN) {
-    document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-klassement'; });
-    return;
-  }
+  // knoppen in de tabbalk in de volgorde van de rol zetten (kijker: klassement eerst)
+  const balk = $('#tabs');
+  zichtbaar.forEach((naam) => { const b = balk.querySelector(`button[data-tab=${naam}]`); if (b) balk.appendChild(b); });
   const actief = document.querySelector('#tabs button.actief');
   if (!actief || actief.hidden || !zichtbaar.includes(actief.dataset.tab)) {
     document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('actief', x.dataset.tab === zichtbaar[0]));
@@ -879,10 +906,12 @@ function renderAlles(eerste) {
   tikKlok();
   renderKlassement();
   renderPushKnop();
-  if (ROL === 'kijker') return; // kijkers zien alleen klok + klassement + meldingen
-  renderKaart();
+  const kijkerCard = $('#kijker-card');
+  if (kijkerCard) kijkerCard.hidden = ROL !== 'kijker';
+  renderKaart();      // kijkers: alleen lezen (magSelecteren is false zonder team of pin)
   renderLoting();
   renderVangsten();
+  if (ROL === 'kijker') return; // kijkers: geen team-tab, beheer of zwevende knop
   if (ROL === 'deelnemer') { renderTeamTab(); renderWachtrij(); }
   if (ROL === 'organisator') renderBeheer(eerste);
   renderSnelVangst();
@@ -897,9 +926,8 @@ function renderSnelVangst() {
   // niet zweven waar het formulier al staat (team-tab) of waar de vaste
   // doorgeef-knop staat (vangsten-tab)
   const opTeamTab = !$('#tab-team')?.hidden;
-  const opVangstenTab = !$('#tab-vangsten')?.hidden;
   knop.hidden = !(ROL === 'deelnemer' && fase() === 'live'
-    && !!sessie.team(CODE) && !opTeamTab && !opVangstenTab);
+    && !!sessie.team(CODE) && !opTeamTab);
 }
 
 /* ---------- organisatie-omgeving ---------- */
@@ -1479,6 +1507,7 @@ function renderKop() {
     `${fmtDatumTijd(w.start_ts)} tot ${fmtDatumTijd(w.eind_ts)}` +
     (w.mode === 'koppel' ? ' · koppelwedstrijd' : ' · individueel') +
     (heeftZones() ? ' · zones' : '') +
+    (STATE.teams.length ? ` · ${STATE.teams.length} ${w.mode === 'koppel' ? 'koppels' : 'deelnemers'}` : '') +
     (w.prijsuitreiking_ts ? ` · prijsuitreiking ${fmtDatumTijd(w.prijsuitreiking_ts)}` : '');
   const chip = $('#w-status');
   const f = fase();
@@ -1700,6 +1729,8 @@ function renderKaart() {
 /* ---------- loting-lijst ---------- */
 function renderLoting() {
   const el = $('#loting-lijst');
+  const kop = document.querySelector('#loting-card h2');
+  if (kop) kop.textContent = ROL === 'kijker' ? 'Wie zit waar' : 'Loting & volgorde';
   const beurt = teamAanBeurt();
   if (!STATE.teams.length) {
     el.innerHTML = '<p class="muted">Nog geen deelnemers aangemeld.</p>';
@@ -1730,7 +1761,8 @@ function renderLoting() {
 /* ---------- klassement ---------- */
 // tiebreaks: gelijk totaal -> grootste vis wint; gelijk grootste -> vroegst gevangen wint
 const klGrootsteVan = (r) => r.grootste ? r.grootste.gewicht_gram : 0;
-const klTijdGrootste = (r) => r.grootste ? new Date(r.grootste.created_at).getTime() : Infinity;
+// tijd = de GETOONDE vangsttijd (gevangen_op als de organisator of de telefoon die gaf), v90
+const klTijdGrootste = (r) => r.grootste ? new Date(vangstTijd(r.grootste)).getTime() : Infinity;
 // EEN comparator voor de grootste vis, gebruikt door zowel de tab als de
 // deelafbeelding. Die twee liepen uiteen: de afbeelding hield bij exact gelijk
 // gewicht de eerste uit de op TOTAALgewicht gesorteerde lijst en kon dus een
@@ -1790,7 +1822,7 @@ function klassementRijen() {
     // waarop het klassement sorteert (Codex v10)
     if (!r.grootste || v.gewicht_gram > r.grootste.gewicht_gram
         || (v.gewicht_gram === r.grootste.gewicht_gram
-            && new Date(v.created_at) < new Date(r.grootste.created_at))) r.grootste = v;
+            && new Date(vangstTijd(v)) < new Date(vangstTijd(r.grootste)))) r.grootste = v;
   }
   return [...perTeam.values()].filter((r) => r.aantal > 0);
 }
@@ -1834,7 +1866,7 @@ function renderKlassement() {
     const uitleg = REGEL_UITLEG[dagRegel()];
     el.innerHTML = (uitleg ? `<p class="muted klein regel-uitleg">${esc(uitleg)}</p>` : '')
       + `<table class="klassement">
-      <tr><th>#</th><th>Team</th><th class="r">Vissen</th><th class="r">Totaal</th></tr>
+      <tr><th>#</th><th>${STATE.wedstrijd.mode === 'koppel' ? 'Team' : 'Deelnemer'}</th><th class="r">Vissen</th><th class="r">Totaal</th></tr>
       ${metRang(klRangSleutel).map(({ r, rang }) => `<tr>
         <td class="${rangKlas(rang)}">${rang}</td>
         <td>${avatarHtml(r.team, 'k')}${teamNaamHtml(r.team)} <span class="muted klein">${esc(plek(r.team))}</span>
@@ -1846,7 +1878,7 @@ function renderKlassement() {
   } else {
     rijen.sort(klGrootsteEerst);
     el.innerHTML = `<table class="klassement">
-      <tr><th>#</th><th>Team</th><th class="r">Grootste vis</th><th></th></tr>
+      <tr><th>#</th><th>${STATE.wedstrijd.mode === 'koppel' ? 'Team' : 'Deelnemer'}</th><th class="r">Grootste vis</th><th></th></tr>
       ${metRang((r) => `${grootsteVan(r)}|${tijdGrootste(r)}`).map(({ r, rang }) => `<tr>
         <td class="${rangKlas(rang)}">${rang}</td>
         <td>${avatarHtml(r.team, 'k')}${teamNaamHtml(r.team)}</td>
@@ -2072,7 +2104,7 @@ async function tekenVangst(v, t) {
   ctx.fillStyle = '#ffffff'; ctx.font = F(34, true);
   ctx.fillText(kort(t ? teamNaam(t) : 'vangst', B - 128), 64, FOTO_H + 154);
   ctx.fillStyle = '#d9dcc2'; ctx.font = F(26);
-  const wanneer = new Date(v.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+  const wanneer = new Date(vangstTijd(v)).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
   ctx.fillText(kort(`${STATE.wedstrijd.naam} \u00b7 ${wanneer}`, B - 128), 64, FOTO_H + 198);
   tekenVoet(ctx, B, H, VOET, 'volg de wedstrijd live');
   return c;
@@ -2345,23 +2377,9 @@ async function deelSeizoen() {
 
 /* ---------- vangstenfeed ---------- */
 function renderVangsten() {
-  // vaste doorgeef-knop (klantvraag NPHV): deelnemers zoeken registreren op
-  // deze tab; voor de start zichtbaar maar uitgeschakeld met de starttijd erbij
-  const knop = $('#vangst-doorgeef');
-  if (knop) {
-    const sub = $('#vangst-doorgeef-sub');
-    const f = fase();
-    const deelnemerMetTeam = ROL === 'deelnemer' && !!sessie.team(CODE);
-    const toon = deelnemerMetTeam && f !== 'voorbij';
-    knop.hidden = !toon;
-    if (sub) sub.hidden = !(toon && f === 'voor');
-    if (toon) {
-      knop.disabled = f !== 'live';
-      if (f === 'voor' && sub) {
-        sub.textContent = `Doorgeven kan vanaf de start van de wedstrijd (${fmtDatumTijd(STATE.wedstrijd.start_ts)}).`;
-      }
-    }
-  }
+  // (v90) de groene doorgeef-knop op deze tab is weg: er is nog één ingang,
+  // de zwevende oranje knop, die overal staat behalve op Mijn deelname (daar
+  // staat het formulier zelf). Vier ingangen waren verwarrend (Carpclassic).
   const el = $('#vangsten-feed');
   const teamsBijId = new Map(STATE.teams.map((t) => [t.id, t]));
   const sig = vangstenHandtekening(STATE.vangsten, teamsBijId);
@@ -2376,9 +2394,9 @@ function renderVangsten() {
     return `<div class="vangst-kaart">
       ${vangstFotoHtml(v, 'groot')}
       <div class="info">
-        <div class="gewicht">${fmtKg(v.gewicht_gram)}</div>
+        <div class="gewicht">${fmtKg(v.gewicht_gram)}${sterHtml(v)}</div>
         <div class="wie">${t ? `${avatarHtml(t, 'mini')}${teamNaamHtml(t)}` : 'onbekend'}</div>
-        <div class="tijd">${fmtDatumTijd(v.created_at)}</div>
+        <div class="tijd">${fmtDatumTijd(vangstTijd(v))}</div>
         <div style="margin-top:6px"><button class="btn klein-btn" data-deel-vangst="${esc(v.id)}">\ud83d\udce4 deel</button></div>
       </div>
     </div>`;
@@ -2669,6 +2687,23 @@ function initWedstrijd() {
   $('#kl-totaal').addEventListener('click', () => { KLASSEMENT_MODE = 'totaal'; renderKlassement(); });
   $('#kl-grootste').addEventListener('click', () => { KLASSEMENT_MODE = 'grootste'; renderKlassement(); });
   $('#btn-deel-uitslag')?.addEventListener('click', deelUitslag);
+  // kijklink delen (v89): kijker deelt door, deelnemer nodigt het thuisfront uit;
+  // ALTIJD de kijkcode, nooit de deelnemers- of persoonlijke code
+  const deelKijklink = async () => {
+    const w = STATE?.wedstrijd;
+    const kijk = w?.kijk_code;
+    if (!kijk) { toast('De kijkcode is nog niet bekend, probeer het zo nog eens.'); return; }
+    const link = `${location.origin}${location.pathname}#/k/${kijk}`;
+    const tekst = `Kijk live mee met ${w.naam}: klassement, vangsten en de kaart. ${link} (kijkcode ${kijk})`;
+    if (navigator.share) {
+      try { await navigator.share({ title: `Kijk mee: ${w.naam}`, text: tekst }); return; }
+      catch (err) { if (err && err.name === 'AbortError') return; /* anders: kopiëren */ }
+    }
+    const ok = await kopieerTekst(tekst);
+    toast(ok ? 'Kijklink gekopieerd, plak hem in de groepsapp.' : 'Kopiëren mislukt.');
+  };
+  $('#btn-kijklink-deel')?.addEventListener('click', deelKijklink);
+  $('#btn-kijkers-uitnodigen')?.addEventListener('click', deelKijklink);
   $('#afsluit-deel')?.addEventListener('click', deelUitslag);
   $('#afsluit-ok')?.addEventListener('click', () => sluitAfsluiting(true));
   $('#afsluit-sluit')?.addEventListener('click', () => sluitAfsluiting(false));
@@ -2868,12 +2903,14 @@ function initWedstrijd() {
         p_naam2: (isKoppel || duoAan) ? (naam2 || null) : null,
         p_team_naam: $('#join-teamnaam').value.trim() || null,
         p_duo: duoAan,
+        p_foto_toestemming: !!$('#join-foto-ok')?.checked,
       });
       sessie.zetTeam(CODE, { id: res.team_id, token: res.token, naam: $('#join-naam').value.trim(), code: res.deelnemer_code });
       BEWAAR_VOOR_CODE = null;   // nieuwe deelname: bewaar-knop weer tonen
       DUO_MAAT = res.duo ? { code: CODE, ...res.duo } : null;
       if (res.deelnemer_code) toast(`🔑 Bewaar je persoonlijke inlogcode: ${res.deelnemer_code}`);
       TOON_CODE_NA_RENDER = true;   // renderTeamTab pakt dit op zodra de teamkaart zichtbaar wordt
+      $('#form-join')?.reset();
       await laadState(false);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
   });
@@ -3116,12 +3153,6 @@ function initWedstrijd() {
     if (bewaard) zetKaartZoom(bewaard);
   } catch { /* privémodus */ }
 
-  $('#vangst-doorgeef')?.addEventListener('click', () => {
-    activateTab('team');
-    renderSnelVangst();
-    $('#registreer-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    $('#v-gewicht')?.focus();
-  });
   $('#snel-vangst')?.addEventListener('click', () => {
     activateTab('team');   // het registratieformulier staat op Mijn team, niet op Vangsten
     renderSnelVangst();
@@ -3297,8 +3328,8 @@ function renderTeamTab() {
     <div class="vangst-kaart">
       ${vangstFotoHtml(v, 'groot')}
       <div class="info">
-        <div class="gewicht">${fmtKg(v.gewicht_gram)}</div>
-        <div class="tijd">${fmtDatumTijd(v.created_at)}</div>
+        <div class="gewicht">${fmtKg(v.gewicht_gram)}${sterHtml(v)}</div>
+        <div class="tijd">${fmtDatumTijd(vangstTijd(v))}</div>
         <div style="margin-top:6px"><button class="btn klein-btn" data-deel-vangst="${esc(v.id)}">\ud83d\udce4 deel op social media</button></div>
       </div>
     </div>`).join('') +
@@ -3393,7 +3424,7 @@ function initBeheerKnoppen() {
       // één poging-object voor zowel het fotopad als de idempotentiesleutel,
       // ook zonder foto (Codex v10)
       const pogingKey = [f ? `${f.name}|${f.size}|${f.lastModified}` : 'geenfoto',
-                         gram, $('#bv-team').value].join('|');
+                         gram, $('#bv-team').value, $('#bv-tijd')?.value || ''].join('|');
       if (!BV_POGING || BV_POGING.key !== pogingKey) {
         BV_POGING = { key: pogingKey, pad: null, id: crypto.randomUUID() };
       }
@@ -3402,10 +3433,12 @@ function initBeheerKnoppen() {
         const blob = await compressFoto(f);
         pad = await uploadFoto(BV_POGING, blob);
       }
+      const bvTijd = $('#bv-tijd')?.value || '';
       await rpc('w_admin_voeg_vangst', {
         p_code: CODE, p_pin: sessie.pin(CODE),
         p_team_id: $('#bv-team').value, p_gewicht_gram: gram, p_foto_path: pad,
         p_client_id: BV_POGING.id,
+        p_gevangen_op: bvTijd ? new Date(bvTijd).toISOString() : null,
       });
       BV_POGING = null;
       okEl.textContent = `Vangst van ${fmtKg(gram)} toegevoegd.`;
@@ -3551,7 +3584,7 @@ async function renderBeheer(magPrefill) {
   if (!magPrefill) {
     const actiefEl = document.activeElement;
     if (actiefEl && actiefEl.closest && actiefEl.closest('#beheer-inhoud')
-        && (actiefEl.tagName === 'INPUT' || actiefEl.tagName === 'TEXTAREA')) return;
+        && (actiefEl.tagName === 'INPUT' || actiefEl.tagName === 'TEXTAREA' || actiefEl.tagName === 'SELECT')) return;
     if (document.querySelector('#beheer-inhoud [data-scherp]')) return;
   }
 
@@ -3600,7 +3633,7 @@ async function renderBeheer(magPrefill) {
     <div class="b-rij">
       <span class="naam">${teamNaamHtml(t)}${duoMaatVan(t)
         ? ` <span class="duo-label">🎣 duo met ${esc(duoMaatVan(t).naam)}</span>`
-        : ''}</span>
+        : ''}${t.foto_toestemming ? ' <span class="foto-ok-label" title="foto\'s mogen op de socials van de viswedstrijdapp">📸 socials ok</span>' : ''}</span>
       <span class="muted klein">${t.lot_nummer ? 'lot ' + t.lot_nummer : ''} ${t.zone ? '· ' + esc(zoneLabel(t.zone)) : (t.stekken || []).length ? '· stek ' + t.stekken.join('+') : ''}</span>
       <span class="muted klein">🔑 <b class="codegroot klein-code" data-team-code="${t.id}">·····</b></span>
       ${w.status === 'stekkeuze' && !(t.stekken || []).length ? `<button class="btn klein-btn" data-team-kies="${t.id}">📍 geef plek</button>` : ''}
@@ -3652,20 +3685,43 @@ async function renderBeheer(magPrefill) {
   }
 
   const teamsBijId = new Map(STATE.teams.map((t) => [t.id, t]));
+  const teamOpties = (gekozen) => STATE.teams.map((t) => `<option value="${t.id}"${t.id === gekozen ? ' selected' : ''}>${esc(teamNaam(t))}</option>`).join('');
   $('#b-vangsten').innerHTML = STATE.vangsten.length ? STATE.vangsten.map((v) => `
     <div class="b-rij">
       ${vangstFotoHtml(v, 'thumb')}
-      <span class="naam">${teamsBijId.get(v.team_id) ? teamNaamHtml(teamsBijId.get(v.team_id)) : '?'} · ${fmtDatumTijd(v.created_at)}</span>
-      <input class="gewicht-edit" value="${(v.gewicht_gram / 1000).toFixed(2).replace('.', ',')}" data-vangst="${v.id}">
+      <span class="naam">${teamsBijId.get(v.team_id) ? teamNaamHtml(teamsBijId.get(v.team_id)) : '?'}${sterHtml(v)} · ${fmtDatumTijd(vangstTijd(v))}</span>
+      <input class="gewicht-edit" value="${(v.gewicht_gram / 1000).toFixed(2).replace('.', ',')}" data-orig="${(v.gewicht_gram / 1000).toFixed(2).replace('.', ',')}" data-vangst="${v.id}" aria-label="gewicht in kg">
+      <select class="team-edit" data-vangst-team="${v.id}" data-orig="${v.team_id}" aria-label="visser">${teamOpties(v.team_id)}</select>
+      <input class="tijd-edit" type="datetime-local" value="${naarLocalInput(vangstTijd(v))}" data-orig="${naarLocalInput(vangstTijd(v))}" data-vangst-tijd="${v.id}" aria-label="gevangen om">
       <button class="btn klein-btn" data-vangst-opslaan="${v.id}">opslaan</button>
       <button class="btn gevaar klein-btn" data-vangst-weg="${v.id}">verwijder</button>
     </div>`).join('') : '<p class="muted">Nog geen vangsten.</p>';
   $('#b-vangsten').querySelectorAll('[data-vangst-opslaan]').forEach((b) => {
     b.onclick = async () => {
-      const veld = $('#b-vangsten').querySelector(`input[data-vangst="${b.dataset.vangstOpslaan}"]`);
-      const gram = parseGewicht(veld.value);
-      if (!gram) { toast('Ongeldig gewicht.'); return; }
-      await beheerActie('w_admin_vangst', { p_vangst_id: b.dataset.vangstOpslaan, p_gewicht_gram: gram });
+      const id = b.dataset.vangstOpslaan;
+      const rij = $('#b-vangsten');
+      if (!STATE.vangsten.some((x) => x.id === id)) { toast('Deze vangst bestaat niet meer.'); return; }
+      const gewichtEl = rij.querySelector(`input[data-vangst="${id}"]`);
+      const teamEl = rij.querySelector(`select[data-vangst-team="${id}"]`);
+      const tijdEl = rij.querySelector(`input[data-vangst-tijd="${id}"]`);
+      // alleen meesturen wat de organisator ZELF in deze rij veranderde (vergeleken
+      // met wat de rij toonde, niet met de nieuwste state): anders draait een opslag
+      // een gelijktijdige correctie van een collega terug, of krijgt een vangst van
+      // 12,345 kg door de afronding op twee decimalen elke keer een ster (Codex v90)
+      const args = { p_vangst_id: id };
+      if (gewichtEl.value.trim() !== gewichtEl.dataset.orig) {
+        const gram = parseGewicht(gewichtEl.value);
+        if (!gram) { toast('Ongeldig gewicht.'); return; }
+        args.p_gewicht_gram = gram;
+      }
+      if (teamEl.value && teamEl.value !== teamEl.dataset.orig) args.p_team_id = teamEl.value;
+      if (tijdEl.value && tijdEl.value !== tijdEl.dataset.orig) {
+        const d = new Date(tijdEl.value);
+        if (Number.isNaN(d.getTime())) { toast('Ongeldige tijd.'); return; }
+        args.p_gevangen_op = d.toISOString();
+      }
+      if (Object.keys(args).length === 1) { toast('Niets gewijzigd.'); return; }
+      await beheerActie('w_admin_vangst', args);
     };
   });
   $('#b-vangsten').querySelectorAll('[data-vangst-weg]').forEach((b) => {

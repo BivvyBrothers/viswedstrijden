@@ -103,14 +103,15 @@ wedstrijden organiseren (doelgroep verbreed 11 jul 2026).
 ## v3: rollen (6 jul 2026)
 
 - **3 ingangen op de homepagina:** Deelnemer (deelnemerscode, `#/w/CODE`),
-  Kijker (kijkcode, `#/k/KIJKCODE`, ziet alleen klok + klassement + push),
+  Kijker (kijkcode, `#/k/KIJKCODE`; sinds v89 klok + klassement + kaart (alleen
+  lezen, "Wie zit waar") + vangsten met foto's + push; geen team-tab),
   Organisator (org-wachtwoord, `#/org`).
 - Elke wedstrijd heeft een **deelnemerscode** (`code`) en **kijkcode** (`kijk_code`),
   uniek over beide kolommen (generator `wedstrijd.nieuwe_code()`).
   `w_get_state_kijker` geeft de deelnemerscode bewust NIET terug. Wat hij WEL
   teruggeeft: team-ID's, namen, lotnummers, stekken/zones en alle actieve
-  vangsten met fotopad. De kijkers-UI toont daarvan alleen klok, klassement en
-  seizoen, maar de API-grens is ruimer. **Dat is een keuze, geen omissie**
+  vangsten met fotopad. Sinds v89 toont de kijkers-UI dat ook (kaart, wie zit
+  waar, vangsten met foto), precies wat de API al gaf. **Dat is een keuze, geen omissie**
   (Codex v11 meldde het als lek): het is precies wat op de wedstrijddag aan het
   water openbaar is, en de kijkcode deelt de organisator zelf. Wil je dat ooit
   smaller, dan hoort dat server-side in een aparte projectie, niet in de client.
@@ -517,6 +518,65 @@ code vraagt: de terugknop `#btn-terug` (voor iedereen behalve de organisator
     verkeerd gelabeld raken (praktijkgeval te zeldzaam); twee tabbladen die
     om beurten pollen.
   Toesteltest op iPhone (wachtwoordmanager, PWA-herstart) staat open bij Patrick.
+
+## Kijkers (v89, 14 sep 2026, uit de Carpclassic-evaluatie)
+
+Uit de Forms-evaluatie: kijkers wilden de kaart met wie waar zit (3 van 12) en
+de foto van de vis (2 van 12); Patrick wilde een aparte vangsten-tab, een
+deelbare kijklink en een promotielink.
+- `TABS_PER_ROL.kijker = ['klassement', 'kaart', 'vangsten', 'seizoen']`;
+  `renderTabs` zet de knoppen in de volgorde van de rol en `route()` activeert
+  voor een kijker het klassement. De tabbalk is voor kijkers niet meer verborgen.
+- `renderAlles` rendert voor kijkers ook `renderKaart` (alleen lezen: zonder
+  team of pin is `magSelecteren()` false, `#stek-actie` blijft verborgen),
+  `renderLoting` (kop heet dan "Wie zit waar") en `renderVangsten`. Legenda-items
+  "mijn stek" en "selectie" hebben `.alleen-deelnemer` en verdwijnen via
+  `body.rol-kijker`.
+- `#kijker-card` onder het klassement (alleen kijkers): knop "Deel de kijklink"
+  en de promotieregel naar viswedstrijdapp.nl. Deelnemers hebben onder Mijn
+  deelname "nodig kijkers uit" (`#btn-kijkers-uitnodigen`). Beide delen ALTIJD
+  `#/k/<kijk_code>` (staat in beide states), nooit een deelnemerscode.
+- Klassementkop zegt "Deelnemer" bij individueel en "Team" bij koppels; de kop
+  van de wedstrijd toont het aantal deelnemers (of koppels).
+
+## Organisator-correcties en foto-toestemming (v90, 14 sep 2026)
+
+Migratie `wedstrijd_organisator_v90` (oude signaturen van `w_admin_vangst`,
+`w_admin_voeg_vangst` en `w_join` gedropt; nieuwe parameters met defaults):
+- `vangsten.gewijzigd_op` + `gewijzigd_wat` (komma-lijst: gewicht, team, tijd,
+  handmatig, verwijderd). `w_admin_vangst` kreeg `p_team_id` (vangst naar een
+  andere visser, bijv. ingelogd onder de verkeerde code) en `p_gevangen_op`
+  (tussen start en nu); alleen wat écht verandert wordt geregistreerd, de
+  client stuurt ook alleen gewijzigde velden mee. `w_admin_voeg_vangst` kreeg
+  `p_gevangen_op` en markeert `handmatig`. Beide states geven de drie velden
+  mee; `sterHtml(v)` toont ★ met uitleg in de vangstenlijsten en in Beheer,
+  `vangstTijd(v)` = `gevangen_op || created_at` is overal de getoonde tijd en
+  de state sorteert daarop.
+- `teams.foto_toestemming` (default false) via `w_join(p_foto_toestemming)`;
+  vinkje `#join-foto-ok` in het aanmeldformulier ("mijn vangstfoto's mogen op
+  de socials van de viswedstrijdapp"). Bij een duo geldt het alleen voor de
+  aanmelder. Zichtbaar in Beheer bij de deelnemers als "📸 socials ok"; alleen
+  `w_get_state` geeft het mee (niet de kijker). Patrick ziet het via
+  "Openen & beheren" vanuit de beheerdersomgeving.
+- **Eén ingang voor registreren (D5):** de groene knop op de vangsten-tab is
+  weg; de zwevende oranje knop `#snel-vangst` staat op elke tab behalve Mijn
+  deelname (daar staat het formulier). Vier ingangen waren verwarrend.
+- Codex v90 (`review/codex-v90-uit.md`, 11 punten) gaf migratie
+  `wedstrijd_organisator_v90c` en client-fixes: tiebreaks van het klassement
+  (`klassementRijen`, `klTijdGrootste`), de deelafbeelding en
+  `meld_afgelopen` gebruiken de GETOONDE vangsttijd; een gecorrigeerde tijd
+  moet tussen start en einde liggen; de opslag in Beheer stuurt alleen mee wat
+  de organisator in die rij zelf veranderde (`data-orig`, dus geen ster door
+  de afronding op twee decimalen en geen terugdraaien van een gelijktijdige
+  correctie van een collega); `SELECT` telt mee als "bezig met typen" bij het
+  verversen; de tijd zit in de idempotentiesleutel van handmatig toevoegen;
+  `#form-join` wordt gereset bij een wissel en na aanmelden. Bewust niet:
+  push of melding bij een verplaatste vangst, ster bij verwijderde vangsten
+  (die staan nergens meer), instelling voor de duo-maat, zomertijdgrenzen.
+- Codex v89 (`review/codex-v89-uit.md`): kijkerstate mist zones (migratie
+  `wedstrijd_kijker_zones_v89`), `activateTab` weigert tabs buiten de rol en
+  `route()` leegt teamkaart en lijsten direct bij een wissel, kijklink-delen
+  valt bij een share-fout terug op kopiëren.
 
 ## Afsluiting van de wedstrijd (v88, 14 sep 2026, uit de Carpclassic-evaluatie)
 

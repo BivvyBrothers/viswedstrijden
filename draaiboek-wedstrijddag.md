@@ -153,3 +153,19 @@ op gaan, niet pas op de stek.
   de deelknop voor de uitslag. Jij hoeft niets te doen.
 - Verzet je de eindtijd naar later, dan gaat de melding opnieuw bij de nieuwe
   eindtijd. Verzet je hem naar eerder (naar nu), dan komt hij binnen vijf minuten.
+
+
+## Vangsten corrigeren (sinds v90, 14 sep 2026)
+
+- **Verkeerde code:** vist iemand met z'n tweeën en staat de vangst onder de
+  verkeerde naam, kies dan in Beheer bij de vangst de juiste visser en tik
+  opslaan. De vangst verhuist met foto en al.
+- **Tijd:** bij handmatig toevoegen kun je "gevangen om" invullen (leeg = nu);
+  bij een bestaande vangst is de tijd ook aan te passen.
+- Elke aanpassing en elke handmatig ingevoerde vangst krijgt een ★ in de app,
+  zichtbaar voor iedereen (met uitleg als je de ster aanraakt). Dat is bewust:
+  transparantie voorkomt discussie bij de prijsuitreiking.
+- **Foto's voor de socials:** deelnemers die bij het aanmelden het vinkje
+  "mijn vangstfoto's mogen op de socials van de viswedstrijdapp" hebben gezet,
+  staan in Beheer bij de deelnemers met 📸 socials ok. Alleen die foto's mag
+  KemblincK gebruiken.

@@ -335,8 +335,8 @@
       <div class="kaart-legenda">
         <span><i class="dot vrij"></i> vrij</span>
         <span><i class="dot bezet"></i> bezet</span>
-        <span><i class="dot mijn"></i> mijn stek</span>
-        <span><i class="dot keuze"></i> selectie</span>
+        <span class="alleen-deelnemer"><i class="dot mijn"></i> mijn stek</span>
+        <span class="alleen-deelnemer"><i class="dot keuze"></i> selectie</span>
       </div>
       <div id="stek-actie" hidden>
         <button id="btn-kies" class="btn primary breed" disabled></button>
@@ -359,6 +359,13 @@
       <div id="klassement-inhoud"></div>
       <p id="deel-rij" hidden style="margin-top:12px"><button id="btn-deel-uitslag" class="btn breed">📤 Deel de einduitslag</button></p>
     </div>
+    <div class="card kijker-card" id="kijker-card" hidden>
+      <p class="muted klein">Iemand anders laten meekijken? Deel de kijklink; daarmee ziet die persoon
+      het klassement, de vangsten en de kaart, maar kan niet meedoen.</p>
+      <button id="btn-kijklink-deel" class="btn breed">📺 Deel de kijklink</button>
+      <p class="muted klein kijker-promo">Zelf een wedstrijd organiseren met deze app, voor je vereniging of
+      je vriendengroep? Kijk op <a href="https://viswedstrijdapp.nl/" target="_blank" rel="noopener">viswedstrijdapp.nl</a>.</p>
+    </div>
   </section>
 
   <!-- Seizoen -->
@@ -374,8 +381,6 @@
   <section id="tab-vangsten" class="tab" hidden>
     <div class="card">
       <h2>Vangsten</h2>
-      <button id="vangst-doorgeef" class="btn primary vangst-doorgeef" hidden>⚖️ Vangst doorgeven</button>
-      <p id="vangst-doorgeef-sub" class="muted klein" hidden></p>
       <div id="vangsten-feed"></div>
     </div>
   </section>
@@ -392,6 +397,9 @@
           <small>samen loten en zitten, ieder een eigen score</small></span></label>
         <label id="join-naam2-label" hidden><span id="join-naam2-tekst">Naam koppelmaat</span> <input id="join-naam2" type="text" maxlength="40"></label>
         <label id="join-teamnaam-label" hidden>Teamnaam <span class="muted">(optioneel)</span> <input id="join-teamnaam" type="text" maxlength="40" placeholder="bijv. De Bivvy Brothers"></label>
+        <label id="join-foto-label"><input type="checkbox" id="join-foto-ok">
+          <span>📸 Mijn vangstfoto's mogen gebruikt worden op de socials van de viswedstrijdapp<br>
+          <small>vrijwillig; zonder vinkje blijven je foto's alleen in deze wedstrijd</small></span></label>
         <button type="submit" class="btn primary">Aanmelden</button>
         <p id="join-fout" class="fout" hidden></p>
       </form>
@@ -424,6 +432,9 @@
       </form>
       <p id="bewaar-code-klaar" class="muted klein" hidden>Kies <b>Bewaren</b> als je telefoon dat vraagt. Daarna vult hij je code
       zelf in als je ooit opnieuw moet inloggen.</p>
+      <p class="muted klein" style="margin-top:14px">📺 Thuisfront of vrienden laten meekijken? Deel de <b>kijklink</b>
+      (niet je persoonlijke code): daarmee volgen ze het klassement en de vangsten live.</p>
+      <p><button id="btn-kijkers-uitnodigen" class="btn klein-btn">📺 nodig kijkers uit</button></p>
       <div id="duo-code-blok" class="duo-code" hidden>
         <p class="muted klein">🎣 Jullie vissen samen aan één stek. Geef deze inlogcode aan
           <b id="duo-maat-naam"></b>; daarmee doet die op de eigen telefoon mee (eigen score):</p>
@@ -533,6 +544,9 @@
       </div>
       <div class="card">
         <h2>Vangsten corrigeren</h2>
+        <p class="muted klein">Gewicht, visser (bij een vangst onder de verkeerde code) en tijd zijn aan te
+        passen; de tijd moet binnen de wedstrijd vallen. Elke aangepaste of handmatig ingevoerde vangst
+        die meetelt krijgt een <b>★</b> in de app, zichtbaar voor iedereen.</p>
         <div id="b-vangsten"></div>
         <details id="b-toevoegen">
           <summary>➕ Vangst handmatig toevoegen</summary>
@@ -541,6 +555,7 @@
           <form id="form-b-vangst" class="stack">
             <label>Team <select id="bv-team"></select></label>
             <label>Gewicht (kg) <input id="bv-gewicht" type="text" inputmode="decimal" placeholder="bijv. 12,45" required></label>
+            <label>Gevangen om <span class="muted">(optioneel; leeg = nu)</span> <input id="bv-tijd" type="datetime-local"></label>
             <label class="fotoknop">
               <input id="bv-foto" type="file" accept="image/*">
               <span id="bv-foto-label">📷 Foto (optioneel)</span>

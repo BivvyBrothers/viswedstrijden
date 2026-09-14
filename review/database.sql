@@ -94,6 +94,7 @@ create table wedstrijd.teams (
   team_naam text,
   zone text,
   deelnemer_code text not null unique,
+  foto_toestemming boolean not null default false,   -- v90: foto's mogen op de socials van de viswedstrijdapp
   unique (wedstrijd_id, naam)
 );
 create index teams_wedstrijd_idx on wedstrijd.teams (wedstrijd_id);
@@ -109,7 +110,9 @@ create table wedstrijd.vangsten (
   status text not null default 'actief' check (status in ('actief','verwijderd','wacht')),
   created_at timestamptz not null default now(),   -- audittijd van de server
   gevangen_op timestamptz,            -- wat de telefoon zegt; indicatie, geen bewijs
-  client_id uuid                      -- idempotentie bij handmatig toevoegen
+  client_id uuid,                     -- idempotentie bij handmatig toevoegen
+  gewijzigd_op timestamptz,           -- v90: laatste ingreep van de organisator (ster in de app)
+  gewijzigd_wat text                  -- v90: komma-lijst: gewicht, team, tijd, handmatig, verwijderd
 );
 create index vangsten_wedstrijd_idx on wedstrijd.vangsten (wedstrijd_id, status);
 -- idempotente registratie: zelfde foto kan maar bij 1 vangst horen
@@ -319,7 +322,7 @@ end $function$;
 
 
 
-CREATE OR REPLACE FUNCTION public.w_join(p_code text, p_naam text, p_naam2 text DEFAULT NULL::text, p_team_naam text DEFAULT NULL::text, p_duo boolean DEFAULT false)
+CREATE OR REPLACE FUNCTION public.w_join(p_code text, p_naam text, p_naam2 text DEFAULT NULL::text, p_team_naam text DEFAULT NULL::text, p_duo boolean DEFAULT false, p_foto_toestemming boolean DEFAULT false)
  RETURNS json
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -395,8 +398,9 @@ begin
   if p_duo then
     -- duo: twee losse deelnemers die samen loten
     v_duo := gen_random_uuid();
-    insert into wedstrijd.teams (wedstrijd_id, naam, deelnemer_code, duo_id, lot_nummer)
-    values (v_w.id, trim(p_naam), wedstrijd.nieuwe_team_code(), v_duo, v_lot)
+    -- duo: de toestemming geldt alleen voor de aanmelder zelf (v90)
+    insert into wedstrijd.teams (wedstrijd_id, naam, deelnemer_code, duo_id, lot_nummer, foto_toestemming)
+    values (v_w.id, trim(p_naam), wedstrijd.nieuwe_team_code(), v_duo, v_lot, coalesce(p_foto_toestemming, false))
     returning * into v_team;
     insert into wedstrijd.teams (wedstrijd_id, naam, deelnemer_code, duo_id, lot_nummer)
     values (v_w.id, trim(p_naam2), wedstrijd.nieuwe_team_code(), v_duo, v_lot)
@@ -410,11 +414,11 @@ begin
         'deelnemer_code', v_maat.deelnemer_code, 'token', v_maat.token));
   end if;
 
-  insert into wedstrijd.teams (wedstrijd_id, naam, naam2, team_naam, deelnemer_code, lot_nummer)
+  insert into wedstrijd.teams (wedstrijd_id, naam, naam2, team_naam, deelnemer_code, lot_nummer, foto_toestemming)
   values (v_w.id, trim(p_naam),
           case when v_w.mode = 'koppel' then trim(p_naam2) end,
           nullif(trim(coalesce(p_team_naam,'')), ''),
-          wedstrijd.nieuwe_team_code(), v_lot)
+          wedstrijd.nieuwe_team_code(), v_lot, coalesce(p_foto_toestemming, false))
   returning * into v_team;
   if v_laat and v_w.status = 'klaar' then
     update wedstrijd.wedstrijden set status = 'stekkeuze' where id = v_w.id;
@@ -978,24 +982,48 @@ begin
   return json_build_object('ok', true);
 end $function$;
 
-CREATE OR REPLACE FUNCTION public.w_admin_vangst(p_code text, p_pin text, p_vangst_id uuid, p_gewicht_gram integer DEFAULT NULL::integer, p_verwijder boolean DEFAULT false)
+CREATE OR REPLACE FUNCTION public.w_admin_vangst(p_code text, p_pin text, p_vangst_id uuid, p_gewicht_gram integer DEFAULT NULL::integer, p_verwijder boolean DEFAULT false, p_team_id uuid DEFAULT NULL::uuid, p_gevangen_op timestamp with time zone DEFAULT NULL::timestamp with time zone)
  RETURNS json
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-declare v_w wedstrijd.wedstrijden;
+declare
+  v_w wedstrijd.wedstrijden;
+  v_v wedstrijd.vangsten;
+  v_wat text[] := '{}';
 begin
   select * into v_w from wedstrijd.wedstrijden where code = upper(trim(p_code)) and admin_pin = trim(p_pin);
   if not found then raise exception 'pin_onjuist'; end if;
+  select * into v_v from wedstrijd.vangsten where id = p_vangst_id and wedstrijd_id = v_w.id for update;
+  if not found then raise exception 'vangst_niet_gevonden'; end if;
   if p_gewicht_gram is not null and (p_gewicht_gram < 50 or p_gewicht_gram > 50000) then
     raise exception 'ongeldig_gewicht';
   end if;
+  if p_team_id is not null and p_team_id <> v_v.team_id then
+    if not exists (select 1 from wedstrijd.teams where id = p_team_id and wedstrijd_id = v_w.id) then
+      raise exception 'team_niet_gevonden';
+    end if;
+    v_wat := array_append(v_wat, 'team');
+  end if;
+  if p_gevangen_op is not null and p_gevangen_op is distinct from v_v.gevangen_op then
+    if p_gevangen_op < v_w.start_ts or p_gevangen_op > v_w.eind_ts or p_gevangen_op > pg_catalog.now() then
+      raise exception 'ongeldige_tijd';
+    end if;
+    v_wat := array_append(v_wat, 'tijd');
+  end if;
+  if p_gewicht_gram is not null and p_gewicht_gram <> v_v.gewicht_gram then v_wat := array_append(v_wat, 'gewicht'); end if;
+  if p_verwijder then v_wat := array_append(v_wat, 'verwijderd'); end if;
   update wedstrijd.vangsten set
     gewicht_gram = coalesce(p_gewicht_gram, gewicht_gram),
-    status = case when p_verwijder then 'verwijderd' else status end
-  where id = p_vangst_id and wedstrijd_id = v_w.id;
-  if not found then raise exception 'vangst_niet_gevonden'; end if;
+    team_id = coalesce(p_team_id, team_id),
+    gevangen_op = coalesce(p_gevangen_op, gevangen_op),
+    status = case when p_verwijder then 'verwijderd' else status end,
+    gewijzigd_op = case when array_length(v_wat, 1) > 0 then pg_catalog.now() else gewijzigd_op end,
+    gewijzigd_wat = case when array_length(v_wat, 1) > 0
+                         then array_to_string(array(select distinct x from unnest(array_cat(coalesce(string_to_array(gewijzigd_wat, ','), '{}'::text[]), v_wat)) as x order by x), ',')
+                         else gewijzigd_wat end
+  where id = v_v.id;
   return json_build_object('ok', true);
 end $function$;
 
@@ -1413,7 +1441,7 @@ begin
 end $function$;
 
 -- ============ Codex v10 ronde 2 (18 jul 2026) ============
-CREATE OR REPLACE FUNCTION public.w_admin_voeg_vangst(p_code text, p_pin text, p_team_id uuid, p_gewicht_gram integer, p_foto_path text DEFAULT NULL::text, p_client_id uuid DEFAULT NULL::uuid)
+CREATE OR REPLACE FUNCTION public.w_admin_voeg_vangst(p_code text, p_pin text, p_team_id uuid, p_gewicht_gram integer, p_foto_path text DEFAULT NULL::text, p_client_id uuid DEFAULT NULL::uuid, p_gevangen_op timestamp with time zone DEFAULT NULL::timestamp with time zone)
  RETURNS json
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -1437,12 +1465,15 @@ begin
   if p_gewicht_gram is null or p_gewicht_gram < 50 or p_gewicht_gram > 50000 then
     raise exception 'ongeldig_gewicht';
   end if;
+  if p_gevangen_op is not null and (p_gevangen_op < v_w.start_ts or p_gevangen_op > v_w.eind_ts or p_gevangen_op > pg_catalog.now()) then
+    raise exception 'ongeldige_tijd';
+  end if;
   if p_foto_path is not null
      and p_foto_path !~ ('^' || v_w.code || '/[A-Za-z0-9-]+\.(jpe?g|png|webp|gif|heic)$') then
     raise exception 'ongeldige_foto';
   end if;
-  insert into wedstrijd.vangsten (wedstrijd_id, team_id, gewicht_gram, foto_path, client_id)
-  values (v_w.id, v_team.id, p_gewicht_gram, p_foto_path, p_client_id)
+  insert into wedstrijd.vangsten (wedstrijd_id, team_id, gewicht_gram, foto_path, client_id, gevangen_op, gewijzigd_op, gewijzigd_wat)
+  values (v_w.id, v_team.id, p_gewicht_gram, p_foto_path, p_client_id, p_gevangen_op, pg_catalog.now(), 'handmatig')
   returning id into v_id;
   begin
     v_wie := coalesce(v_team.team_naam, v_team.naam || coalesce(' & ' || v_team.naam2, ''));
@@ -1471,15 +1502,16 @@ AS $function$
     'teams', coalesce((select json_agg(json_build_object(
         'id', t.id, 'naam', t.naam, 'naam2', t.naam2, 'team_naam', t.team_naam,
         'lot_nummer', t.lot_nummer, 'stekken', t.stekken, 'zone', t.zone,
-        'duo_id', t.duo_id)
+        'duo_id', t.duo_id, 'foto_toestemming', t.foto_toestemming)
         order by t.lot_nummer nulls last, t.created_at, t.id)
       from wedstrijd.teams t
       join wedstrijd.wedstrijden w on w.id = t.wedstrijd_id
       where w.code = upper(trim(p_code))), '[]'::json),
     'vangsten', coalesce((select json_agg(json_build_object(
         'id', v.id, 'team_id', v.team_id, 'gewicht_gram', v.gewicht_gram,
-        'foto_path', v.foto_path, 'created_at', v.created_at)
-        order by v.created_at desc)
+        'foto_path', v.foto_path, 'created_at', v.created_at,
+        'gevangen_op', v.gevangen_op, 'gewijzigd_op', v.gewijzigd_op, 'gewijzigd_wat', v.gewijzigd_wat)
+        order by coalesce(v.gevangen_op, v.created_at) desc)
       from wedstrijd.vangsten v
       join wedstrijd.wedstrijden w on w.id = v.wedstrijd_id
       where w.code = upper(trim(p_code)) and v.status = 'actief'), '[]'::json),
@@ -1498,7 +1530,7 @@ AS $function$
         'kijk_code', w.kijk_code, 'naam', w.naam, 'mode', w.mode,
         'start_ts', w.start_ts, 'eind_ts', w.eind_ts, 'status', w.status,
         'prijsuitreiking_ts', w.prijsuitreiking_ts,
-        'max_teams', w.max_teams, 'regels', w.regels,
+        'zones', w.zones, 'max_teams', w.max_teams, 'regels', w.regels,
         'dag_regels', w.dag_regels,
         'seizoen_ex_aequo', (select z.regels->>'ex_aequo' from wedstrijd.seizoenen z where z.id = w.seizoen_id))
       from wedstrijd.wedstrijden w where w.kijk_code = upper(trim(p_kijk_code))),
@@ -1512,8 +1544,9 @@ AS $function$
       where w.kijk_code = upper(trim(p_kijk_code))), '[]'::json),
     'vangsten', coalesce((select json_agg(json_build_object(
         'id', v.id, 'team_id', v.team_id, 'gewicht_gram', v.gewicht_gram,
-        'foto_path', v.foto_path, 'created_at', v.created_at)
-        order by v.created_at desc)
+        'foto_path', v.foto_path, 'created_at', v.created_at,
+        'gevangen_op', v.gevangen_op, 'gewijzigd_op', v.gewijzigd_op, 'gewijzigd_wat', v.gewijzigd_wat)
+        order by coalesce(v.gevangen_op, v.created_at) desc)
       from wedstrijd.vangsten v
       join wedstrijd.wedstrijden w on w.id = v.wedstrijd_id
       where w.kijk_code = upper(trim(p_kijk_code)) and v.status = 'actief'), '[]'::json),
@@ -2026,7 +2059,8 @@ begin
     with per_team as (
       select t.id, coalesce(t.team_naam, t.naam || case when t.naam2 is not null then ' & ' || t.naam2 else '' end) as naam,
              sum(v.gewicht_gram) as totaal, count(*) as aantal, max(v.gewicht_gram) as grootste,
-             min(v.created_at) filter (where v.gewicht_gram = (select max(v2.gewicht_gram) from wedstrijd.vangsten v2 where v2.team_id = t.id and v2.wedstrijd_id = r.id and v2.status = 'actief')) as tijd_grootste
+             -- tijd van de grootste vis = de GETOONDE vangsttijd (zoals de client, v90c)
+             min(coalesce(v.gevangen_op, v.created_at)) filter (where v.gewicht_gram = (select max(v2.gewicht_gram) from wedstrijd.vangsten v2 where v2.team_id = t.id and v2.wedstrijd_id = r.id and v2.status = 'actief')) as tijd_grootste
       from wedstrijd.vangsten v join wedstrijd.teams t on t.id = v.team_id
       where v.wedstrijd_id = r.id and v.status = 'actief'
       group by t.id, t.naam, t.naam2, t.team_naam
