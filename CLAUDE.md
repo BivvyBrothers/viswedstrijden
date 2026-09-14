@@ -781,6 +781,12 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
     huisstijl (bron: og-image.html-patroon, headless screenshot 1200x630).
     nieuwe_tenant.py vervangt de og-tags automatisch mee (asserts).
 
+**Contactadres op ALLE oppervlakken: `info@viswedstrijdapp.nl`** (gedeelde
+mailbox in M365 sinds 14 sep 2026, doorgestuurd naar Patrick). Nooit
+patrick@kemblinck.nl of info@kemblinck.nl in de app, de site, de instructies,
+de PDF's, de foutteksten in app.js of klantmails. Handtekening met logo:
+`marketing/handtekening-viswedstrijdapp.html`.
+
 De demo-omgeving is zelf ook documentatie: nieuwe zichtbare features waar
 mogelijk in de demo laten zien (zoals de demo-competitie).
 
