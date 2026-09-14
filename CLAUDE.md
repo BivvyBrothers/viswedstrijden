@@ -726,7 +726,16 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
    kaartopname `#topcode` leegmaken (de wedstrijdcode geeft toegang tot de
    deelnemerslijst) en vanaf scrollTop 0 fotograferen, zodat "Loting & volgorde"
    met de deelnemersnamen NIET in beeld komt.
-   **Zes beelden sinds 13 aug** (`docs/schermen/`): klassement (hero),
+   **Zeven beelden sinds 14 sep** (`docs/schermen/`; alle zes bestaande opnieuw
+   gemaakt na v82 t/m v91, plus `scherm-afsluiting.png` bij "Zo werkt een
+   wedstrijddag": kijker KIJKJE met geënsceneerd einde, `checkAfsluiting()`
+   na `eind_ts` in het verleden, opname na 900 ms voor de confetti; de
+   loting-opname is geënsceneerd als deelnemer STATE.teams[3] met lotnummers
+   en start in de toekomst, de vangsten-opname vervangt de placeholders door
+   `schermen/vangsten/vangst-0x.jpg`; het JS-argument van
+   `mobiel_screenshot.mjs` moet een Promise teruggeven die na de actie
+   resolvet, want de tool wacht EERST en maakt direct na het JS de foto):
+   klassement (hero),
    `scherm-loting.png` (stekkeuze), `scherm-kaart-nphv.png` (dieptekaart),
    `scherm-seizoen.png` (seizoensklassement), `scherm-home.png` (startscherm) en
    `uitslag-gedeeld.png`. Die laatste is GEEN schermopname maar de afbeelding
