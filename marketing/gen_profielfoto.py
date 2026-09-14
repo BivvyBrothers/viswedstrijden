@@ -31,8 +31,8 @@ x1, y1 = pt(190); x2, y2 = pt(350)
 svg = f"""<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='{W}' height='{W}' viewBox='0 0 {W} {W}'>
   <rect width='{W}' height='{W}' fill='rgb{GROEN}'/>
   <defs><path id='boog' d='M {x1:.1f} {y1:.1f} A {R} {R} 0 0 1 {x2:.1f} {y2:.1f}'/></defs>
-  <text font-family="'Avenir Next','Segoe UI',Arial,sans-serif" font-weight='800' font-size='96' fill='rgb{ORANJE}' letter-spacing='6'>
-    <textPath xlink:href='#boog' startOffset='50%' text-anchor='middle'>viswedstrijdapp</textPath>
+  <text font-family="'Avenir Next','Segoe UI',Arial,sans-serif" font-weight='800' font-size='96' fill='#ffffff' letter-spacing='6'>
+    <textPath xlink:href='#boog' startOffset='50%' text-anchor='middle'>viswedstrijd<tspan fill='rgb{ORANJE}'>app</tspan></textPath>
   </text>
   <image xlink:href='data:image/png;base64,{vis64}' x='{fx:.1f}' y='{fy:.1f}' width='{fw:.1f}' height='{fh:.1f}'/>
 </svg>"""
