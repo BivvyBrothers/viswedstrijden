@@ -396,10 +396,8 @@
         <p class="muted klein">🔑 <b>Al aangemeld</b> (of per ongeluk uitgelogd)? Log hier weer in
         met je persoonlijke inlogcode; meld je niet opnieuw aan.</p>
         <form id="form-herstel" class="herstel-rij">
-          <input class="vh ww-username" type="text" name="username" autocomplete="username" value="wedstrijd" tabindex="-1" aria-hidden="true">
-          <input id="herstel-code" type="password" maxlength="8" autocapitalize="characters"
-            autocomplete="current-password" spellcheck="false" placeholder="bijv. AB2CD3">
-          <button type="button" class="btn klein-btn oog" data-toon-code="#herstel-code" aria-label="toon code">👁</button>
+          <input id="herstel-code" type="text" maxlength="8" autocapitalize="characters"
+            autocomplete="off" spellcheck="false" placeholder="bijv. AB2CD3">
           <button type="submit" class="btn">Inloggen</button>
         </form>
         <p id="herstel-fout" class="fout" hidden></p>
@@ -414,8 +412,7 @@
       <p><b id="team-code" class="codegroot"></b>
       <button id="btn-herstel" class="btn klein-btn">kopieer</button>
       <button id="btn-code-deel" class="btn klein-btn">📤 stuur naar jezelf</button></p>
-      <p class="muted klein">Tip: stuur de code naar jezelf (WhatsApp of Notities). Log je ooit opnieuw in
-      met je code, dan biedt je telefoon aan hem in je wachtwoorden te bewaren.</p>
+      <p class="muted klein">Tip: stuur de code naar jezelf (WhatsApp of Notities), dan heb je hem altijd bij de hand.</p>
       <div id="duo-code-blok" class="duo-code" hidden>
         <p class="muted klein">🎣 Jullie vissen samen aan één stek. Geef deze inlogcode aan
           <b id="duo-maat-naam"></b>; daarmee doet die op de eigen telefoon mee (eigen score):</p>

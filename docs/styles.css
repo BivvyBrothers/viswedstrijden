@@ -295,9 +295,6 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .rolknop.actief { border-color: var(--blauw); background: var(--blauw-licht); }
 .rolknop.actief .rol-icoon { background: #ffffff; }
 .rolform { margin-top: 4px; }
-/* verborgen username-veld: alleen zodat de wachtwoordmanager de code wil bewaren */
-.vh { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-.oog { flex: none; font-size: 16px; padding: 4px 8px; }
 /* sessie-herstel: "Verder met de wedstrijd" op het startscherm */
 .verder-kaart { border: 2px solid var(--oranje); }
 .verder-kaart p:first-child { margin-top: 0; font-size: 16px; }

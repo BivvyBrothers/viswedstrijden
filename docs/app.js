@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 84; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 85; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -447,14 +447,6 @@ window.addEventListener('DOMContentLoaded', () => {
     location.hash = '';
   });
   document.querySelector('.brand')?.addEventListener('click', () => sessionStorage.setItem(HOME_BEWUST(), '1'));
-  // code-velden: type=password zodat de telefoon hem in de wachtwoordmanager wil zetten; oogje toont hem
-  document.querySelectorAll('[data-toon-code]').forEach((b) => b.addEventListener('click', () => {
-    const veld = $(b.dataset.toonCode);
-    if (!veld) return;
-    veld.type = veld.type === 'password' ? 'text' : 'password';
-    b.textContent = veld.type === 'password' ? '\ud83d\udc41' : '\ud83d\ude48';
-    b.setAttribute('aria-label', veld.type === 'password' ? 'toon code' : 'verberg code');
-  }));
   initHome(); initWedstrijd(); route(true);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   checkVersie();
@@ -511,8 +503,6 @@ function route(initieel) {
     KIJKER = !!mK;
     CODE = (mW || mK)[1].toUpperCase();
     sessionStorage.removeItem(HOME_BEWUST());   // in een wedstrijd: herstel bij een herstart weer aan
-    // wachtwoordmanager: per wedstrijd een eigen regel (username = tenant + wedstrijdcode)
-    document.querySelectorAll('.ww-username').forEach((u) => { u.value = `${KLANT() || 'wedstrijd'}-${CODE}`; });
     $('#topcode').textContent = CODE;
     toonView('wedstrijd');
     ROL = KIJKER ? 'kijker' : 'deelnemer';
@@ -2895,10 +2885,11 @@ function initWedstrijd() {
     $('#btn-herstel').textContent = ok ? '✅ gekopieerd' : 'kopiëren mislukt';
     setTimeout(() => { $('#btn-herstel').textContent = 'kopieer'; }, 2500);
   });
-  // (v84) de knop "bewaar in de wachtwoorden" is weer weg: een formulier dat
-  // alleen preventDefault doet herkent iOS niet als inlog en er verscheen geen
-  // bewaarvraag (toesteltest Patrick 14 sep). De wachtwoordmanager leert de code
-  // nu via het herstelveld, de eerste keer dat iemand hem daar echt intikt.
+  // (v84/v85) de wachtwoordmanager-route is geschrapt: noch een bewaar-formulier
+  // noch een echte inlog via het herstelveld (type=password) leverde op iOS een
+  // bewaarvraag op (toesteltests Patrick 14 sep, iPhone en iPad). Zonder echte
+  // navigatie na het inloggen herkent Safari het niet. De code bewaren gaat via
+  // "stuur naar jezelf" en kopiëren; sessie-herstel maakt hem zelden nog nodig.
   // code naar jezelf sturen (WhatsApp, notities): 4 van de 8 Carpclassic-deelnemers waren hem kwijt
   $('#btn-code-deel')?.addEventListener('click', async () => {
     const code = $('#team-code').textContent;
