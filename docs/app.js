@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 93; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 94; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -2068,7 +2068,7 @@ function laadFoto(url, timeoutMs = 12000) {
 }
 
 function tekenVangstPlaceholder(ctx, B, H) {
-  ctx.fillStyle = '#2f4a2a'; ctx.fillRect(0, 0, B, H);
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, 0, B, H);
   if (APP_ICOON.complete && APP_ICOON.naturalWidth) {
     const m = 340;
     ctx.save(); ctx.globalAlpha = 0.9;
