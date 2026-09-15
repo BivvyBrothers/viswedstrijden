@@ -6,7 +6,7 @@
 const CACHE = 'nphv-shell-v1';
 const SHELL = ['./', 'index.html', 'instructies.html', 'kaart.js', 'config.js', 'dieptekaart.jpg',
   'manifest.webmanifest',
-  '/styles.css', '/app.js', '/icon-180.png', '/icon-192.png', '/icon-512.png', '/kemblinck-logo.png'];
+  '/styles.css', '/app.js', '/icon-180.png', '/icon-192.png', '/icon-512.png', '/logo-rond-512.png', '/kemblinck-logo.png'];
 
 self.addEventListener('install', (e) => {
   // per stuk cachen: één ontbrekende asset mag de rest van de shell niet blokkeren
@@ -55,7 +55,7 @@ self.addEventListener('push', (e) => {
     }
     await self.registration.showNotification(d.title || 'Viswedstrijd', {
       body: d.body || 'Nieuwe vangst!',
-      icon: '/icon-192.png',
+      icon: '/logo-rond-512.png',
       badge: '/icon-192.png',
       vibrate: [100, 50, 100],
       tag: 'vangst',

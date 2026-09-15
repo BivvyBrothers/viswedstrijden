@@ -715,9 +715,11 @@ moet toevoegen.
 - **Lettertype:** systeemletter overal: `system-ui, -apple-system, 'Segoe UI', Roboto,
   Arial, sans-serif` (SF op Apple, Segoe op Windows). Geen Avenir Next meer in PDF's,
   handtekening of social-generators.
-- **Logo's:** `docs/icon-*.png` = het vierkante app-icoon (vis op groen), voor alles
-  onder ~96 px: favicon, manifest, beginscherm, topbar (`.brand-logo`), knoppen, de
-  productkaart op kemblinck.nl. `docs/logo-rond.png` (1024) en `logo-rond-512.png` = het
+- **Logo's:** `docs/icon-*.png` = het vierkante app-icoon (vis op groen), ALLEEN nog voor
+  favicon, manifest/beginscherm-icoon en de push-badge (iOS en Android bepalen daar zelf
+  de vorm). Op elke plek IN een pagina staat het ronde logo (besluit Patrick 15 sep):
+  topbar (`.brand-logo` 30 px), hero (84 px), inlogkaarten (60 px), knoppen (22 px),
+  productkaart op kemblinck.nl, voet van social-posts, pushmelding-icoon. `docs/logo-rond.png` (1024) en `logo-rond-512.png` = het
   ronde logo met "viswedstrijdapp.nl" in een boog erboven en "Loot. Vis. Win." eronder,
   voor alles vanaf ~96 px: merk-blok onderaan landing en tenantpagina's (132 px), kop van
   de instructiepagina's (96 px), inlogpagina (120 px), kop van beide A4's, de
