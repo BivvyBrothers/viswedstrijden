@@ -10,13 +10,14 @@
   --grijs: #6b6853;
   --groen: #2e7d32;
   --rood: #a63c2c;
-  --oranje: #d97b29;
+  --oranje: #f0a04b;         /* huisstijl-oranje (zelfde als site, icoon en socials) */
+  --oranje-tekst: #2c331f;   /* tekst op oranje: donker, wit haalt het contrast niet */
   --kaart-blauw: #1d4e79;    /* stekmarkers op de (blauwe) kaart */
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: system-ui, 'Segoe UI', Arial, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   background: var(--zand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='%23dcd9c1'%3E%3Cpath d='M40 60c30-25 85-15 95 15s-20 60-60 55S10 85 40 60z'/%3E%3Cpath d='M280 300c40-20 90 5 85 45s-70 55-100 25 -15-55 15-70z'/%3E%3Cpath d='M330 90c25-18 65-5 60 28s-55 40-75 18 -5-32 15-46z'/%3E%3C/g%3E%3Cg fill='%23d0cdb3'%3E%3Cpath d='M120 260c25-30 75-20 80 10s-30 65-70 50-35-35-10-60z'/%3E%3Cpath d='M240 130c20-22 60-12 62 15s-38 45-62 30-15-28 0-45z'/%3E%3C/g%3E%3Cg fill='%23e0ddc6'%3E%3Cpath d='M60 350c22-16 58-6 56 22s-48 38-66 18-8-26 10-40z'/%3E%3C/g%3E%3C/svg%3E") fixed;
   color: var(--tekst);
   font-size: 16px;
@@ -48,7 +49,7 @@ input, select { font-size: 16px; }
 .hero-logo { width: 72px; height: 72px; border-radius: 16px; flex: 0 0 auto;
   box-shadow: 0 4px 12px rgba(0,0,0,.3); }
 .hero-eyebrow { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .13em;
-  text-transform: uppercase; color: #f0a04b; margin-bottom: 3px; }
+  text-transform: uppercase; color: var(--oranje); margin-bottom: 3px; }
 .hero h1 { margin: 0 0 6px; font-size: 28px; line-height: 1.15; letter-spacing: -.4px; }
 .hero .sub { margin: 0; opacity: .9; }
 
@@ -67,6 +68,8 @@ h2 { font-size: 17px; margin: 0 0 10px; color: var(--blauw-donker); }
 .merk-tekst a:hover { text-decoration: underline; }
 .merk-voet { margin: 14px 0 6px; }
 .merk-voet img { width: 84px; height: auto; }
+.merk-logo { margin: 4px 0 10px; }
+.merk-logo img { width: 132px; height: 132px; }
 .merk-links { margin: 0; font-weight: 600; font-size: 13px; }
 .merk-links a { color: var(--blauw); text-decoration: none; }
 .merk-links a:hover { text-decoration: underline; }
@@ -345,7 +348,7 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
   position: fixed; z-index: 18;
   left: 50%; transform: translateX(-50%);
   bottom: calc(16px + env(safe-area-inset-bottom));
-  background: var(--oranje); color: #fff; border: none;
+  background: var(--oranje); color: var(--oranje-tekst); border: none;
   border-radius: 999px; padding: 14px 22px; font-size: 16px; font-weight: 800;
   box-shadow: 0 6px 18px rgba(42, 39, 33, .32); cursor: pointer;
   min-height: 52px;
@@ -423,7 +426,7 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 
 .update-banner {
   position: fixed; top: calc(52px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
-  background: var(--oranje); color: #fff; border: none; border-radius: 999px;
+  background: var(--oranje); color: var(--oranje-tekst); border: none; border-radius: 999px;
   padding: 10px 18px; font-weight: 700; z-index: 95; box-shadow: 0 4px 14px rgba(0,0,0,.25); cursor: pointer;
 }
 .update-banner[hidden] { display: none; }
@@ -493,8 +496,8 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 /* meldingen-aanzetten mag schreeuwen (vraag Patrick): volle accentkleur met
    donkere tekst (wit op dit oranje haalt het contrast niet) */
 .push-oproep {
-  background: #f0a04b; color: #2c331f; font-weight: 800;
-  border: 2px solid #d97b29; font-size: 15px; padding: 12px 16px;
+  background: var(--oranje); color: #2c331f; font-weight: 800;
+  border: 2px solid #d98a34; font-size: 15px; padding: 12px 16px;
   box-shadow: 0 2px 8px rgba(217, 123, 41, .35);
 }
 

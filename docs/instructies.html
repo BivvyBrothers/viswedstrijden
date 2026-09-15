@@ -22,17 +22,18 @@
 <link rel="icon" href="icon-192.png">
 <style>
   .instr-kop { display: flex; align-items: center; gap: 14px; }
-  .instr-kop img { width: 64px; height: 64px; border-radius: 14px; }
+  .instr-kop img { width: 96px; height: 96px; border-radius: 50%; flex: 0 0 auto; }
+  .instr-mockup { display: block; width: 100%; height: auto; border-radius: 14px; margin-top: 14px; }
   .instr-url {
     background: var(--blauw-donker); color: #fff; border-radius: 12px;
     padding: 14px 16px; text-align: center; margin: 12px 0;
   }
-  .instr-url .adres { font-family: ui-monospace, Menlo, monospace; font-weight: 700; font-size: 19px; color: #E8871E; word-break: break-all; }
+  .instr-url .adres { font-family: ui-monospace, Menlo, monospace; font-weight: 700; font-size: 19px; color: var(--oranje); word-break: break-all; }
   .stap-rij { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--zand); }
   .stap-rij:last-child { border-bottom: none; }
   .stap-nr {
     flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%;
-    background: #E8871E; color: #fff; font-weight: 800; font-size: 17px;
+    background: var(--oranje); color: #fff; font-weight: 800; font-size: 17px;
     display: flex; align-items: center; justify-content: center; margin-top: 2px;
   }
   .stap-rij b { color: var(--blauw-donker); }
@@ -50,12 +51,13 @@
 <main class="container">
   <section class="card hero">
     <div class="instr-kop">
-      <img src="icon-180.png" alt="app-logo">
+      <img src="logo-rond-512.png" alt="Viswedstrijdapp-logo" width="96" height="96">
       <div>
         <h1>Zet de app op je beginscherm</h1>
         <p class="sub">Klaar in één minuut. Zonder App Store, zonder account.</p>
       </div>
     </div>
+    <img class="instr-mockup" src="schermen/beginscherm-mockup.png" alt="Het icoon van de viswedstrijdapp op het beginscherm van een iPhone" width="1600" height="1200">
   </section>
 
   <section class="card">
@@ -66,7 +68,7 @@
       <div class="muted klein" style="color:#d9dcc2">Open op je telefoon in <b style="color:#fff">Safari</b> (iPhone) of <b style="color:#fff">Chrome</b> (Android)</div>
       <div class="adres">viswedstrijdapp.nl</div>
       <div class="muted klein" style="color:#d9dcc2; margin-top:6px">tik op <b style="color:#fff">Inloggen</b> en kies jouw organisatie
-      &nbsp;·&nbsp; direct kan ook, bijv. <b style="color:#E8871E">viswedstrijdapp.nl/nphv</b></div>
+      &nbsp;·&nbsp; direct kan ook, bijv. <b style="color:var(--oranje)">viswedstrijdapp.nl/nphv</b></div>
     </div>
   </section>
 

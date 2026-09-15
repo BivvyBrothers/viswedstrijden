@@ -703,6 +703,34 @@ valt. Lukt aanbieden ook niet meer (langer dan 24 uur geleden), dan blijft de
 vangst in de wachtrij staan met de melding dat de organisator hem handmatig
 moet toevoegen.
 
+## Huisstijl (vastgelegd 15 sep 2026, bron = de landingspagina)
+
+- **Kleuren:** groen `#353d2a` (topbar, kop, achtergrond van logo en icoon; hero-gradient
+  `#2c331f -> #4d5839 -> #6d7355`), oranje `#f0a04b` (`--oranje`; accenten, vis, knoppen),
+  wit op groen, tekst op oranje ALTIJD donker `#2c331f` (`--oranje-tekst`; wit haalt het
+  contrast niet), zand `#e6e4d0`/`#edeadb` als lichte achtergrond. Vóór 15 sep liepen er
+  drie oranjes (#d97b29 app, #E8871E icoon/PDF/socials, #f0a04b site) en twee groenen
+  (#2f4a2a icoon) door elkaar; die zijn allemaal hiernaar omgezet, ook de PNG-iconen
+  (herkleurd, origineel in `marketing/oud/icon-512-v1.png`).
+- **Lettertype:** systeemletter overal: `system-ui, -apple-system, 'Segoe UI', Roboto,
+  Arial, sans-serif` (SF op Apple, Segoe op Windows). Geen Avenir Next meer in PDF's,
+  handtekening of social-generators.
+- **Logo's:** `docs/icon-*.png` = het vierkante app-icoon (vis op groen), voor alles
+  onder ~96 px: favicon, manifest, beginscherm, topbar (`.brand-logo`), knoppen, de
+  productkaart op kemblinck.nl. `docs/logo-rond.png` (1024) en `logo-rond-512.png` = het
+  ronde logo met "viswedstrijdapp.nl" in een boog erboven en "Loot. Vis. Win." eronder,
+  voor alles vanaf ~96 px: merk-blok onderaan landing en tenantpagina's (132 px), kop van
+  de instructiepagina's (96 px), inlogpagina (120 px), kop van beide A4's, de
+  mailhandtekening (76 px), og.png en het profiel op Instagram/Facebook. Bron en
+  generator: `marketing/gen_profielfoto.py` (schrijft ook `marketing/profielfoto-socials.png`).
+- **Beginscherm-mockup:** `docs/schermen/beginscherm-mockup.png` (1600x1200) uit
+  `tools/mockup_beginscherm.html` (headless screenshot 1200x900 @2x, daarna verkleind):
+  iPhone-hoek met het icoon tussen generieke apps, op de hero-gradient. Staat op de
+  landing (sectie "Geen accounts, geen App Store") en op de drie instructiepagina's.
+- **Regenereren na een stijlwijziging:** `gen_profielfoto.py`, `tools/og_image.html`
+  (screenshot 1200x630), beide A4's (print-to-pdf + pymupdf-PNG op 110 dpi), de
+  social-generators in `marketing/` en `klanten/NPHV/social/`.
+
 ## Documentatie-oppervlakken (WERKAFSPRAAK sinds 15 jul 2026)
 
 Bij ELKE nieuwe feature of gedragswijziging die gebruikers raakt worden ALLE
@@ -773,7 +801,8 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
 9. **kemblinck.nl** (repo `KemblincK/Bedrijf/site/`): Viswedstrijden-productkaart
    (product__desc + product__info); na akkoord direct pushen (vaste afspraak)
 10. Deze CLAUDE.md + de project-memory
-11. **og/social-meta (sinds v49):** elke statische HTML-pagina heeft
+11. **Huisstijl (zie de sectie hierboven):** kleuren, letter en logo's op alle oppervlakken gelijk.
+12. **og/social-meta (sinds v49):** elke statische HTML-pagina heeft
     og:title/og:description (spiegelen title + meta description: bij
     tekstwijziging BEIDE bijwerken), og:url (absolute URL), og:image
     (https://viswedstrijdapp.nl/og.png, 1200x630) en twitter:card.

@@ -107,11 +107,11 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
                 1, 'instructies og:url')
     t = vervang(t, 'class="brand-logo"> NPHV Viswedstrijden</a>',
                 f'class="brand-logo"> {kh} Viswedstrijden</a>', 1, 'instructies brand')
-    t = vervang(t, 'tik op <b style="color:#fff">Inloggen</b> en kies daar <b style="color:#E8871E">NPHV</b>',
-                f'tik op <b style="color:#fff">Inloggen</b> en kies daar <b style="color:#E8871E">{kh}</b>',
+    t = vervang(t, 'tik op <b style="color:#fff">Inloggen</b> en kies daar <b style="color:var(--oranje)">NPHV</b>',
+                f'tik op <b style="color:#fff">Inloggen</b> en kies daar <b style="color:var(--oranje)">{kh}</b>',
                 1, 'instructies kies-daar')
-    t = vervang(t, 'direct kan ook: <b style="color:#E8871E">viswedstrijdapp.nl/nphv</b>',
-                f'direct kan ook: <b style="color:#E8871E">viswedstrijdapp.nl/{slug}</b>', 1, 'instructies adres')
+    t = vervang(t, 'direct kan ook: <b style="color:var(--oranje)">viswedstrijdapp.nl/nphv</b>',
+                f'direct kan ook: <b style="color:var(--oranje)">viswedstrijdapp.nl/{slug}</b>', 1, 'instructies adres')
     t = vervang(t, '<p class="muted klein">Liever op papier? <a href="instructies-print.pdf">'
                    'Download de print-versie (PDF, A4)</a>.</p>',
                 '', 1, 'instructies print-link (nog geen tenant-pdf)')

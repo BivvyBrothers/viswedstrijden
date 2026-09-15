@@ -37,14 +37,14 @@
     color: #fff; border-radius: 18px; padding: clamp(28px, 5vw, 52px);
     margin: 12px 0;
   }
-  .landing-hero .eyebrow { color: #f0a04b; font-size: 15px; }
+  .landing-hero .eyebrow { color: var(--oranje); font-size: 15px; }
   .landing-hero .eyebrow .accent { color: #ffffff; }
   .landing-hero h1 { font-size: clamp(34px, 6vw, 52px); }
   .landing-hero h1 {
     font-size: clamp(38px, 7vw, 60px); font-weight: 800;
     letter-spacing: -.5px; line-height: 1.05; margin: 0 0 14px;
   }
-  .landing-hero h1 .accent { color: #f0a04b; }
+  .landing-hero h1 .accent { color: var(--oranje); }
   .landing-hero .sub {
     font-size: clamp(16px, 2.4vw, 19px); line-height: 1.55;
     opacity: .92; margin: 0 0 22px; max-width: 46ch;
@@ -52,6 +52,8 @@
   .duo { display: flex; gap: clamp(20px, 4vw, 44px); align-items: center; flex-wrap: wrap; }
   .duo > .tekstkolom { flex: 1 1 320px; min-width: 0; }
   .duo > .telefoon { margin: 0 auto; }
+  .duo > .mockup { flex: 1 1 340px; min-width: 0; }
+  .mockup img { display: block; width: 100%; height: auto; border-radius: 18px; box-shadow: 0 10px 30px rgba(42,39,33,.22); }
   /* Telefoonlijst: de opnames zijn 390x844 punten (1:2,16), dus de verhouding
      van een echte telefoon. Rand, hoekstraal en zijknoppen zijn op die maat
      geschaald; met een bredere doos of een vlakkere verhouding leest het
@@ -69,7 +71,7 @@
   .telefoon::after { right: -11px; top: 30%; height: 12%; border-radius: 0 3px 3px 0; }
   .hero-bewijs { margin: 14px 0 0; font-size: 13px; font-weight: 600; color: #d9dcc2; }
   .demo-rollen { margin: 10px 0 0; font-size: 14px; color: #d9dcc2; }
-  .demo-rollen a { color: #f0a04b; font-weight: 700; }
+  .demo-rollen a { color: var(--oranje); font-weight: 700; }
   .demo-rollen .muted { color: #b9bda6; }
   @media (max-width: 520px) {
     .landing-hero .telefoon { width: min(178px, 58vw); }
@@ -102,7 +104,7 @@
   .sectie li { margin: 4px 0; }
   .cta-knoppen { display: flex; gap: 10px; flex-wrap: wrap; }
   .cta-knoppen .btn { text-decoration: none; display: inline-flex; align-items: center; }
-  .btn.hero-primair { background: #f0a04b; color: #2c331f; }
+  .btn.hero-primair { background: var(--oranje); color: #2c331f; }
   .btn.hero-secundair { background: rgba(255,255,255,.14); color: #fff; }
   .privacy-blok { background: var(--blauw-donker); color: #fff; }
   .privacy-blok h2 { color: #fff; }
@@ -348,7 +350,7 @@
         reageert kan met één tik, en vangsten zijn te corrigeren of handmatig in te
         voeren (ook na de eindtijd). Eerdere wedstrijden blijven in het archief staan.</p>
       </div>
-      <div class="telefoon"><img src="schermen/scherm-home.png" alt="Het startscherm: inloggen als deelnemer, kijker of organisator" width="780" height="1688" loading="lazy"></div>
+      <div class="mockup"><img src="schermen/beginscherm-mockup.png" alt="Het icoon van de viswedstrijdapp op het beginscherm van een iPhone, tussen de andere apps" width="1600" height="1200" loading="lazy"></div>
     </div>
   </section>
 
@@ -488,6 +490,7 @@
   </section>
 
   <section class="card merk-blok">
+    <p class="merk-logo"><a href="./" aria-label="Viswedstrijdapp"><img src="logo-rond-512.png" alt="Viswedstrijdapp" width="132" height="132"></a></p>
     <p class="merk-voet"><a href="https://kemblinck.nl" target="_blank" rel="noopener" aria-label="Een product van KemblincK"><img src="kemblinck-logo.png" alt="Een product van KemblincK" width="84" height="84"></a></p>
     <p class="merk-links">
       <a href="https://kemblinck.nl" target="_blank" rel="noopener">kemblinck.nl</a>

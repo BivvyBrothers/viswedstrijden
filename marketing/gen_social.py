@@ -7,14 +7,14 @@ icon = b64("docs/icon-512.png")
 CSS = """
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { width:1080px; height:1080px; overflow:hidden; }
-body { font-family:'Avenir Next','Segoe UI',Arial,sans-serif; position:relative; }
+body { font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif; position:relative; }
 .groen { background:#353d2a; color:#fff; }
 .creme { background:#edeadb; color:#29271e; }
 .wrap { width:1080px; height:1080px; padding:90px 90px 190px; display:flex; flex-direction:column; }
 .badge { width:150px; height:150px; border-radius:34px; display:block; }
-.oranje { color:#E8871E; }
+.oranje { color:#f0a04b; }
 .voet { position:absolute; left:90px; right:90px; bottom:74px; display:flex; align-items:baseline; justify-content:space-between; }
-.voet .adres { font-family:'Courier New',monospace; font-weight:800; font-size:34px; color:#E8871E; letter-spacing:.5px; }
+.voet .adres { font-family:'Courier New',monospace; font-weight:800; font-size:34px; color:#f0a04b; letter-spacing:.5px; }
 .voet .kem { font-size:24px; }
 """
 def html(body, klass, extra=""):
@@ -28,7 +28,7 @@ lancering = html(f"""
 <div class='wrap'>
   <img class='badge' src='data:image/png;base64,{icon}'>
   <div style='margin-top:50px'>
-    <div style='font-size:32px; font-weight:700; color:#E8871E; letter-spacing:2px'>NIEUW</div>
+    <div style='font-size:32px; font-weight:700; color:#f0a04b; letter-spacing:2px'>NIEUW</div>
     <h1 style='font-size:92px; line-height:1.05; font-weight:800; margin-top:16px'>De<br>viswedstrijd&#8209;app<br>is er</h1>
     <p style='font-size:39px; line-height:1.4; color:#d9dcc2; margin-top:38px; max-width:860px'>
     Loten, je stek kiezen op de kaart, je vangst doorgeven met foto en het klassement
@@ -41,10 +41,10 @@ lancering = html(f"""
 # 2) FEATURES
 def feat(svg, titel, tekst):
     return f"<div class='kaart'><div class='ico'>{svg}</div><b>{titel}</b><p>{tekst}</p></div>"
-svg_loting = "<svg width='58' height='58' viewBox='0 0 64 64'><rect x='10' y='10' width='44' height='44' rx='10' fill='none' stroke='#E8871E' stroke-width='4'/><circle cx='22' cy='22' r='4.5' fill='#E8871E'/><circle cx='42' cy='22' r='4.5' fill='#E8871E'/><circle cx='32' cy='32' r='4.5' fill='#E8871E'/><circle cx='22' cy='42' r='4.5' fill='#E8871E'/><circle cx='42' cy='42' r='4.5' fill='#E8871E'/></svg>"
-svg_kaart = "<svg width='58' height='58' viewBox='0 0 64 64'><path d='M24 8 L40 14 L56 8 L56 50 L40 56 L24 50 L8 56 L8 14 Z' fill='none' stroke='#E8871E' stroke-width='4' stroke-linejoin='round'/><path d='M24 8 L24 50 M40 14 L40 56' stroke='#E8871E' stroke-width='4'/><circle cx='32' cy='30' r='5' fill='#E8871E'/></svg>"
-svg_klass = "<svg width='58' height='58' viewBox='0 0 64 64'><path d='M20 12 h24 v10 a12 12 0 0 1 -24 0 z' fill='none' stroke='#E8871E' stroke-width='4' stroke-linejoin='round'/><path d='M20 16 H12 a6 6 0 0 0 8 8 M44 16 h8 a6 6 0 0 1 -8 8' fill='none' stroke='#E8871E' stroke-width='4'/><path d='M32 34 v8 M24 52 h16 M28 46 h8' stroke='#E8871E' stroke-width='4' stroke-linecap='round'/></svg>"
-svg_push = "<svg width='58' height='58' viewBox='0 0 64 64'><path d='M32 10 c-9 0 -14 6 -14 15 v10 l-5 8 h38 l-5 -8 v-10 c0 -9 -5 -15 -14 -15 z' fill='none' stroke='#E8871E' stroke-width='4' stroke-linejoin='round'/><path d='M26 48 a6 6 0 0 0 12 0' fill='none' stroke='#E8871E' stroke-width='4'/></svg>"
+svg_loting = "<svg width='58' height='58' viewBox='0 0 64 64'><rect x='10' y='10' width='44' height='44' rx='10' fill='none' stroke='#f0a04b' stroke-width='4'/><circle cx='22' cy='22' r='4.5' fill='#f0a04b'/><circle cx='42' cy='22' r='4.5' fill='#f0a04b'/><circle cx='32' cy='32' r='4.5' fill='#f0a04b'/><circle cx='22' cy='42' r='4.5' fill='#f0a04b'/><circle cx='42' cy='42' r='4.5' fill='#f0a04b'/></svg>"
+svg_kaart = "<svg width='58' height='58' viewBox='0 0 64 64'><path d='M24 8 L40 14 L56 8 L56 50 L40 56 L24 50 L8 56 L8 14 Z' fill='none' stroke='#f0a04b' stroke-width='4' stroke-linejoin='round'/><path d='M24 8 L24 50 M40 14 L40 56' stroke='#f0a04b' stroke-width='4'/><circle cx='32' cy='30' r='5' fill='#f0a04b'/></svg>"
+svg_klass = "<svg width='58' height='58' viewBox='0 0 64 64'><path d='M20 12 h24 v10 a12 12 0 0 1 -24 0 z' fill='none' stroke='#f0a04b' stroke-width='4' stroke-linejoin='round'/><path d='M20 16 H12 a6 6 0 0 0 8 8 M44 16 h8 a6 6 0 0 1 -8 8' fill='none' stroke='#f0a04b' stroke-width='4'/><path d='M32 34 v8 M24 52 h16 M28 46 h8' stroke='#f0a04b' stroke-width='4' stroke-linecap='round'/></svg>"
+svg_push = "<svg width='58' height='58' viewBox='0 0 64 64'><path d='M32 10 c-9 0 -14 6 -14 15 v10 l-5 8 h38 l-5 -8 v-10 c0 -9 -5 -15 -14 -15 z' fill='none' stroke='#f0a04b' stroke-width='4' stroke-linejoin='round'/><path d='M26 48 a6 6 0 0 0 12 0' fill='none' stroke='#f0a04b' stroke-width='4'/></svg>"
 
 features = html(f"""
 <div class='wrap' style='padding-top:80px'>

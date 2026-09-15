@@ -3,18 +3,18 @@
 <style>
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: "Avenir Next", "Segoe UI", Arial, sans-serif; width: 210mm; height: 297mm;
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; width: 210mm; height: 297mm;
          background: #edeadb; color: #29271e; position: relative; }
   .kop { background: #353d2a; color: #fff; padding: 10mm 14mm 8mm; display: flex; align-items: center; gap: 8mm; }
-  .kop img { width: 26mm; height: 26mm; border-radius: 5.5mm; }
+  .kop img { width: 30mm; height: 30mm; border-radius: 50%; }
   .kop .eyebrow { font-size: 8.5pt; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
-                  color: #E8871E; margin-bottom: 1.2mm; }
+                  color: #f0a04b; margin-bottom: 1.2mm; }
   .kop h1 { font-size: 26pt; line-height: 1.1; font-weight: 800; letter-spacing: -.3pt; }
-  .kop h1 .accent { color: #E8871E; }
+  .kop h1 .accent { color: #f0a04b; }
   .kop .sub { color: #d9dcc2; font-size: 11pt; font-weight: 600; margin-top: 1.5mm; }
-  .body { padding: 7mm 14mm 0; }
-  .intro { font-size: 10.5pt; line-height: 1.45; color: #3c392c; }
-  .features { display: flex; flex-wrap: wrap; gap: 2mm 3mm; margin: 4mm 0 6mm; }
+  .body { padding: 6mm 14mm 0; }
+  .intro { font-size: 10.2pt; line-height: 1.42; color: #3c392c; }
+  .features { display: flex; flex-wrap: wrap; gap: 1.8mm 2.6mm; margin: 3.5mm 0 5mm; }
   .features span { background: #dfdcc6; border-radius: 3mm; padding: 1.6mm 3.4mm; font-size: 8.8pt;
                    color: #45412e; font-weight: 600; }
   .kolommen { display: flex; gap: 6mm; align-items: stretch; }
@@ -23,7 +23,7 @@
   .kolomkop small { display: block; font-weight: 600; font-size: 8.8pt; color: #7a7660; margin-top: .8mm; }
   .kaart { background: #fff; border-radius: 5mm; padding: 5mm 6mm; box-shadow: 0 1px 3px rgba(42,39,33,.18); }
   .kaart .naam { font-size: 10.5pt; font-weight: 800; color: #353d2a; }
-  .kaart .prijs { font-size: 19pt; font-weight: 800; color: #E8871E; margin: 1mm 0 .5mm; }
+  .kaart .prijs { font-size: 19pt; font-weight: 800; color: #f0a04b; margin: 1mm 0 .5mm; }
   .kaart .prijs small { font-size: 9.5pt; color: #7a7660; font-weight: 600; }
   .kaart p { font-size: 9pt; line-height: 1.45; color: #57543f; }
   .setup { background: #dfdcc6; border-radius: 5mm; padding: 4.5mm 6mm; }
@@ -36,26 +36,26 @@
   table.staffel th { color: #7a7660; font-size: 8.2pt; text-transform: uppercase; letter-spacing: .4px;
                      border-bottom: .5mm solid #dfdcc6; }
   table.staffel tr + tr td { border-top: .3mm solid #eceada; }
-  table.staffel .p { font-weight: 800; color: #E8871E; font-size: 11pt; white-space: nowrap; }
-  .gratis { margin-top: 6mm; background: #353d2a; color: #fff; border-radius: 5mm; padding: 4.5mm 6mm;
+  table.staffel .p { font-weight: 800; color: #f0a04b; font-size: 11pt; white-space: nowrap; }
+  .gratis { margin-top: 4.5mm; background: #353d2a; color: #fff; border-radius: 5mm; padding: 4.5mm 6mm;
             display: flex; align-items: center; gap: 5mm; }
-  .gratis .ster { flex: 0 0 auto; width: 10mm; height: 10mm; border-radius: 50%; background: #E8871E;
+  .gratis .ster { flex: 0 0 auto; width: 10mm; height: 10mm; border-radius: 50%; background: #f0a04b;
                   display: flex; align-items: center; justify-content: center; font-size: 13pt;
                   color: #fff; font-weight: 800; }
-  .gratis b { color: #E8871E; }
+  .gratis b { color: #f0a04b; }
   .gratis p { font-size: 9.5pt; line-height: 1.45; color: #d9dcc2; }
-  .betaling { margin-top: 4mm; font-size: 9pt; color: #57543f; line-height: 1.5; }
+  .betaling { margin-top: 3.5mm; font-size: 8.8pt; color: #57543f; line-height: 1.5; }
   .betaling b { color: #353d2a; }
   .voet { position: absolute; left: 0; right: 0; bottom: 0; background: #353d2a; color: #9ba183;
           padding: 5mm 14mm; font-size: 9pt; display: flex; justify-content: space-between; align-items: center; }
-  .voet .oranje { color: #E8871E; font-weight: 700; }
+  .voet .oranje { color: #f0a04b; font-weight: 700; }
   .voet img { width: 8mm; height: 8mm; vertical-align: middle; margin-right: 2.5mm;
               background: #edeadb; border-radius: 2mm; padding: .7mm; }
   .voet .kem { display: flex; align-items: center; }
 </style></head>
 <body>
   <div class="kop">
-    <img src="docs/icon-512.png" alt="logo">
+    <img src="docs/logo-rond-512.png" alt="logo">
     <div>
       <div class="eyebrow">Viswedstrijdapp.nl · prijzen</div>
       <h1>Loot. Vis. <span class="accent">Win.</span></h1>

@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 92; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 93; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -1910,7 +1910,7 @@ function tekenUitslag() {
   // achtergrond + kop
   ctx.fillStyle = '#edeadb'; ctx.fillRect(0, 0, B, H);
   ctx.fillStyle = '#353d2a'; ctx.fillRect(0, 0, B, KOP);
-  ctx.fillStyle = '#E8871E'; ctx.font = F(26, true);
+  ctx.fillStyle = '#f0a04b'; ctx.font = F(26, true);
   ctx.fillText('EINDUITSLAG', 64, 74);
   ctx.fillStyle = '#ffffff'; ctx.font = F(46, true);
   ctx.fillText(kort(w.naam, B - 128), 64, 130);
@@ -2041,7 +2041,7 @@ function tekenVoet(ctx, B, H, VOET, rechts = 'loting \u00b7 stekkeuze \u00b7 liv
     ctx.restore();
     x += m + 22;
   }
-  ctx.fillStyle = '#E8871E'; ctx.font = '800 30px "Courier New", monospace';
+  ctx.fillStyle = '#f0a04b'; ctx.font = '800 30px "Courier New", monospace';
   ctx.fillText('viswedstrijdapp.nl', x, H - VOET / 2 + 11);
   ctx.fillStyle = '#9ba183'; ctx.font = '22px system-ui, "Segoe UI", Arial, sans-serif';
   ctx.textAlign = 'right';
@@ -2099,7 +2099,7 @@ async function tekenVangst(v, t) {
     tekenVangstPlaceholder(ctx, B, FOTO_H);
   }
   ctx.fillStyle = '#353d2a'; ctx.fillRect(0, FOTO_H, B, INFO + VOET);
-  ctx.fillStyle = '#E8871E'; ctx.font = F(72, true);
+  ctx.fillStyle = '#f0a04b'; ctx.font = F(72, true);
   ctx.fillText(fmtKg(v.gewicht_gram), 64, FOTO_H + 98);
   ctx.fillStyle = '#ffffff'; ctx.font = F(34, true);
   ctx.fillText(kort(t ? teamNaam(t) : 'vangst', B - 128), 64, FOTO_H + 154);
@@ -2237,7 +2237,7 @@ function startConfetti(canvas, duurMs) {
   canvas.width = canvas.clientWidth * dpr; canvas.height = canvas.clientHeight * dpr;
   ctx.scale(dpr, dpr);
   const W = canvas.clientWidth, H = canvas.clientHeight;
-  const kleuren = ['#E8871E', '#d9dcc2', '#fff', '#6d7355', '#f2c14e'];
+  const kleuren = ['#f0a04b', '#d9dcc2', '#fff', '#6d7355', '#f2c14e'];
   const deeltjes = Array.from({ length: 140 }, () => ({
     x: Math.random() * W, y: -20 - Math.random() * H * 0.5,
     vx: (Math.random() - 0.5) * 1.6, vy: 2 + Math.random() * 3,
@@ -2323,7 +2323,7 @@ function tekenSeizoen() {
 
   ctx.fillStyle = '#edeadb'; ctx.fillRect(0, 0, B, H);
   ctx.fillStyle = '#353d2a'; ctx.fillRect(0, 0, B, KOP);
-  ctx.fillStyle = '#E8871E'; ctx.font = F(26, true);
+  ctx.fillStyle = '#f0a04b'; ctx.font = F(26, true);
   ctx.fillText('SEIZOENSSTAND', 64, 74);
   ctx.fillStyle = '#ffffff'; ctx.font = F(46, true);
   ctx.fillText(kort(s.seizoen.naam, B - 128), 64, 130);

@@ -6,12 +6,12 @@ from PIL import Image
 
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 HIER = pathlib.Path(__file__).parent
-GROEN = (47, 74, 42); ORANJE = (232, 135, 30)
+GROEN = (53, 61, 42); ORANJE = (240, 160, 75)   # huisstijl = de site: #353d2a en #f0a04b
 
 # 1. de vis uit het icoon halen: alles wat niet groen is wordt oranje met een alpha op basis van de afstand tot groen
 ico = Image.open(HIER / "../docs/icon-512.png").convert("RGB")
 px = ico.load(); vis = Image.new("RGBA", ico.size, (0, 0, 0, 0)); vp = vis.load()
-maxd = math.dist(GROEN, ORANJE)
+maxd = math.dist(GROEN, ORANJE)   # het icoon staat in dezelfde kleuren (docs/icon-512.png is de bron van de vis)
 for y in range(ico.height):
     for x in range(ico.width):
         a = min(1.0, math.dist(px[x, y], GROEN) / maxd)
@@ -35,10 +35,10 @@ svg = f"""<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org
   <rect width='{W}' height='{W}' fill='rgb{GROEN}'/>
   <defs><path id='boog' d='M {x1:.1f} {y1:.1f} A {R} {R} 0 0 1 {x2:.1f} {y2:.1f}'/>
         <path id='boog2' d='M {bx1:.1f} {by1:.1f} A {R2} {R2} 0 0 0 {bx2:.1f} {by2:.1f}'/></defs>
-  <text font-family="'Avenir Next','Segoe UI',Arial,sans-serif" font-weight='800' font-size='88' fill='rgb{ORANJE}' letter-spacing='6'>
+  <text font-family="system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif" font-weight='800' font-size='88' fill='rgb{ORANJE}' letter-spacing='6'>
     <textPath xlink:href='#boog' startOffset='50%' text-anchor='middle'>viswedstrijd<tspan fill='#ffffff'>app</tspan>.nl</textPath>
   </text>
-  <text font-family="'Avenir Next','Segoe UI',Arial,sans-serif" font-weight='800' font-size='78' fill='#ffffff' letter-spacing='5'>
+  <text font-family="system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif" font-weight='800' font-size='78' fill='#ffffff' letter-spacing='5'>
     <textPath xlink:href='#boog2' startOffset='50%' text-anchor='middle'>Loot<tspan fill='rgb{ORANJE}'>.</tspan> Vis<tspan fill='rgb{ORANJE}'>.</tspan> Win<tspan fill='rgb{ORANJE}'>.</tspan></textPath>
   </text>
   <image xlink:href='data:image/png;base64,{vis64}' x='{fx:.1f}' y='{fy:.1f}' width='{fw:.1f}' height='{fh:.1f}'/>
@@ -54,4 +54,10 @@ im = Image.open(pp).convert("RGBA"); m = Image.new("L", im.size, 0)
 from PIL import ImageDraw
 ImageDraw.Draw(m).ellipse((0, 0, W - 1, W - 1), fill=255)
 rond = Image.new("RGBA", im.size, (230, 228, 208, 255)); rond.paste(im, (0, 0), m); rond.save(HIER / "profielfoto-socials-rond-preview.png")
+# het ronde logo voor site, instructies, PDF's en handtekening: transparant buiten de cirkel
+logo = Image.new("RGBA", im.size, (0, 0, 0, 0)); logo.paste(im, (0, 0), m)
+DOCS = HIER / "../docs"
+logo.resize((1024, 1024), Image.LANCZOS).save(DOCS / "logo-rond.png")
+logo.resize((512, 512), Image.LANCZOS).save(DOCS / "logo-rond-512.png")
+print("geschreven: docs/logo-rond.png (1024) + docs/logo-rond-512.png")
 print("geschreven:", pp, "+ rond-preview")

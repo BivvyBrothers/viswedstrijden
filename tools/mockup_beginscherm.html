@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="nl"><head><meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:900px; overflow:hidden; position:relative;
+         background: linear-gradient(150deg, #2c331f, #4d5839 60%, #6d7355);
+         font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+  .phone { position:absolute; left:150px; top:105px; width:980px; height:2000px;
+           border-radius:170px; background:#0d0f0a; padding:16px;
+           border:6px solid #a8a79f; box-shadow: 0 40px 90px rgba(0,0,0,.45), inset 0 0 0 5px #6d6c66;
+           transform: rotate(-10deg); transform-origin: 0 0; }
+  .side { position:absolute; left:-15px; width:9px; background:#8f8e88; border-radius:4px; }
+  .side.a { top:330px; height:90px; } .side.b { top:470px; height:170px; } .side.c { top:680px; height:170px; }
+  .screen { width:100%; height:100%; border-radius:150px; overflow:hidden; position:relative;
+            background: radial-gradient(circle at 30% 20%, #7b8462 0, #4d5839 45%, #2c331f 100%); }
+  .blob { position:absolute; border-radius:50%; filter: blur(60px); opacity:.55; }
+  .b1 { width:520px; height:520px; left:-120px; top:380px; background:#8a9466; }
+  .b2 { width:600px; height:600px; right:-200px; top:900px; background:#3a4a2a; }
+  .island { position:absolute; left:50%; top:26px; transform:translateX(-50%); width:250px; height:72px; border-radius:40px; background:#000; }
+  .status { position:absolute; top:42px; left:90px; right:90px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; font-size:40px; }
+  .status .r { display:flex; align-items:center; gap:14px; }
+  .bars { display:flex; align-items:flex-end; gap:4px; } .bars i { display:block; width:8px; background:#fff; border-radius:2px; }
+  .wifi { width:34px; height:26px; border:5px solid #fff; border-color:#fff transparent transparent transparent; border-radius:50% 50% 0 0; }
+  .batt { width:60px; height:28px; border:4px solid #fff; border-radius:9px; padding:3px; } .batt i { display:block; height:100%; width:80%; background:#fff; border-radius:3px; }
+  .grid { position:absolute; top:190px; left:70px; right:70px; display:grid; grid-template-columns:repeat(4, 1fr); row-gap:44px; column-gap:18px; }
+  .app { display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .ico { width:172px; height:172px; border-radius:40px; box-shadow:0 10px 24px rgba(0,0,0,.28); display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
+  .app span { color:#fff; font-size:26px; font-weight:500; text-shadow:0 2px 6px rgba(0,0,0,.4); letter-spacing:.2px; }
+  .ico img { width:100%; height:100%; display:block; }
+  .agenda { background:#fff; flex-direction:column; } .agenda b { color:#e0402f; font-size:28px; letter-spacing:2px; margin-top:6px; } .agenda i { font-style:normal; color:#1a1a1a; font-size:96px; line-height:1; font-weight:300; }
+  .camera { background:linear-gradient(#5a5a5e,#2a2a2d); } .camera i { width:78px; height:78px; border-radius:50%; border:12px solid #dcdce0; background:#111; }
+  .kaart { background:linear-gradient(#e8f0d8,#c9d9a8); } .kaart i { width:120px; height:120px; border-radius:50%; border:10px solid #6d7355; border-right-color:#f0a04b; border-bottom-color:#4d5839; }
+  .weer { background:linear-gradient(#3e8ad9,#7fb9ee); } .weer i { width:80px; height:80px; border-radius:50%; background:#ffd75e; box-shadow:0 0 0 14px rgba(255,255,255,.35); }
+  .mail { background:linear-gradient(#3aa0f5,#1a6fd6); } .mail i { width:100px; height:70px; border-radius:12px; background:#fff; position:relative; } .mail i::after { content:''; position:absolute; left:8px; right:8px; top:8px; height:40px; border-left:46px solid transparent; border-right:46px solid transparent; border-top:36px solid #1a6fd6; width:0; margin:auto; left:0; right:0; }
+  .notitie { background:#fff; flex-direction:column; justify-content:flex-start; } .notitie b { display:block; width:100%; height:48px; background:#f5d353; } .notitie i { display:block; width:110px; height:8px; background:#cfcfcf; border-radius:4px; margin-top:22px; box-shadow:0 22px 0 #cfcfcf, 0 44px 0 #cfcfcf; }
+  .klok { background:#111; } .klok i { width:120px; height:120px; border-radius:50%; background:#fff; position:relative; } .klok i::before, .klok i::after { content:''; position:absolute; left:50%; top:50%; background:#111; transform-origin:0 50%; height:5px; } .klok i::before { width:40px; transform:rotate(-60deg); } .klok i::after { width:52px; transform:rotate(30deg); background:#f0a04b; height:4px; }
+  .muziek { background:linear-gradient(#ff6a7a,#e0263c); } .muziek i { width:26px; height:26px; border-radius:50%; background:#fff; box-shadow:44px -18px 0 #fff; position:relative; } .muziek i::before { content:''; position:absolute; left:20px; top:-52px; width:6px; height:60px; background:#fff; box-shadow:44px -18px 0 #fff; }
+</style></head>
+<body>
+  <div class="phone">
+    <div class="side a"></div><div class="side b"></div><div class="side c"></div>
+    <div class="screen">
+      <div class="blob b1"></div><div class="blob b2"></div>
+      <div class="island"></div>
+      <div class="status"><span>9:41</span><span class="r"><span class="bars"><i style="height:10px"></i><i style="height:15px"></i><i style="height:20px"></i><i style="height:25px"></i></span><span class="wifi"></span><span class="batt"><i></i></span></span></div>
+      <div class="grid">
+        <div class="app"><div class="ico agenda"><b>ZAT</b><i>12</i></div><span>Agenda</span></div>
+        <div class="app"><div class="ico weer"><i></i></div><span>Weer</span></div>
+        <div class="app"><div class="ico camera"><i></i></div><span>Camera</span></div>
+        <div class="app"><div class="ico kaart"><i></i></div><span>Kaarten</span></div>
+        <div class="app"><div class="ico"><img src="../docs/icon-512.png" alt=""></div><span>Viswedstrijd</span></div>
+        <div class="app"><div class="ico mail"><i></i></div><span>Mail</span></div>
+        <div class="app"><div class="ico notitie"><b></b><i></i></div><span>Notities</span></div>
+        <div class="app"><div class="ico klok"><i></i></div><span>Klok</span></div>
+        <div class="app"><div class="ico muziek"><i></i></div><span>Muziek</span></div>
+      </div>
+    </div>
+  </div>
+</body></html>
