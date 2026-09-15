@@ -723,7 +723,7 @@ moet toevoegen.
   de instructiepagina's (96 px), inlogpagina (120 px), kop van beide A4's, de
   mailhandtekening (76 px), og.png en het profiel op Instagram/Facebook. Bron en
   generator: `marketing/gen_profielfoto.py` (schrijft ook `marketing/profielfoto-socials.png`).
-- **Beginscherm-mockup:** `docs/schermen/beginscherm-mockup.png` (1600x1200) uit
+- **Beginscherm-mockup:** `docs/schermen/beginscherm-mockup.jpg` (1600x1200) uit
   `tools/mockup_beginscherm.html` (headless screenshot 1200x900 @2x, daarna verkleind):
   iPhone-hoek met het icoon tussen generieke apps, op de hero-gradient. Staat op de
   landing (sectie "Geen accounts, geen App Store") en op de drie instructiepagina's.
