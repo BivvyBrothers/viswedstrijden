@@ -712,9 +712,10 @@ moet toevoegen.
   drie oranjes (#d97b29 app, #E8871E icoon/PDF/socials, #f0a04b site) en twee groenen
   (#2f4a2a icoon) door elkaar; die zijn allemaal hiernaar omgezet, ook de PNG-iconen
   (herkleurd, origineel in `marketing/oud/icon-512-v1.png`).
-- **Lettertype:** systeemletter overal: `system-ui, -apple-system, 'Segoe UI', Roboto,
-  Arial, sans-serif` (SF op Apple, Segoe op Windows). Geen Avenir Next meer in PDF's,
-  handtekening of social-generators.
+- **Lettertype:** BESLUIT 19 sep 2026 (ontwerp ChatGPT): **Arial** (`font-family: Arial,
+  sans-serif`) op alle oppervlakken; wordt doorgevoerd in fase 1 van het ontwerpplan. Tot
+  die tijd staat nog de systeemletter (`system-ui, -apple-system, 'Segoe UI', Roboto,
+  Arial, sans-serif`). Geen webfonts (CSP).
 - **Logo's:** `docs/icon-*.png` = het vierkante app-icoon (vis op groen), ALLEEN nog voor
   favicon, manifest/beginscherm-icoon en de push-badge (iOS en Android bepalen daar zelf
   de vorm). Op elke plek IN een pagina staat het ronde logo (besluit Patrick 15 sep):
@@ -734,6 +735,13 @@ moet toevoegen.
   social-generators in `marketing/` en `klanten/NPHV/social/`.
 
 ## Samenwerking vormgeving met ChatGPT (sinds 18 sep 2026)
+
+**Stand 19 sep 2026:** definitieve overdracht van ChatGPT staat in
+`ontwerp/van-chatgpt/2026-09-19-definitieve-briefing/`; het uitvoeringsplan met alle
+besluiten van Patrick (prijs € 10 p.p. per wedstrijd voor vriendengroepen, Arial,
+achtergrond van ChatGPT, alle 23 foto's vrij, icoon uit eigen bron, warme app-kleuren,
+tegelnavigatie eerst op demo) in `ontwerp/van-claude/PLAN-UITVOERING-ONTWERP.md`.
+Volgende sessie: fase 1 (website) direct starten.
 
 Patricks besluit: **ChatGPT doet de vormgeving, Claude de techniek.** Briefing en
 werkwijze staan in `Viswedstrijdapp/ontwerp/BRIEFING-CHATGPT-VORMGEVING.md` (buiten de
