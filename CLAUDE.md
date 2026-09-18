@@ -733,6 +733,22 @@ moet toevoegen.
   (screenshot 1200x630), beide A4's (print-to-pdf + pymupdf-PNG op 110 dpi), de
   social-generators in `marketing/` en `klanten/NPHV/social/`.
 
+## Samenwerking vormgeving met ChatGPT (sinds 18 sep 2026)
+
+Patricks besluit: **ChatGPT doet de vormgeving, Claude de techniek.** Briefing en
+werkwijze staan in `Viswedstrijdapp/ontwerp/BRIEFING-CHATGPT-VORMGEVING.md` (buiten de
+repo; ChatGPT leest de cowork-map rechtstreeks). ChatGPT levert voorstellen in
+`ontwerp/van-chatgpt/<datum>-<onderwerp>/` (LEESMIJ.md + mockups + optioneel
+voorstel.css/html) en schrijft NOOIT in `app/`. Claude toetst elk voorstel op de
+randvoorwaarden uit hoofdstuk 6 van de briefing (CSP zonder externe bronnen, gedeelde
+styles.css raakt de app, mobiel eerst, contrast, één A4, alle doc-oppervlakken), bouwt
+het, bewijst het met schermopnames naast de mockup, en meldt expliciet waar het van
+het ontwerp afwijkt en waarom. Antwoorden op vragen van ChatGPT: `ontwerp/van-claude/`.
+Actuele schermopnames voor ChatGPT: `ontwerp/huidige-schermen/` (mobiel via
+`tools/mobiel_screenshot.mjs`, desktop via headless Chrome 1280 breed); verversen na
+elke zichtbare wijziging. Huisstijl blijft vast (sectie hierboven); ChatGPT werkt
+daarbinnen.
+
 ## Documentatie-oppervlakken (WERKAFSPRAAK sinds 15 jul 2026)
 
 Bij ELKE nieuwe feature of gedragswijziging die gebruikers raakt worden ALLE
