@@ -712,10 +712,16 @@ moet toevoegen.
   drie oranjes (#d97b29 app, #E8871E icoon/PDF/socials, #f0a04b site) en twee groenen
   (#2f4a2a icoon) door elkaar; die zijn allemaal hiernaar omgezet, ook de PNG-iconen
   (herkleurd, origineel in `marketing/oud/icon-512-v1.png`).
-- **Lettertype:** BESLUIT 19 sep 2026 (ontwerp ChatGPT): **Arial** (`font-family: Arial,
-  sans-serif`) op alle oppervlakken; wordt doorgevoerd in fase 1 van het ontwerpplan. Tot
-  die tijd staat nog de systeemletter (`system-ui, -apple-system, 'Segoe UI', Roboto,
-  Arial, sans-serif`). Geen webfonts (CSP).
+- **Lettertype:** **Arial** (`font-family: Arial, Helvetica, sans-serif`), DOORGEVOERD
+  19 sep 2026 (v96) op site, app, instructies, beide A4's, handtekening, og-beeld en de
+  social-generators. Geen webfonts (CSP). **Uitzondering: `marketing/gen_profielfoto.py`
+  houdt bewust de systeemletter**, want het ronde logo is een vastgesteld beeldmerk dat
+  al op Instagram, Facebook, de site en de PDF's staat; alleen regenereren na een
+  expliciet besluit van Patrick.
+- **Landingspagina staat LOS van de app (sinds 19 sep, v96):** `docs/index.html` gebruikt
+  alleen `docs/landing.css` en niet meer de gedeelde `styles.css`. Een wijziging in de app
+  kan de site dus niet meer breken en andersom. `docs/instructies.html` en
+  `docs/inloggen/` gebruiken nog wél styles.css.
 - **Logo's:** `docs/icon-*.png` = het vierkante app-icoon (vis op groen), ALLEEN nog voor
   favicon, manifest/beginscherm-icoon en de push-badge (iOS en Android bepalen daar zelf
   de vorm). Op elke plek IN een pagina staat het ronde logo (besluit Patrick 15 sep):

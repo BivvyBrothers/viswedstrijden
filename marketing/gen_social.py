@@ -7,7 +7,7 @@ icon = b64("docs/logo-rond-512.png")
 CSS = """
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { width:1080px; height:1080px; overflow:hidden; }
-body { font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif; position:relative; }
+body { font-family:Arial,Helvetica,sans-serif; position:relative; }
 .groen { background:#353d2a; color:#fff; }
 .creme { background:#edeadb; color:#29271e; }
 .wrap { width:1080px; height:1080px; padding:90px 90px 190px; display:flex; flex-direction:column; }
