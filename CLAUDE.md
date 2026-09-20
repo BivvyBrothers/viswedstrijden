@@ -861,9 +861,16 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
    "Meedoen met een wedstrijd" (sinds 31 aug ook: terug inloggen met de
    persoonlijke code, naam aanpassen tot de start, en het duo-blok
    "Vissen jullie met z'n tweeën aan één stek?")
-5. `beginscherm-a4.html` -> REGENEREREN: `beginscherm-instructie.pdf/.png` +
-   kopie naar `docs/instructies-print.pdf` + `docs/nphv/instructies-print.pdf`
-   (headless Chrome --print-to-pdf, PNG via pymupdf)
+5. `beginscherm-a4.html` -> REGENEREREN met **`python3 tools/gen_instructie_a4.py`**.
+   Dat script maakt TWEE varianten uit dezelfde bron: de ALGEMENE versie voor de root
+   (`docs/instructies-print.pdf` + `beginscherm-instructie.pdf/.png`, met "tik op
+   Inloggen en kies jouw organisatie") en de NPHV-versie
+   (`docs/nphv/instructies-print.pdf`, met "kies NPHV" en viswedstrijdapp.nl/nphv).
+   Nooit meer één PDF naar beide plekken kopiëren: tot 20 sep 2026 stond de
+   NPHV-instructie op de algemene URL, dus een bezoeker van een andere club werd naar
+   NPHV gestuurd. Een nieuwe tenant krijgt zijn eigen A4 met
+   `python3 tools/gen_instructie_a4.py --slug X --kort NAAM`. Het script faalt luid als
+   de A4 meer dan één pagina wordt of als de NPHV-plekken in de bron niet meer kloppen.
 6. `prijzenblad-a4.html` (feature-chips) -> REGENEREREN: `prijzenblad.pdf/.png`
 7. `draaiboek-wedstrijddag.md` | organisator-draaiboek
 8. `README.md` | repo-omschrijving
