@@ -773,6 +773,9 @@ technische details die bij het bouwen nodig zijn.
   (1080x1350). Het telefoonscherm in de advertentie is het TEGELOVERZICHT uit fase 4
   van het ontwerp; zolang dat niet live staat belooft de advertentie een scherm dat de
   bezoeker nog niet ziet. Prijs in het beeld: vanaf € 10 per persoon per wedstrijd.
+  De kop van dat tegeloverzicht is ALLEEN het ronde logo met daaronder "Loot. Vis. Win."
+  (besluit Patrick 20 sep); de kleine karperfoto uit de mockup van ChatGPT vervalt, ook
+  straks in de app zelf.
 
 ## Samenwerking vormgeving met ChatGPT (sinds 18 sep 2026)
 

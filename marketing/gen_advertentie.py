@@ -65,9 +65,8 @@ def telefoon_html():
   <div class='tb'>Viswedstrijdapp</div>
   <div class='kop'>
     <img class='rond' src='data:image/png;base64,{logo}'>
-    <img class='foto' src='data:image/jpeg;base64,{vis}'>
+    <div class='slog'>Loot<i>.</i> Vis<i>.</i> Win<i>.</i>{STREEP}</div>
   </div>
-  <div class='slog'>Loot<i>.</i> Vis<i>.</i> Win<i>.</i>{STREEP}</div>
   <div class='tegels'>
     {tegel('kaart', 'Viswater')}{tegel('loting', 'Loting', True)}
     {tegel('beker', 'Klassement', True)}{tegel('vangst', 'Vangsten')}
@@ -141,13 +140,12 @@ h1 .o {{ color:#f0a04b; }}
 .scherm {{ width:100%; height:100%; background:#3e4732; border-radius:10.4%/4.97%;
   overflow:hidden; padding:{20*f:.1f}px {17*f:.1f}px 0; display:flex; flex-direction:column; }}
 .tb {{ text-align:center; font-size:{15*f:.1f}px; font-weight:700; color:#fff; opacity:.9; margin-bottom:{13*f:.1f}px; }}
-.kop {{ display:flex; align-items:center; gap:{12*f:.1f}px; }}
-.kop .rond {{ width:{80*f:.1f}px; height:{80*f:.1f}px; }}
-.kop .foto {{ width:{100*f:.1f}px; height:{70*f:.1f}px; object-fit:cover; border-radius:{12*f:.1f}px; }}
-.slog {{ margin-top:{14*f:.1f}px; font-size:{25*f:.1f}px; font-weight:800; color:#fff; letter-spacing:-.6px; line-height:1; }}
+.kop {{ display:flex; flex-direction:column; align-items:center; margin-top:{6*f:.1f}px; }}
+.kop .rond {{ width:{104*f:.1f}px; height:{104*f:.1f}px; }}
+.slog {{ margin-top:{12*f:.1f}px; text-align:center; font-size:{27*f:.1f}px; font-weight:800; color:#fff; letter-spacing:-.6px; line-height:1; }}
 .slog i {{ color:#f0a04b; font-style:normal; }}
-.slog svg {{ width:{162*f:.1f}px; display:block; margin-top:{2*f:.1f}px; }}
-.tegels {{ display:grid; grid-template-columns:1fr 1fr; gap:{9*f:.1f}px; margin-top:{13*f:.1f}px; }}
+.slog svg {{ width:{176*f:.1f}px; display:block; margin:{2*f:.1f}px auto 0; }}
+.tegels {{ display:grid; grid-template-columns:1fr 1fr; gap:{9*f:.1f}px; margin-top:{18*f:.1f}px; }}
 .tegel {{ border-radius:{14*f:.1f}px; padding:{11*f:.1f}px {11*f:.1f}px {9*f:.1f}px; position:relative; }}
 .tegel .ti svg {{ width:{25*f:.1f}px; height:{25*f:.1f}px; }}
 .tegel .tl {{ display:block; margin-top:{10*f:.1f}px; font-size:{14*f:.1f}px; font-weight:700; color:#2b3122; padding-right:{16*f:.1f}px; }}
