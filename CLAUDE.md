@@ -231,6 +231,17 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
   insert), daarna VERPLICHT de codes terugzetten, anders kloppen de
   geadverteerde codes op /demo/ niet meer (gebeurde 16 jul):
   `update wedstrijd.wedstrijden set code='DEMOJA' where kijk_code='KIJKJE';`
+- **Vangstfoto's in de demo (20 sep 2026):** zes van de twintig vangsten van de
+  Voorjaarswedstrijd hebben een echte foto (Thijs 14,65 | Piet 12,40 | Jan 11,80 |
+  Dennis 10,25 | Kees 6,20 | Marco 5,15). Daardoor toont de vangstenlijst zowel
+  echte foto's als de placeholder, en staat er ook een thumbnail bij "Grootste vis"
+  in het klassement. Alleen foto's uit `marketing/fotos-site/` (de vrijgegeven map);
+  de twee met een @BivvyBrothers-watermerk zijn bewust overgeslagen, en de foto's
+  hangen aan mannelijke deelnemersnamen omdat er een man op staat. Verwerking zonder
+  metadata + upload via de edge function: `python3 tools/demo_fotos.py --pin <admin-pin>`
+  (de pin staat in de database, nooit in deze repo). Het script print daarna de SQL
+  om `foto_path` te zetten. **Na een nieuwe seed zijn de foto's weg: script opnieuw
+  draaien.**
 
 ## Vangst delen op social media (v45, 14 jul 2026)
 
