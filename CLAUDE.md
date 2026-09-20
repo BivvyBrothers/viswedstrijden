@@ -732,6 +732,11 @@ moet toevoegen.
   de instructiepagina's (96 px), inlogpagina (120 px), kop van beide A4's, de
   mailhandtekening (76 px), og.png en het profiel op Instagram/Facebook. Bron en
   generator: `marketing/gen_profielfoto.py` (schrijft ook `marketing/profielfoto-socials.png`).
+- **Vangstbeeld op de landing** (`docs/schermen/vangst-klassement.jpg`, naast het
+  klassementblok): de foto in het viswedstrijdapp-frame zoals een social-post, maar
+  ZONDER wedstrijdgegevens (geen datum, tijd, plaats of wedstrijdnaam), alleen gewicht
+  en naam. Generator: `tools/gen_vangstbeeld_site.py`. Besluit Patrick 20 sep 2026;
+  daarbij is ook de bronvermelding BivvyBrothers van de landing gehaald (eigen foto).
 - **Beginscherm-mockup:** `docs/schermen/beginscherm-mockup.jpg` (1600x1200) uit
   `tools/mockup_beginscherm.html` (headless screenshot 1200x900 @2x, daarna verkleind):
   iPhone-hoek met het icoon tussen generieke apps, op de hero-gradient. Staat op de

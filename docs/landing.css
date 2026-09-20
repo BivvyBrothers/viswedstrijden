@@ -183,7 +183,8 @@ p:last-child { margin-bottom: 0; }
 .vlak.groen .punten span { color: var(--licht-op-groen); }
 
 /* ---------- 05 live klassement ---------- */
-.klassement-beeld { position: relative; display: grid; gap: 14px; grid-template-columns: 1.25fr .75fr; align-items: start; }
+.klassement-beeld { position: relative; display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 620px) { .klassement-beeld { grid-template-columns: 1.06fr .94fr; } }
 .klassement-beeld img { border-radius: 14px; box-shadow: 0 8px 26px rgba(0,0,0,.34); }
 .klassement-beeld img:first-child { grid-column: 1 / -1; }
 @media (min-width: 620px) { .klassement-beeld img:first-child { grid-column: auto; } }
