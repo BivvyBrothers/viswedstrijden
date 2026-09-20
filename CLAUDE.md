@@ -249,10 +249,16 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
 ## Vangst delen op social media (v45, 14 jul 2026)
 
 Per vangst een deel-knop (vangsten-feed + Mijn vangsten): `tekenVangst()`
-maakt een 1080x1352-afbeelding (Instagram-vriendelijk 4:5) met **sinds v102 een
-kopbalk** (`tekenKop`: "Loot. Vis. Win." met oranje punten, penseelstreek en het
-icoon rechts, wens Patrick 21 sep: een gedeelde foto hoort boven én onder een kader te
-hebben) en daaronder de vangstfoto cover-gecropt (of de karper-placeholder bij handmatige invoer), gewicht groot,
+maakt sinds **v103** een 1080x1266-afbeelding in de opmaak die Patrick aanwees
+(21 sep 2026): de foto cover-gecropt met twee chips eroverheen (`tekenChips`:
+links een oranje pil met "grootste vis", "eerste/tweede/derde plaats" of "nieuwe
+vangst" via `vangstChipLinks`, rechts een donkere chip met de wedstrijdnaam), daaronder
+een donkergroen blok met het gewicht heel groot in oranje, de naam, een detailregel
+(stek of zone, dag en tijd, en hoeveel deze visser in totaal ving) en de voet met
+"een product van KemblincK". **Alle canvas-tekst staat in Montserrat** (`CANVAS_FONT`);
+`wachtOpCanvasFont()` laadt het font voordat er getekend wordt, want een canvas gebruikt
+alleen fonts die de browser echt geladen heeft. De oude versie gebruikte de systeemletter
+en had alleen een voet (of de karper-placeholder bij handmatige invoer), gewicht groot,
 visser, wedstrijd + datum en de app-voet. Foto's laden met
 crossOrigin='anonymous' (bucket stuurt ACAO *, dus geen canvas-taint).
 Alle deel-afbeeldingen (uitslag, seizoen, vangst) hebben sinds v45 een

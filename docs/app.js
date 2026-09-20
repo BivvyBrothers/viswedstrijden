@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 102; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 103; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -2070,7 +2070,7 @@ function tekenUitslag() {
 }
 
 function canvasHulp(ctx) {
-  const F = (px, vet = false) => `${vet ? '800 ' : ''}${px}px system-ui, "Segoe UI", Arial, sans-serif`;
+  const F = (px, vet = false) => `${vet ? '800 ' : (700 + ' ')}${px}px ${CANVAS_FONT}`;
   const rond = (x, y, br, h, r) => {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -2110,6 +2110,19 @@ async function deelPng(canvas, bestandsnaam, titel, tekst) {
 }
 
 // duidelijke app-vermelding op ALLE deel-afbeeldingen: logo + adres in de voet
+// Deel-afbeeldingen in de huisstijl: Montserrat staat al in de app (zelf gehost),
+// maar een canvas gebruikt alleen fonts die de browser ECHT geladen heeft. Daarom
+// vooraf laden en pas daarna tekenen (huisstijl, wens Patrick 21 sep 2026).
+const CANVAS_FONT = '"Montserrat", system-ui, "Segoe UI", Arial, sans-serif';
+function wachtOpCanvasFont() {
+  if (!document.fonts || !document.fonts.load) return Promise.resolve();
+  return Promise.all([
+    document.fonts.load('800 120px "Montserrat"'),
+    document.fonts.load('700 40px "Montserrat"'),
+    document.fonts.load('400 30px "Montserrat"'),
+  ]).catch(() => {});
+}
+
 const APP_ICOON = new Image();
 const APP_ICOON_KLAAR = new Promise((klaar) => {
   APP_ICOON.onload = klaar;
@@ -2120,7 +2133,10 @@ APP_ICOON.src = '/icon-192.png';
 // kort wachten op het logo zodat de eerste deelactie het ook al heeft;
 // na 1,5s delen we zonder logo in plaats van te blijven hangen (Codex v6 P2-4)
 function wachtOpVoetLogo() {
-  return Promise.race([APP_ICOON_KLAAR, new Promise((klaar) => setTimeout(klaar, 1500))]);
+  return Promise.all([
+    Promise.race([APP_ICOON_KLAAR, new Promise((klaar) => setTimeout(klaar, 1500))]),
+    Promise.race([wachtOpCanvasFont(), new Promise((klaar) => setTimeout(klaar, 1500))]),
+  ]);
 }
 
 function tekenVoet(ctx, B, H, VOET, rechts = 'loting \u00b7 stekkeuze \u00b7 live klassement') {
@@ -2142,43 +2158,35 @@ function tekenVoet(ctx, B, H, VOET, rechts = 'loting \u00b7 stekkeuze \u00b7 liv
   }
   ctx.fillStyle = '#f0a04b'; ctx.font = '800 30px "Courier New", monospace';
   ctx.fillText('viswedstrijdapp.nl', x, H - VOET / 2 + 11);
-  ctx.fillStyle = '#9ba183'; ctx.font = '22px system-ui, "Segoe UI", Arial, sans-serif';
+  ctx.fillStyle = '#9ba183'; ctx.font = `400 22px ${CANVAS_FONT}`;
   ctx.textAlign = 'right';
   ctx.fillText(rechts, B - 64, H - VOET / 2 + 8);
   ctx.textAlign = 'left';
 }
 
-// Kopbalk voor deel-afbeeldingen (21 sep 2026, wens Patrick): een gedeelde foto
-// hoort boven én onder een kader te hebben, met de slogan bovenaan.
-function tekenKop(ctx, B, KOP) {
-  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, 0, B, KOP);
-  const mid = KOP / 2 + 15;
-  let x = 64;
-  ctx.textAlign = 'left';
-  ctx.font = '800 44px system-ui, "Segoe UI", Arial, sans-serif';
-  // "Loot. Vis. Win." met oranje punten, net als in de app en op de site
-  [['Loot', '.'], [' Vis', '.'], [' Win', '.']].forEach(([woord, punt]) => {
-    ctx.fillStyle = '#ffffff'; ctx.fillText(woord, x, mid); x += ctx.measureText(woord).width;
-    ctx.fillStyle = '#f0a04b'; ctx.fillText(punt, x, mid); x += ctx.measureText(punt).width;
-  });
-  // penseelstreek onder de slogan
-  ctx.strokeStyle = '#f0a04b'; ctx.lineWidth = 6; ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(64, mid + 16);
-  ctx.quadraticCurveTo((64 + x) / 2, mid + 26, x, mid + 12);
-  ctx.stroke();
-  if (APP_ICOON.complete && APP_ICOON.naturalWidth) {
-    const m = 60, y = (KOP - m) / 2, r = 14, lx = B - 64 - m;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(lx + r, y);
-    ctx.arcTo(lx + m, y, lx + m, y + m, r);
-    ctx.arcTo(lx + m, y + m, lx, y + m, r);
-    ctx.arcTo(lx, y + m, lx, y, r);
-    ctx.arcTo(lx, y, lx + m, y, r);
-    ctx.closePath(); ctx.clip();
-    ctx.drawImage(APP_ICOON, lx, y, m, m);
-    ctx.restore();
+// Chips over de foto van een deel-afbeelding: links een oranje pil (de plaats in
+// het klassement of "nieuwe vangst"), rechts een donkere chip met de wedstrijd.
+// Opmaak naar het voorbeeld dat Patrick aanwees (21 sep 2026).
+function tekenChips(ctx, B, links, rechts) {
+  const { rond, kort } = canvasHulp(ctx);
+  const y = 40, h = 64;
+  if (links) {
+    ctx.font = `800 30px ${CANVAS_FONT}`;
+    const t = links.toUpperCase();
+    const br = ctx.measureText(t).width + 64;
+    ctx.fillStyle = '#f0a04b';
+    rond(44, y, br, h, h / 2); ctx.fill();
+    ctx.fillStyle = '#2c331f';
+    ctx.fillText(t, 44 + 32, y + h / 2 + 11);
+  }
+  if (rechts) {
+    ctx.font = `700 26px ${CANVAS_FONT}`;
+    const t = kort(rechts, 460);
+    const br = ctx.measureText(t).width + 52;
+    ctx.fillStyle = 'rgba(28, 33, 20, .82)';
+    rond(B - 44 - br, y + 4, br, h - 8, (h - 8) / 2); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(t, B - 44 - br + 26, y + h / 2 + 10);
   }
 }
 
@@ -2211,37 +2219,61 @@ function tekenVangstPlaceholder(ctx, B, H, top = 0) {
 }
 
 // deelbare vangst-afbeelding: foto (of placeholder) + gewicht + visser + app-voet
+// Plaats van deze visser in het totaalklassement, voor de chip linksboven.
+function vangstChipLinks(v, t) {
+  if (!t) return 'nieuwe vangst';
+  const grootste = (STATE.vangsten || []).reduce((m, x) => (x.gewicht_gram > (m?.gewicht_gram || 0) ? x : m), null);
+  if (grootste && grootste.id === v.id) return 'grootste vis';
+  const rijen = klSorteer(klassementRijen());
+  const i = rijen.findIndex((r) => r.team.id === t.id);
+  return ['eerste plaats', 'tweede plaats', 'derde plaats'][i] || 'nieuwe vangst';
+}
+
 async function tekenVangst(v, t) {
-  const B = 1080, KOP = 118, FOTO_H = 910, INFO = 232, VOET = 92;
-  const H = KOP + FOTO_H + INFO + VOET; // ~4:5, Instagram-vriendelijk
+  const B = 1080, FOTO_H = 820, INFO = 350, VOET = 96;
+  const H = FOTO_H + INFO + VOET; // 1080 x 1266, ruim binnen 4:5
   const c = document.createElement('canvas');
   c.width = B; c.height = H;
   const ctx = c.getContext('2d');
   const { F, kort } = canvasHulp(ctx);
-  tekenKop(ctx, B, KOP);
   if (v.foto_path) {
     try {
       const img = await laadFoto(fotoUrl(v.foto_path));
       const s = Math.max(B / img.width, FOTO_H / img.height); // cover-crop
       const w2 = img.width * s, h2 = img.height * s;
       ctx.save();
-      ctx.beginPath(); ctx.rect(0, KOP, B, FOTO_H); ctx.clip();
-      ctx.drawImage(img, (B - w2) / 2, KOP + (FOTO_H - h2) / 2, w2, h2);
+      ctx.beginPath(); ctx.rect(0, 0, B, FOTO_H); ctx.clip();
+      ctx.drawImage(img, (B - w2) / 2, (FOTO_H - h2) / 2, w2, h2);
       ctx.restore();
-    } catch { tekenVangstPlaceholder(ctx, B, FOTO_H, KOP); }
+    } catch { tekenVangstPlaceholder(ctx, B, FOTO_H); }
   } else {
-    tekenVangstPlaceholder(ctx, B, FOTO_H, KOP);
+    tekenVangstPlaceholder(ctx, B, FOTO_H);
   }
-  const onder = KOP + FOTO_H;
-  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, onder, B, INFO + VOET);
-  ctx.fillStyle = '#f0a04b'; ctx.font = F(72, true);
-  ctx.fillText(fmtKg(v.gewicht_gram), 64, onder + 92);
-  ctx.fillStyle = '#ffffff'; ctx.font = F(34, true);
-  ctx.fillText(kort(t ? teamNaam(t) : 'vangst', B - 128), 64, onder + 146);
-  ctx.fillStyle = '#d9dcc2'; ctx.font = F(26);
-  const wanneer = new Date(vangstTijd(v)).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
-  ctx.fillText(kort(`${STATE.wedstrijd.naam} \u00b7 ${wanneer}`, B - 128), 64, onder + 190);
-  tekenVoet(ctx, B, H, VOET, 'volg de wedstrijd live');
+  tekenChips(ctx, B, vangstChipLinks(v, t), STATE.wedstrijd.naam);
+
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, FOTO_H, B, INFO + VOET);
+  ctx.fillStyle = '#f0a04b'; ctx.font = F(124, true);
+  ctx.fillText(fmtKg(v.gewicht_gram), 60, FOTO_H + 136);
+  ctx.fillStyle = '#ffffff'; ctx.font = F(52, true);
+  ctx.fillText(kort(t ? teamNaam(t) : 'vangst', B - 120), 60, FOTO_H + 208);
+
+  // detailregel: plek, dag en tijd, en wat deze visser in totaal ving
+  const d = new Date(vangstTijd(v));
+  const wanneer = d.toLocaleDateString('nl-NL', { weekday: 'long' }) + ' '
+    + d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const deel = [];
+  if (t?.stek) deel.push('stek ' + t.stek);
+  else if (t?.zone) deel.push('zone ' + t.zone);
+  deel.push(wanneer);
+  if (t) {
+    const eigen = (STATE.vangsten || []).filter((x) => x.team_id === t.id);
+    const totaal = eigen.reduce((n, x) => n + x.gewicht_gram, 0);
+    if (eigen.length > 1) deel.push(`${eigen.length} vissen, ${fmtKg(totaal)}`);
+  }
+  ctx.fillStyle = '#d9dcc2'; ctx.font = F(30);
+  ctx.fillText(kort(deel.join(' \u00b7 '), B - 120), 60, FOTO_H + 268);
+
+  tekenVoet(ctx, B, H, VOET, 'een product van KemblincK');
   return c;
 }
 
