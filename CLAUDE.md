@@ -768,6 +768,11 @@ technische details die bij het bouwen nodig zijn.
 - **Regenereren na een stijlwijziging:** `gen_profielfoto.py`, `tools/og_image.html`
   (screenshot 1200x630), beide A4's (print-to-pdf + pymupdf-PNG op 110 dpi), de
   social-generators in `marketing/` en `klanten/NPHV/social/`.
+- **Advertentie socials:** `marketing/gen_advertentie.py` schrijft
+  `marketing/advertentie-vierkant.png` (1080x1080) en `advertentie-staand.png`
+  (1080x1350). Het telefoonscherm in de advertentie is het TEGELOVERZICHT uit fase 4
+  van het ontwerp; zolang dat niet live staat belooft de advertentie een scherm dat de
+  bezoeker nog niet ziet. Prijs in het beeld: vanaf € 10 per persoon per wedstrijd.
 
 ## Samenwerking vormgeving met ChatGPT (sinds 18 sep 2026)
 
