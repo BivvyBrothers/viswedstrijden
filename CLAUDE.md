@@ -703,7 +703,12 @@ valt. Lukt aanbieden ook niet meer (langer dan 24 uur geleden), dan blijft de
 vangst in de wachtrij staan met de melding dat de organisator hem handmatig
 moet toevoegen.
 
-## Huisstijl (vastgelegd 15 sep 2026, bron = de landingspagina)
+## Huisstijl (vastgelegd 20 sep 2026)
+
+**HET huisstijldocument is `Viswedstrijdapp/ontwerp/HUISSTIJL.md`** (met visueel
+overzicht `ontwerp/huisstijl-overzicht.png`, generator `tools/gen_huisstijl_overzicht.py`).
+Dat document is leidend voor site, app, drukwerk, e-mail en social. Hieronder staan de
+technische details die bij het bouwen nodig zijn.
 
 - **Kleuren:** groen `#353d2a` (topbar, kop, achtergrond van logo en icoon; hero-gradient
   `#2c331f -> #4d5839 -> #6d7355`), oranje `#f0a04b` (`--oranje`; accenten, vis, knoppen),
