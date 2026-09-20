@@ -1,7 +1,11 @@
-# Merkblok voor de e-mailhandtekening: het ronde logo op donkergroen met
-# "Loot. Vis. Win." eronder en de oranje penseelstreek (beeld van Patrick,
-# 20 sep 2026). Wordt als een plaatje in de handtekening gezet, want een
-# mailclient rendert geen webfont en geen inline SVG betrouwbaar.
+# Merkblok voor de e-mailhandtekening: het ronde logo met "Loot. Vis. Win."
+# eronder en de oranje penseelstreek. Wordt als een plaatje in de handtekening
+# gezet, want een mailclient rendert geen webfont en geen inline SVG betrouwbaar.
+#
+# Besluit Patrick 20 sep 2026: GEEN groen vlak eromheen. De achtergrond is
+# doorzichtig (het logo brengt zijn eigen groene cirkel mee) en de slogan staat
+# in donkergroen met oranje punten, zodat het blok op een witte mailachtergrond
+# staat zonder kader.
 #
 # Draaien vanuit app/: python3 marketing/gen_handtekening_merk.py
 # Uitvoer: docs/handtekening-merk.png (320x340, tonen op 160x170)
@@ -20,13 +24,13 @@ STREEP = ("<svg viewBox='0 0 200 15'><path d='M2.5 11.2C34 5.1 96 1.6 174 2.2c8 
 html = f"""<!DOCTYPE html><html><head><meta charset='utf-8'><style>
 @font-face {{ font-family:'Montserrat'; font-weight:400 900; src:url(data:font/woff2;base64,{mont}) format('woff2'); }}
 * {{ margin:0; padding:0; box-sizing:border-box; }}
-html,body {{ width:320px; height:340px; overflow:hidden; }}
-body {{ background:#353d2a; font-family:'Montserrat',Arial,sans-serif;
+html,body {{ width:320px; height:300px; overflow:hidden; background:transparent; }}
+body {{ font-family:'Montserrat',Arial,sans-serif;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:22px 20px 26px; }}
-img {{ width:196px; height:196px; display:block; }}
-.slogan {{ margin-top:16px; width:100%; text-align:center; }}
-.slogan .t {{ font-size:38px; font-weight:800; color:#fff; letter-spacing:-1px; line-height:1; }}
+  padding:6px 10px 10px; }}
+img {{ width:210px; height:210px; display:block; }}
+.slogan {{ margin-top:14px; width:100%; text-align:center; }}
+.slogan .t {{ font-size:40px; font-weight:800; color:#353d2a; letter-spacing:-1px; line-height:1; }}
 .slogan i {{ color:#f0a04b; font-style:normal; }}
 .slogan svg {{ display:block; width:100%; margin-top:4px; }}
 </style></head><body>
@@ -38,16 +42,14 @@ tmp = HIER / "_hs.html"
 tmp.write_text(html, encoding="utf-8")
 uit = APP / "docs" / "handtekening-merk.png"
 subprocess.run([CHROME, "--headless", "--disable-gpu", "--hide-scrollbars",
-                f"--screenshot={uit}", "--window-size=320,340",
+                "--default-background-color=00000000",
+                f"--screenshot={uit}", "--window-size=320,300",
                 "--force-device-scale-factor=1", f"file://{tmp.resolve()}"], capture_output=True)
 tmp.unlink()
 
-# afgeronde hoeken met transparante buitenrand: het blok mag niet als een
-# rechthoekig vlak in de mail staan
-from PIL import Image, ImageDraw
+from PIL import Image
 im = Image.open(uit).convert("RGBA")
-masker = Image.new("L", im.size, 0)
-ImageDraw.Draw(masker).rounded_rectangle([0, 0, im.width - 1, im.height - 1], radius=26, fill=255)
-im.putalpha(masker)
+if im.getpixel((2, 2))[3] > 10:      # Chrome gaf toch een dekkende achtergrond
+    print("LET OP: achtergrond niet doorzichtig")
 im.save(uit)
 print("geschreven:", uit, uit.stat().st_size // 1024, "KB")
