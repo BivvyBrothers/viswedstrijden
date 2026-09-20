@@ -712,9 +712,13 @@ moet toevoegen.
   drie oranjes (#d97b29 app, #E8871E icoon/PDF/socials, #f0a04b site) en twee groenen
   (#2f4a2a icoon) door elkaar; die zijn allemaal hiernaar omgezet, ook de PNG-iconen
   (herkleurd, origineel in `marketing/oud/icon-512-v1.png`).
-- **Lettertype:** **Arial** (`font-family: Arial, Helvetica, sans-serif`), DOORGEVOERD
-  19 sep 2026 (v96) op site, app, instructies, beide A4's, handtekening, og-beeld en de
-  social-generators. Geen webfonts (CSP). **Uitzondering: `marketing/gen_profielfoto.py`
+- **Lettertype:** **Avenir Next** (`font-family: 'Avenir Next', Avenir, 'Segoe UI',
+  Roboto, Helvetica, Arial, sans-serif`), besluit Patrick 20 sep 2026 (v97): de letter
+  van de eerdere social-posts, die hij mooier vindt dan Arial (19 sep, v96). Doorgevoerd
+  op site, app, instructies, beide A4's, handtekening, og-beeld en de social-generators.
+  **Let op: Avenir Next is een Apple-systeemfont.** Op iPhone en Mac zie je precies de
+  posts; op Windows valt het terug op Segoe UI, op Android op Roboto. Wil je overal exact
+  hetzelfde, dan is een zelf gehost vrij font nodig (mag binnen de CSP, kost laadtijd). Geen webfonts (CSP). **Uitzondering: `marketing/gen_profielfoto.py`
   houdt bewust de systeemletter**, want het ronde logo is een vastgesteld beeldmerk dat
   al op Instagram, Facebook, de site en de PDF's staat; alleen regenereren na een
   expliciet besluit van Patrick.

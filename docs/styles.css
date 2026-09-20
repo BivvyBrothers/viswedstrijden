@@ -17,7 +17,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Avenir Next', Avenir, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--zand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='%23dcd9c1'%3E%3Cpath d='M40 60c30-25 85-15 95 15s-20 60-60 55S10 85 40 60z'/%3E%3Cpath d='M280 300c40-20 90 5 85 45s-70 55-100 25 -15-55 15-70z'/%3E%3Cpath d='M330 90c25-18 65-5 60 28s-55 40-75 18 -5-32 15-46z'/%3E%3C/g%3E%3Cg fill='%23d0cdb3'%3E%3Cpath d='M120 260c25-30 75-20 80 10s-30 65-70 50-35-35-10-60z'/%3E%3Cpath d='M240 130c20-22 60-12 62 15s-38 45-62 30-15-28 0-45z'/%3E%3C/g%3E%3Cg fill='%23e0ddc6'%3E%3Cpath d='M60 350c22-16 58-6 56 22s-48 38-66 18-8-26 10-40z'/%3E%3C/g%3E%3C/svg%3E") fixed;
   color: var(--tekst);
   font-size: 16px;

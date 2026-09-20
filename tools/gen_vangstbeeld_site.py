@@ -21,7 +21,7 @@ logo = b64(APP / "docs/logo-rond-512.png")
 HTML = f"""<!DOCTYPE html><html><head><meta charset='utf-8'><style>
 * {{ margin:0; padding:0; box-sizing:border-box; }}
 html,body {{ width:1080px; height:1350px; overflow:hidden; }}
-body {{ font-family: Arial, Helvetica, sans-serif; background:#353d2a; color:#fff; position:relative; }}
+body {{ font-family: 'Avenir Next',Avenir,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#353d2a; color:#fff; position:relative; }}
 .foto {{ width:1080px; height:800px; overflow:hidden; background:#29271e; }}
 .foto img {{ width:100%; height:100%; object-fit:cover; object-position:center 45%; display:block; }}
 .paneel {{ padding:58px 70px 0; }}
