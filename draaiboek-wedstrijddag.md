@@ -12,7 +12,7 @@ in je wachtwoordmanager (staat nergens op papier of in de app).
    staat er automatisch op. Telt de wedstrijd mee voor een competitie? Koppel
    hem dan aan het seizoen (dropdown op de wedstrijdkaart in de
    organisatie-omgeving); deelnemers en kijkers krijgen er dan een
-   Seizoen-tabblad met de doorlopende stand bij.
+   Seizoen met de doorlopende stand bij.
    **Sneller: 📋 Als sjabloon.** Staat er al een vergelijkbare wedstrijd in de
    lijst, tik dan op die knop. Type, maximum, regels, de duur en het seizoen
    worden overgenomen, en de datum schuift door naar dezelfde weekdag en tijd
@@ -114,7 +114,7 @@ op gaan, niet pas op de stek.
   "Deel de einduitslag": één tik en de uitslag gaat als afbeelding de
   groepsapp of social media in. Vissers kunnen tijdens en na de wedstrijd hun
   eigen vangst delen (deel-knop bij de vangst). Bij een competitie kan ook de
-  seizoensstand gedeeld worden vanaf het Seizoen-tabblad.
+  seizoensstand gedeeld worden vanaf Seizoen.
 - De wedstrijd blijft bewaard onder "Eerdere wedstrijden"; deelnemers en
   kijkers kunnen alles terugkijken met hun code.
 - Wil je hem later definitief weg (inclusief alle foto's): het 🗑️-knopje,

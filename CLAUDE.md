@@ -892,8 +892,12 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
    `scherm-loting.png` (stekkeuze), `scherm-kaart-nphv.png` (dieptekaart),
    `scherm-seizoen.png` (seizoensklassement), `scherm-home.png` (startscherm) en
    `uitslag-gedeeld.png`. Die laatste is GEEN schermopname maar de afbeelding
-   die de app zelf op een canvas tekent: opgehaald met
-   `tekenUitslag().toDataURL()` na `wachtOpVoetLogo()`.
+   die de app zelf op een canvas tekent: sinds 21 sep met
+   **`node tools/canvas_beeld.mjs <uit.png> <url> "<js dat een dataURL teruggeeft>"`**
+   (zelfde headless Chrome als mobiel_screenshot.mjs).
+   **`scherm-overzicht.png` (21 sep):** het tegeloverzicht van de demo bij "Zo loopt
+   jullie wedstrijddag", blok "Alles vanaf één scherm". De demo draait de tegelnavigatie
+   al, NPHV nog niet; de site toont dus wat een nieuwe klant krijgt.
    **Echte vangstfoto's (14 aug):** vier foto's van Patrick in de sectie
    "Vangst erin, klassement bijgewerkt" (`.fotostrook`), plus zes in
    `docs/schermen/vangsten/` waarvan er twee alleen in de schermopname van de
