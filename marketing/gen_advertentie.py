@@ -44,7 +44,7 @@ def svg(naam, kleur="#f0a04b", dikte=2):
 
 STAND = [("1", "Patrick", "17,9 kg"), ("2", "Jeroen", "12,4 kg"), ("3", "Mark", "9,8 kg")]
 
-VOORDELEN = [("pin", "Eigen viswater", "met interactieve kaart"),
+VOORDELEN = [("pin", "Eigen wedstrijdkaart", "met jullie stekken en zones"),
              ("loting", "Loting in één tik", "iedereen kiest om de beurt"),
              ("beker", "Live klassement", "vangst erin, stand bijgewerkt"),
              ("oog", "Thuis meekijken", "met een aparte kijkcode")]
