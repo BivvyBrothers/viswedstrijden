@@ -239,8 +239,17 @@ p:last-child { margin-bottom: 0; }
 }
 @media (min-width: 860px) { .prijsblok { grid-template-columns: 1.3fr auto; } }
 .prijsblok .bedrag { font-size: clamp(23px, 2.9vw, 30px); font-weight: 800; color: var(--oranje); line-height: 1.1; }
-.prijsblok .bedrag small { font-size: 16px; color: #fff; font-weight: 400; }
+.prijsblok .bedrag small { display: block; margin-top: 5px; font-size: 15px; color: var(--licht-op-groen); font-weight: 400; }
 .prijsblok p { color: var(--licht-op-groen); font-size: 15px; }
+.staffel { list-style: none; margin: 14px 0 4px; display: grid; gap: 1px; }
+.staffel li {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+  padding: 8px 0; border-top: 1px solid rgba(255,255,255,.14);
+  font-size: 15px; color: var(--licht-op-groen);
+}
+.staffel li:first-child { border-top: 0; }
+.staffel b { color: #fff; font-weight: 700; white-space: nowrap; }
+.staffel .jaar b { color: var(--oranje); }
 .prijsblok .knoppen { margin: 0; }
 
 /* ---------- 09 vragen ---------- */

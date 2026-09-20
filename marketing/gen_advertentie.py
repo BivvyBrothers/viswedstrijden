@@ -22,8 +22,9 @@ logo  = b64(APP / "docs/logo-rond-512.png")
 zon   = b64(APP / "docs/schermen/avondlicht-1600.jpg")
 vis   = b64(APP / "docs/schermen/vangst-klein.jpg")
 
-PRIJS_GROOT, PRIJS_REGEL1, PRIJS_REGEL2 = "&euro; 10", "per wedstrijd", "per persoon"
-VOORWAARDE = "Kaart en inrichting inbegrepen vanaf 5 personen."
+PRIJS_GROOT, PRIJS_REGEL1, PRIJS_REGEL2 = "&euro; 79", "per wedstrijd", "alles inbegrepen"
+VOORWAARDE = ("Grotere groep? Tot 25 deelnemers &euro; 119, tot 50 &euro; 159.<br>"
+              "Een heel jaar onbeperkt vissen: vanaf &euro; 199.")
 
 STREEP = ("<svg viewBox='0 0 200 15'><path d='M2.5 11.2C34 5.1 96 1.6 174 2.2c8 .1 16 .6 23.5 1.7"
           "-7.4.3-15 .1-22.6.1-60-.3-116 2.4-168.5 9.4-2.4.3-4.3-.6-3.9-2.2z' fill='#f0a04b'/></svg>")
@@ -115,7 +116,7 @@ body {{ font-family:'Montserrat',Arial,sans-serif; position:relative; color:#fff
 .prijs .v {{ font-size:24px; font-weight:700; }}
 .prijs .b {{ font-size:{60 if staand else 56}px; font-weight:800; letter-spacing:-2px; margin:4px 0 6px; }}
 .prijs .r1 {{ font-size:19px; font-weight:700; }}
-.prijs .r2 {{ font-size:16px; font-weight:400; margin-top:2px; }}
+.prijs .r2 {{ font-size:15px; font-weight:400; margin-top:3px; }}
 h1 {{ font-size:{65 if staand else 61}px; font-weight:800; line-height:1.04; letter-spacing:-2px;
   margin-top:{42 if staand else 26}px; max-width:{660 if staand else 630}px; }}
 h1 .o {{ color:#f0a04b; }}
@@ -127,7 +128,7 @@ h1 .o {{ color:#f0a04b; }}
 .vd b {{ display:block; font-size:{25 if staand else 22}px; font-weight:700; line-height:1.15; }}
 .vd span {{ display:block; font-size:{18 if staand else 16}px; color:#cfd3bd; }}
 .onder {{ margin-top:auto; }}
-.vw {{ font-size:{19 if staand else 17}px; color:#d9dcc2; margin-bottom:16px; }}
+.vw {{ font-size:{19 if staand else 17}px; color:#d9dcc2; margin-bottom:16px; line-height:1.45; max-width:{600 if staand else 560}px; }}
 .cta {{ display:inline-flex; align-items:center; gap:16px; background:#f0a04b; color:#2c331f;
   font-size:{31 if staand else 27}px; font-weight:800; padding:{24 if staand else 21}px {46 if staand else 38}px;
   border-radius:999px; letter-spacing:-.5px; box-shadow:0 12px 30px rgba(0,0,0,.3); }}
