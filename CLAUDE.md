@@ -223,9 +223,12 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
 - Volledige tenant (eerste product van nieuwe_tenant.py) met standaardkaart
   (40 stekken, 8 zones) en een geseede AFGELOPEN voorbeeldwedstrijd
   "Voorjaarswedstrijd (demo)": 12 vissers, 20 vangsten zonder foto.
-- Publieke codes: kijkcode `KIJKJE` (knop op /demo/) en deelnemerscode
-  `DEMOJA` (= `wedstrijden.code` van de demo-wedstrijd; opent het
-  deelnemer-scherm met de kaart). De wedstrijd is afgelopen dus
+- Publieke codes: kijkcode `KIJKJE` en deelnemerscode `DEMOJA` (=
+  `wedstrijden.code` van de demo-wedstrijd). **Op /demo/ staan sinds 21 sep twee
+  knoppen: "Open de demo-wedstrijd als kijker" en "Open het deelnemer-scherm".**
+  Niemand hoeft dus een code te typen om de demo te zien; de codes staan er nog
+  wel bij voor wie het inloggen zelf wil proberen (opmerking Patrick bij de
+  toesteltest van fase 4). De wedstrijd is afgelopen dus
   registreren/aanmelden is server-side dicht.
 - Demo vernieuwen: seed-SQL opnieuw draaien (delete op kijk_code KIJKJE +
   insert), daarna VERPLICHT de codes terugzetten, anders kloppen de
