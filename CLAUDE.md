@@ -733,6 +733,12 @@ technische details die bij het bouwen nodig zijn.
   alleen `docs/landing.css` en niet meer de gedeelde `styles.css`. Een wijziging in de app
   kan de site dus niet meer breken en andersom. `docs/instructies.html` en
   `docs/inloggen/` gebruiken nog wél styles.css.
+- **Warme app-kleuren (v100, fase 3 van het ontwerp):** achtergrond `--app-bg #cdd0bb`,
+  kaarten `--kaart #e0ddca` (niet meer wit), rand `--kaart-rand #d3cfb6`, tabs en
+  secundaire knoppen `#f1eedd` zodat ze afsteken op de crème kaart, invoervelden blijven
+  wit. Gedempte tekst is donkerder gezet (`--grijs #55523f`, was #6b6853): op de warme
+  achtergrond haalde de oude tint geen 4,5:1. Voor fase 4 staan klaar: `--tegel-olijf`,
+  `--tegel-zand`, `--overzicht-bg`.
 - **Koppen afwisselend wit en oranje** (huisstijlregel Patrick 20 sep): elke kop heeft
   een wit (of donkergroen) eerste deel en een oranje tweede deel, zoals
   "Ook voor <span class=accent>jullie wedstrijd?</span>". Op de landing via

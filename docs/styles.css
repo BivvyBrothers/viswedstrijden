@@ -17,10 +17,17 @@
   --blauw: #4d5839;          /* legergroen (primaire knoppen) */
   --blauw-mid: #6d7355;      /* olijf (accenten, focus) */
   --blauw-licht: #d9dcc2;    /* licht olijf (chips) */
-  --zand: #e6e4d0;           /* kaki-achtergrond */
+  --zand: #e6e4d0;           /* kaki, nog voor chips en zachte vlakken */
   --zand-donker: #cfccb0;
+  --app-bg: #cdd0bb;         /* achtergrond van de app (warme reeks, 19 sep) */
+  --kaart: #e0ddca;          /* kaarten: crème in plaats van wit */
+  --kaart-rand: #d3cfb6;
+  --tegel-olijf: #cbd0b7;    /* tegels Viswater en Vangsten (fase 4) */
+  --tegel-zand: #d8d0b7;     /* tegels Loting en Klassement (fase 4) */
+  --overzicht-bg: #3e4732;   /* achtergrond tegeloverzicht (fase 4) */
   --tekst: #29271e;
-  --grijs: #6b6853;
+  --grijs: #55523f;          /* gedempt; donkerder dan voorheen, anders te weinig
+                                contrast op de warme achtergrond (was #6b6853) */
   --groen: #2e7d32;
   --rood: #a63c2c;
   --oranje: #f0a04b;         /* huisstijl-oranje (zelfde als site, icoon en socials) */
@@ -31,7 +38,7 @@
 html, body { margin: 0; padding: 0; }
 body {
   font-family: 'Montserrat', 'Avenir Next', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background: var(--zand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='%23dcd9c1'%3E%3Cpath d='M40 60c30-25 85-15 95 15s-20 60-60 55S10 85 40 60z'/%3E%3Cpath d='M280 300c40-20 90 5 85 45s-70 55-100 25 -15-55 15-70z'/%3E%3Cpath d='M330 90c25-18 65-5 60 28s-55 40-75 18 -5-32 15-46z'/%3E%3C/g%3E%3Cg fill='%23d0cdb3'%3E%3Cpath d='M120 260c25-30 75-20 80 10s-30 65-70 50-35-35-10-60z'/%3E%3Cpath d='M240 130c20-22 60-12 62 15s-38 45-62 30-15-28 0-45z'/%3E%3C/g%3E%3Cg fill='%23e0ddc6'%3E%3Cpath d='M60 350c22-16 58-6 56 22s-48 38-66 18-8-26 10-40z'/%3E%3C/g%3E%3C/svg%3E") fixed;
+  background: var(--app-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='%23c6c9b3'%3E%3Cpath d='M40 60c30-25 85-15 95 15s-20 60-60 55S10 85 40 60z'/%3E%3Cpath d='M280 300c40-20 90 5 85 45s-70 55-100 25 -15-55 15-70z'/%3E%3Cpath d='M330 90c25-18 65-5 60 28s-55 40-75 18 -5-32 15-46z'/%3E%3C/g%3E%3Cg fill='%23c0c4ab'%3E%3Cpath d='M120 260c25-30 75-20 80 10s-30 65-70 50-35-35-10-60z'/%3E%3Cpath d='M240 130c20-22 60-12 62 15s-38 45-62 30-15-28 0-45z'/%3E%3C/g%3E%3Cg fill='%23d2d5bf'%3E%3Cpath d='M60 350c22-16 58-6 56 22s-48 38-66 18-8-26 10-40z'/%3E%3C/g%3E%3C/svg%3E") fixed;
   color: var(--tekst);
   font-size: 16px;
   -webkit-tap-highlight-color: transparent;
@@ -54,7 +61,7 @@ input, select { font-size: 16px; }
 .container { max-width: 860px; margin: 0 auto; padding: 12px calc(12px + env(safe-area-inset-right)) calc(80px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
 
 .card {
-  background: #fff; border-radius: 14px; padding: 16px;
+  background: var(--kaart); border-radius: 14px; padding: 16px;
   margin: 12px 0; box-shadow: 0 1px 4px rgba(42,39,33,.08);
 }
 .hero { background: linear-gradient(150deg, #2c331f, #4d5839 62%, #6d7355); color: #fff;
@@ -119,8 +126,8 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 
 .btn {
   padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer;
-  background: var(--zand-donker); color: var(--blauw-donker); font-weight: 700;
-  min-height: 44px;
+  background: #f1eedd; color: var(--blauw-donker); font-weight: 700;
+  border: 1.5px solid var(--kaart-rand); min-height: 44px;
 }
 .btn.primary { background: var(--blauw); color: #fff; }
 .btn.gevaar { background: #f3ded9; color: var(--rood); }
@@ -158,7 +165,7 @@ label input, label select { margin-top: 5px; font-weight: 400; }
 }
 .tabs button {
   flex: 1; white-space: nowrap; border: none; border-radius: 999px;
-  padding: 9px 12px; background: #fff; color: var(--grijs); font-weight: 700; cursor: pointer;
+  padding: 9px 12px; background: #f1eedd; color: var(--grijs); font-weight: 700; cursor: pointer;
   box-shadow: 0 1px 3px rgba(42,39,33,.08); font-size: 13.5px;
   min-height: 42px;
 }
@@ -332,8 +339,8 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .rolknoppen { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .rolknop {
   display: flex; align-items: center; gap: 13px; width: 100%;
-  padding: 12px 14px; border: 1.5px solid var(--zand-donker); border-radius: 14px;
-  background: #fff; cursor: pointer; text-align: left;
+  padding: 12px 14px; border: 1.5px solid var(--kaart-rand); border-radius: 14px;
+  background: var(--kaart); cursor: pointer; text-align: left;
   box-shadow: 0 1px 3px rgba(42, 39, 33, .06);
 }
 .rolknop:hover { border-color: var(--blauw-mid); }
@@ -360,7 +367,7 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .rol-tekst small { color: var(--grijs); font-size: 13px; }
 .rol-pijl { margin-left: auto; color: var(--blauw); font-size: 24px; font-weight: 700; }
 .rolknop.actief { border-color: var(--blauw); background: var(--blauw-licht); }
-.rolknop.actief .rol-icoon { background: #ffffff; }
+.rolknop.actief .rol-icoon { background: #fff; }
 .rolform { margin-top: 4px; }
 /* verborgen username-veld: alleen zodat de wachtwoordmanager de code wil bewaren */
 .vh { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
@@ -432,7 +439,7 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 @media (max-width: 520px) { .su-zoekrij input { flex: 1 1 100%; } .su-filters { width: 100%; } }
 .su-rij {
   border: 1.5px solid var(--zand-donker); border-radius: 12px;
-  margin-bottom: 8px; overflow: hidden; background: #fff;
+  margin-bottom: 8px; overflow: hidden; background: var(--kaart);
 }
 .su-rij-open { border-color: var(--blauw-mid); }
 .su-rij-kop {
@@ -525,6 +532,20 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 }
 #join-duo-label small { font-weight: 400; color: var(--grijs, #6b6a5f); }
 #join-duo-label:has(input:checked) { border-color: var(--blauw); background: #fff; }
+
+/* foto-toestemming: zelfde vorm als het duo-vinkje, anders rekt de app-brede
+   input-stijl de checkbox uit en staat hij bóven de tekst (v100) */
+#join-foto-label {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--zand); border: 1.5px solid var(--kaart-rand);
+  border-radius: 12px; padding: 12px 14px; cursor: pointer;
+  font-size: 14.5px; color: var(--tekst); line-height: 1.4;
+}
+#join-foto-label input {
+  width: 24px; height: 24px; flex: 0 0 auto; margin: 2px 0 0;
+  accent-color: var(--blauw); cursor: pointer;
+}
+#join-foto-label small { display: block; color: var(--grijs); margin-top: 2px; }
 
 /* vaste doorgeef-knop bovenaan de vangsten-tab */
 
