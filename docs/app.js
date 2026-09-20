@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 100; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 101; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -509,6 +509,7 @@ async function checkVersie() {
 
 function route(initieel) {
   SESSIE_GEN += 1;   // alles wat nog onderweg is, hoort bij het vorige scherm
+  sluitMeer();       // een open Meer-paneel hoort bij het vorige scherm (Codex fase 4, punt 2)
   STATE_OK_OP = 0; verbindingBanner(false);   // de banner hoort bij het vorige scherm
   DUO_MAAT_GEZOCHT = false;
   const mW = location.hash.match(/^#\/w\/([A-Za-z0-9]{4,8})/);
@@ -531,7 +532,10 @@ function route(initieel) {
     toonView('wedstrijd');
     ROL = KIJKER ? 'kijker' : 'deelnemer';
     renderTabs();
-    if (KIJKER) activateTab('klassement');   // kijkers landen op het klassement, niet op de kaart
+    // met tegelnavigatie is het overzicht de thuisbasis voor elke rol; zonder
+    // tegels blijft het oude gedrag (kijker landt op het klassement)
+    if (TEGELS()) activateTab('overzicht');
+    else if (KIJKER) activateTab('klassement');
     SELECTIE = []; SELECTIE_ZONE = null;
     ADMIN_OPEN = false;
     STATE = null;
@@ -586,6 +590,13 @@ function route(initieel) {
   }
 }
 function toonView(naam) {
+  // de onderbalk hoort bij een geopende wedstrijd: buiten die view zou hij naar
+  // tabs wijzen die niemand ziet (Codex fase 4, punt 1)
+  const inWedstrijd = naam === 'wedstrijd';
+  const balkOnder = $('#onderbalk');
+  if (balkOnder) balkOnder.hidden = !(inWedstrijd && TEGELS());
+  document.body.classList.toggle('nav-tegels', inWedstrijd && TEGELS());
+  if (!inWedstrijd) { document.body.classList.remove('op-overzicht'); sluitMeer(); }
   $('#view-home').hidden = naam !== 'home';
   $('#view-wedstrijd').hidden = naam !== 'wedstrijd';
   $('#view-org').hidden = naam !== 'org';
@@ -596,10 +607,15 @@ function toonView(naam) {
 function activateTab(naam) {
   // alleen tabs die bij de huidige rol horen (Codex v89: een oude knop mocht
   // een kijker naar de deelnemerstab sturen)
-  if (!(TABS_PER_ROL[ROL] || TABS_PER_ROL.deelnemer).includes(naam)) return;
+  if (!tabsVanRol().includes(naam)) return;
   const b = document.querySelector(`#tabs button[data-tab=${naam}]`);
   if (b) b.click();
 }
+
+// Tegelnavigatie (v101, fase 4 van het ontwerp). Per tenant aan te zetten met
+// NAV_TEGELS in config.js: eerst demo, daarna NPHV. Staat de vlag uit, dan is
+// alles precies als voorheen; het overzicht en de onderbalk blijven verborgen.
+const TEGELS = () => typeof NAV_TEGELS !== 'undefined' && !!NAV_TEGELS;
 
 // welke tabs elke rol ziet
 const TABS_PER_ROL = {
@@ -609,6 +625,43 @@ const TABS_PER_ROL = {
   deelnemer: ['kaart', 'klassement', 'vangsten', 'team', 'seizoen'],
   organisator: ['kaart', 'klassement', 'vangsten', 'seizoen', 'beheer'],
 };
+// Labels voor de tegels, de onderbalk en het Meer-paneel op één plek
+function tabLabel(naam) {
+  if (naam === 'team') return STATE?.wedstrijd?.mode === 'koppel' ? 'Mijn team' : 'Mijn deelname';
+  return { overzicht: 'Overzicht', kaart: 'Kaart & loting', klassement: 'Klassement',
+    vangsten: 'Vangsten', seizoen: 'Seizoen', beheer: 'Beheer' }[naam] || naam;
+}
+
+// Het Meer-paneel bevat alles wat niet in de onderbalk past, in de volgorde van
+// de rol. De lijst komt uit dezelfde bron als de tabbalk, dus een kijker krijgt
+// hier nooit een deelnemersscherm te zien.
+const ONDERBALK = ['overzicht', 'kaart', 'vangsten'];
+let MEER_SIG = null;
+function renderMeer(zichtbaar) {
+  const vak = $('#meer-knoppen');
+  if (!vak) return;
+  const rest = zichtbaar.filter((n) => !ONDERBALK.includes(n));
+  const thuis = (ROL === 'organisator' && sessie.orgWw())
+    ? 'Naar het organisatie-overzicht' : 'Naar het startscherm';
+  // alleen opnieuw opbouwen als er echt iets verandert: anders verdwijnt bij elke
+  // render de knop waar de toetsenbordfocus op staat (Codex fase 4, punt 3)
+  const sig = JSON.stringify([rest.map(tabLabel), thuis]);
+  if (sig === MEER_SIG) return;
+  MEER_SIG = sig;
+  vak.innerHTML = rest.map((n) =>
+    `<button class="meer-knop" data-ga="${n}">${esc(tabLabel(n))}<span aria-hidden="true">&rsaquo;</span></button>`).join('')
+    + `<button class="meer-knop" data-ga="home">${esc(thuis)}<span aria-hidden="true">&rsaquo;</span></button>`;
+}
+
+// De tabs van deze rol, met het overzicht vooraan zodra de tegelnavigatie aan
+// staat. Eén bron voor renderTabs, activateTab en het Meer-paneel, zodat de
+// rolbeperking maar op één plek staat.
+function tabsVanRol() {
+  const lijst = (TABS_PER_ROL[ROL] || TABS_PER_ROL.deelnemer).slice();
+  if (TEGELS()) lijst.unshift('overzicht');
+  return lijst;
+}
+
 function renderTabs() {
   // duidelijker labels (klantvraag NPHV): bij een individuele wedstrijd is
   // "Mijn team" verwarrend, daar heet de tab "Mijn deelname"
@@ -617,21 +670,30 @@ function renderTabs() {
     teamKnop.textContent = STATE.wedstrijd.mode === 'koppel' ? 'Mijn team' : 'Mijn deelname';
   }
   // de seizoen-tab bestaat alleen als deze wedstrijd bij een seizoen hoort
-  const zichtbaar = (TABS_PER_ROL[ROL] || TABS_PER_ROL.deelnemer)
+  const zichtbaar = tabsVanRol()
     .filter((naam) => naam !== 'seizoen' || !!SEIZOEN);
   $('#tabs').hidden = false;
   document.body.classList.toggle('rol-kijker', ROL === 'kijker');
+  document.body.classList.toggle('nav-tegels', TEGELS());
+  const balkOnder = $('#onderbalk');
+  if (balkOnder) balkOnder.hidden = !TEGELS();
+  renderMeer(zichtbaar);
   document.querySelectorAll('#tabs button').forEach((b) => {
-    b.hidden = !zichtbaar.includes(b.dataset.tab);
+    // 'overzicht' bestaat alleen als navigatiedoel; de knop ervoor staat onderaan
+    b.hidden = b.dataset.tab === 'overzicht' || !zichtbaar.includes(b.dataset.tab);
   });
   // knoppen in de tabbalk in de volgorde van de rol zetten (kijker: klassement eerst)
   const balk = $('#tabs');
   zichtbaar.forEach((naam) => { const b = balk.querySelector(`button[data-tab=${naam}]`); if (b) balk.appendChild(b); });
+  // de overzicht-knop is bewust verborgen, dus 'hidden' zegt hier niets over
+  // geldigheid: alleen de rollijst telt (Codex fase 4, punt 5)
   const actief = document.querySelector('#tabs button.actief');
-  if (!actief || actief.hidden || !zichtbaar.includes(actief.dataset.tab)) {
-    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('actief', x.dataset.tab === zichtbaar[0]));
-    document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-' + zichtbaar[0]; });
+  const actieveTab = zichtbaar.includes(actief?.dataset.tab) ? actief.dataset.tab : zichtbaar[0];
+  if (!actief || actief.dataset.tab !== actieveTab) {
+    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('actief', x.dataset.tab === actieveTab));
+    document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-' + actieveTab; });
   }
+  merkOnderbalk(actieveTab);
 }
 
 /* ---------- home ---------- */
@@ -922,6 +984,36 @@ function renderAlles(eerste) {
   if (ROL === 'deelnemer') { renderTeamTab(); renderWachtrij(); }
   if (ROL === 'organisator') renderBeheer(eerste);
   renderSnelVangst();
+}
+
+// De knop in de onderbalk die bij de huidige tab hoort krijgt de actieve stijl.
+// 'loting' valt onder Kaart, alles wat niet in de balk staat onder Meer.
+function merkOnderbalk(tab) {
+  const balk = $('#onderbalk');
+  if (!balk) return;
+  balk.querySelectorAll('button').forEach((b) => {
+    const doel = b.dataset.ga;
+    b.classList.toggle('aan', doel ? doel === tab : !ONDERBALK.includes(tab));
+  });
+  // op het overzicht is de bovenste tabbalk dubbelop; in detailschermen blijft hij
+  document.body.classList.toggle('op-overzicht', tab === 'overzicht');
+}
+let MEER_TERUG = null;
+function toonMeer() {
+  const paneel = $('#meer-paneel');
+  if (!paneel) return;
+  MEER_TERUG = document.querySelector('#onderbalk [data-meer]');
+  paneel.hidden = false;
+  document.body.classList.add('meer-open');
+  paneel.querySelector('.meer-knop')?.focus();
+}
+function sluitMeer() {
+  const paneel = $('#meer-paneel');
+  if (!paneel || paneel.hidden) return;
+  paneel.hidden = true;
+  document.body.classList.remove('meer-open');
+  if (MEER_TERUG && document.contains(MEER_TERUG)) MEER_TERUG.focus();
+  MEER_TERUG = null;
 }
 
 // Zwevende hoofdactie voor de deelnemer zolang de wedstrijd loopt: registreren
@@ -2689,6 +2781,36 @@ function initWedstrijd() {
     document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('actief', x === b));
     document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-' + b.dataset.tab; });
     renderSnelVangst();  // knop hoort weg te zijn op de vangsten-tab zelf
+    merkOnderbalk(b.dataset.tab);
+  });
+
+  // ---- tegelnavigatie (v101) ----
+  // Alles hieronder navigeert via activateTab naar de BESTAANDE tabs. De tegels
+  // en de onderbalk zijn dus presentatie; rolcontrole en rendering blijven waar
+  // ze stonden.
+  const ga = (doel) => {
+    sluitMeer();
+    if (doel === 'home') { $('#btn-terug')?.click(); return; }   // label in renderMeer volgt de rol
+    if (doel === 'loting') {   // loting is geen eigen tab: de kaartweergave, maar dan bij de lijst
+      activateTab('kaart');
+      setTimeout(() => $('#loting-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      return;
+    }
+    activateTab(doel);
+    if (doel === 'overzicht') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  // bewust begrensd tot de nieuwe navigatie-onderdelen, zodat deze handler nooit
+  // een bestaande knop elders kan kapen (Codex fase 4)
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#onderbalk, #meer-paneel, #tab-overzicht')) return;
+    const knop = e.target.closest('[data-ga]');
+    if (knop) { ga(knop.dataset.ga); return; }
+    if (e.target.closest('[data-meer]')) { toonMeer(); return; }
+    if (e.target.closest('[data-meer-sluit]')) sluitMeer();
+  });
+  // Escape sluit het paneel; zonder volledige focus-trap, maar wel met een uitweg
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('#meer-paneel')?.hidden) sluitMeer();
   });
 
   $('#kl-totaal').addEventListener('click', () => { KLASSEMENT_MODE = 'totaal'; renderKlassement(); });

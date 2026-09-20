@@ -650,6 +650,40 @@ Codex-review v88 (`review/codex-v88-uit.md`, 10 bevindingen) gaf migratie
   dan 3 uur cron-uitval vervalt een melding stilzwijgend; een organisator die
   ook meevist ziet het afsluitscherm niet (hij ziet Beheer en het klassement).
 
+## Tegelnavigatie: overzicht + balk onderaan (v101, 20 sep 2026, fase 4 van het ontwerp)
+
+**Per tenant aan te zetten met `const NAV_TEGELS = true` in `config.js`. Staat hij uit,
+dan is de app exact als v100.** Nu: demo aan, NPHV uit tot de testmatrix daar groen is.
+
+- **`#tab-overzicht`** is een gewone `.tab` (dus dezelfde toon/verberg-logica) en is de
+  thuisbasis binnen een wedstrijd: het ronde logo met "Loot. Vis. Win." op een
+  donkergroen vlak (`--overzicht-bg`) en vier tegels in 2x2: Viswater, Loting,
+  Klassement, Vangsten. **Geen karperfoto naast het logo** (besluit Patrick 20 sep).
+- **`#onderbalk`** staat vast onderaan: Overzicht, Kaart, Vangsten, Meer. "Meer" opent
+  `#meer-paneel` met alles wat niet in de balk past, in de volgorde van de rol
+  (klassement, Mijn deelname of Mijn team, seizoen, beheer) plus een regel terug naar
+  het startscherm (voor een organisator met wachtwoord: naar zijn organisatie-overzicht,
+  want daar brengt de terugknop hem).
+- **Alles navigeert via `activateTab()` naar de BESTAANDE tabs.** De tegels en de balk
+  zijn dus presentatie; `TABS_PER_ROL` blijft de enige plek waar staat wat een rol mag
+  zien, en `tabsVanRol()` (met 'overzicht' vooraan als de vlag aan staat) is de enige
+  bron voor de tabbalk, het Meer-paneel en `activateTab`. De tegel Loting is geen eigen
+  tab: die opent de kaart en scrollt naar `#loting-card`.
+- Op het overzicht verdwijnt de bovenste tabbalk (`body.op-overzicht`); in detailschermen
+  blijft die staan als contextnavigatie. `body.nav-tegels` regelt de ruimte onderaan en
+  tilt de zwevende vangstknop boven de balk.
+- **Uit de Codex-review op de diff** (bewaard als `review/codex-fase4-uit.md`): de balk
+  hoort bij de WEDSTRIJDview, dus `toonView()` verbergt hem en ruimt de body-classes op;
+  `route()` sluit een open Meer-paneel; `renderMeer()` bouwt alleen opnieuw op bij een
+  echte wijziging (`MEER_SIG`), anders verdwijnt de knop waar de focus op staat;
+  `renderTabs()` bepaalt de actieve tab op `zichtbaar.includes()` (de overzicht-knop is
+  bewust `hidden`) en roept `merkOnderbalk()` aan; de globale klik-handler luistert alleen
+  binnen `#onderbalk, #meer-paneel, #tab-overzicht`; Escape sluit het paneel en de focus
+  keert terug naar de Meer-knop. **Bewust NIET gedaan:** een volledige focus-trap in het
+  paneel (wel focus erin, Escape eruit en focus terug).
+- Nog open voor NPHV: instructiepagina's en draaiboek beschrijven straks de nieuwe
+  navigatie, en de schermopnamen op de landingspagina moeten dan opnieuw.
+
 ## Wedstrijd als sjabloon (v67, 13 aug 2026)
 
 Knop **📋 Als sjabloon** op elke wedstrijdkaart in de organisatie-omgeving

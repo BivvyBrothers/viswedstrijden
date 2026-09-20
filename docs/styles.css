@@ -598,3 +598,85 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .rolknop .rol-icoon { background: var(--zand); }
 .merk-blok .merk-logo img { width: 76px; height: 76px; }
 .merk-blok .merk-voet { display: none; }
+
+
+/* ============ Tegelnavigatie (v101, fase 4 van het ontwerp) ============
+   Alleen actief als config.js NAV_TEGELS aanzet: app.js zet dan body.nav-tegels.
+   Het overzicht is de thuisbasis binnen een wedstrijd (donkergroen vlak met het
+   merk en vier tegels), de vaste balk onderaan brengt je overal heen. */
+#tab-overzicht {
+  background: var(--overzicht-bg);
+  border-radius: 18px;
+  padding: clamp(16px, 4vw, 24px) clamp(14px, 4vw, 22px) clamp(18px, 4vw, 26px);
+  margin-bottom: 14px;
+}
+.ov-merk { text-align: center; color: #fff; }
+.ov-merk img { width: 96px; height: 96px; display: block; margin: 0 auto; }
+.ov-merk .slogan-blok { display: block; margin-top: 10px; color: var(--oranje); }
+.ov-merk .slogan-blok .tekst {
+  display: block; font-size: clamp(22px, 6vw, 28px); font-weight: 800;
+  color: #fff; line-height: 1; letter-spacing: -.5px;
+}
+.ov-merk .slogan-blok .punt { color: var(--oranje); }
+.ov-merk .slogan-blok svg { display: block; width: min(230px, 70%); height: auto; margin: 3px auto 0; }
+
+.tegels { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.tegel {
+  position: relative; text-align: left; border: 0; cursor: pointer;
+  background: var(--tegel-olijf); color: var(--tekst);
+  border-radius: 14px; padding: 13px 13px 12px; min-height: 104px;
+  display: flex; flex-direction: column; gap: 2px; font: inherit;
+}
+.tegel:nth-child(2), .tegel:nth-child(3) { background: var(--tegel-zand); }
+.tegel:active { transform: scale(.985); }
+.tegel .t-icoon svg { width: 26px; height: 26px; color: #2b3122; }
+.tegel .t-titel { margin-top: 8px; font-size: 15px; font-weight: 700; color: #2b3122; }
+.tegel .t-sub { font-size: 12px; line-height: 1.3; color: #55523f; padding-right: 12px; }
+.tegel .t-pijl { position: absolute; right: 11px; bottom: 9px; color: #5c6350; font-size: 18px; font-weight: 700; }
+.ov-extra:not(:empty) { margin-top: 14px; }
+
+/* vaste balk onderaan */
+.onderbalk[hidden], .meer-paneel[hidden] { display: none; }
+.onderbalk {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  background: #293222; display: flex; justify-content: space-around;
+  padding: 8px calc(4px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(4px + env(safe-area-inset-left));
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, .22);
+}
+.onderbalk button {
+  flex: 1; background: none; border: 0; cursor: pointer; font: inherit;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 2px; color: #b9bfa6; font-size: 11px; font-weight: 700;
+  min-height: 48px; border-radius: 10px;
+}
+.onderbalk button svg { width: 22px; height: 22px; }
+.onderbalk button.aan { color: var(--oranje); }
+.onderbalk button:active { background: rgba(255, 255, 255, .08); }
+
+body.nav-tegels { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+body.nav-tegels .snel-vangst { bottom: calc(76px + env(safe-area-inset-bottom)); }
+body.nav-tegels.op-overzicht #tabs { display: none; }
+body.meer-open { overflow: hidden; }
+
+/* Meer-paneel */
+.meer-paneel { position: fixed; inset: 0; z-index: 70; display: flex; align-items: flex-end; }
+.meer-vlak { position: absolute; inset: 0; background: rgba(20, 24, 15, .55); }
+.meer-inhoud {
+  position: relative; width: 100%; background: var(--kaart);
+  border-radius: 18px 18px 0 0;
+  padding: 10px calc(16px + env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  max-height: 80vh; overflow: auto;
+}
+.meer-greep { width: 40px; height: 4px; border-radius: 2px; background: var(--kaart-rand); margin: 0 auto 12px; }
+.meer-knop {
+  width: 100%; display: flex; justify-content: space-between; align-items: center;
+  background: #f1eedd; border: 1px solid var(--kaart-rand); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 8px; font: inherit; font-weight: 700;
+  color: var(--groen-donker); cursor: pointer; min-height: 48px;
+}
+.meer-knop:active { background: #e7e3cf; }
+@media (min-width: 620px) {
+  .tegels { grid-template-columns: repeat(4, 1fr); }
+  .meer-inhoud { max-width: 560px; margin: 0 auto; border-radius: 18px; margin-bottom: 30px; }
+  .meer-paneel { align-items: center; }
+}

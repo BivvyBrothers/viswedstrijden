@@ -297,6 +297,7 @@
   </details>
 
   <nav class="tabs" id="tabs">
+    <button data-tab="overzicht" hidden>Overzicht</button>
     <button data-tab="kaart" class="actief">Kaart &amp; loting</button>
     <button data-tab="klassement">Klassement</button>
     <button data-tab="vangsten">Vangsten</button>
@@ -304,6 +305,24 @@
     <button data-tab="seizoen" hidden>Seizoen</button>
     <button data-tab="beheer">Beheer</button>
   </nav>
+
+  <!-- Overzicht (v101, fase 4 van het ontwerp; alleen zichtbaar met NAV_TEGELS
+       in config.js). Dit is de thuisbasis binnen een wedstrijd: merk, de vier
+       tegels en verder alles via de balk onderaan. De tegels navigeren naar de
+       BESTAANDE tabs, dus de rol-, autorisatie- en renderlogica verandert niet. -->
+  <section id="tab-overzicht" class="tab" hidden>
+    <div class="ov-merk">
+      <img src="/logo-rond-512.png" alt="Viswedstrijdapp" width="96" height="96">
+      <span class="slogan-blok"><span class="tekst">Loot<span class="punt">.</span> Vis<span class="punt">.</span> Win<span class="punt">.</span></span><svg viewBox="0 0 200 15" aria-hidden="true" focusable="false"><path d="M2.5 11.2C34 5.1 96 1.6 174 2.2c8 .1 16 .6 23.5 1.7-7.4.3-15 .1-22.6.1-60-.3-116 2.4-168.5 9.4-2.4.3-4.3-.6-3.9-2.2z" fill="currentColor"/></svg></span>
+    </div>
+    <div class="tegels">
+      <button class="tegel" data-ga="kaart"><span class="t-icoon"><svg class='' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3z'/><path d='M9 3v15M15 6v15'/></svg></span><span class="t-titel">Viswater</span><span class="t-sub">de kaart met alle stekken</span><span class="t-pijl" aria-hidden="true">&rsaquo;</span></button>
+      <button class="tegel" data-ga="loting"><span class="t-icoon"><svg class='' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M16 3h5v5M21 3l-7.5 7.5M8 21H3v-5M3 21l7.5-7.5M16 21h5v-5M21 21l-6-6M3 3l6 6'/></svg></span><span class="t-titel">Loting</span><span class="t-sub">wie zit waar, en je eigen plek</span><span class="t-pijl" aria-hidden="true">&rsaquo;</span></button>
+      <button class="tegel" data-ga="klassement"><span class="t-icoon"><svg class='' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M8 4h8v5a4 4 0 0 1-8 0z'/><path d='M8 5H5v2a3 3 0 0 0 3 3M16 5h3v2a3 3 0 0 1-3 3'/><path d='M10 14h4v4h-4zM8 20h8'/></svg></span><span class="t-titel">Klassement</span><span class="t-sub">de stand van nu</span><span class="t-pijl" aria-hidden="true">&rsaquo;</span></button>
+      <button class="tegel" data-ga="vangsten"><span class="t-icoon"><svg class='' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M2 12s3.6-5 8.6-5c3 0 5.5 1.7 6.8 3.5L21 8.5v7l-3.6-2c-1.3 1.8-3.8 3.5-6.8 3.5C5.6 17 2 12 2 12z'/><circle cx='8' cy='10.8' r='.8' fill='currentColor' stroke='none'/></svg></span><span class="t-titel">Vangsten</span><span class="t-sub">alles wat er gevangen is</span><span class="t-pijl" aria-hidden="true">&rsaquo;</span></button>
+    </div>
+    <div id="ov-extra" class="ov-extra"></div>
+  </section>
 
   <!-- Kaart -->
   <section id="tab-kaart" class="tab">
@@ -556,6 +575,25 @@
 </main>
 
 <button id="snel-vangst" class="snel-vangst" hidden>⚖️ Vangst registreren</button>
+
+<!-- Onderste navigatiebalk (v101, fase 4): alleen met NAV_TEGELS. De knoppen
+     activeren dezelfde tabs als de tabbalk; "Meer" opent een paneel met de rest
+     (klassement, mijn deelname, seizoen, beheer, uitloggen) op basis van de rol. -->
+<nav class="onderbalk" id="onderbalk" hidden>
+  <button data-ga="overzicht"><svg class='' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M3 10.5 12 3l9 7.5'/><path d='M5 9.8V21h14V9.8'/></svg><span>Overzicht</span></button>
+  <button data-ga="kaart"><svg class='' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z'/><circle cx='12' cy='10' r='2.6'/></svg><span>Kaart</span></button>
+  <button data-ga="vangsten"><svg class='' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M2 12s3.6-5 8.6-5c3 0 5.5 1.7 6.8 3.5L21 8.5v7l-3.6-2c-1.3 1.8-3.8 3.5-6.8 3.5C5.6 17 2 12 2 12z'/><circle cx='8' cy='10.8' r='.8' fill='currentColor' stroke='none'/></svg><span>Vangsten</span></button>
+  <button data-meer><svg class='' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='5' cy='12' r='1.6'/><circle cx='12' cy='12' r='1.6'/><circle cx='19' cy='12' r='1.6'/></svg><span>Meer</span></button>
+</nav>
+<div class="meer-paneel" id="meer-paneel" hidden>
+  <div class="meer-vlak" data-meer-sluit></div>
+  <div class="meer-inhoud" role="dialog" aria-modal="true" aria-label="Meer voor deze wedstrijd">
+    <div class="meer-greep" aria-hidden="true"></div>
+    <div id="meer-knoppen"></div>
+    <button class="btn breed" data-meer-sluit>Sluiten</button>
+  </div>
+</div>
+
 
 <div id="foto-groot" class="lightbox" role="dialog" aria-modal="true" aria-label="Afbeelding vergroot" hidden><img alt="vangstfoto"><button type="button" class="sluit" aria-label="Sluiten">✕</button></div>
 

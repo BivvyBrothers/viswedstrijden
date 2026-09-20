@@ -4,3 +4,6 @@ const SB_KEY = 'sb_publishable_0sb4MYouujq5bmE6svX6Hg_EzPViAJK';
 const FOTO_BUCKET = 'wedstrijd-fotos';
 const TENANT = 'nphv'; // tenant-slug = klant in de database
 const VAPID_PUBLIC = 'BMqyaPZkcFFyJz7llz7wjIOl7zKOmsmB06i-ulktx4rMaTrS_4exJhbffT9wV04ZmPVw9AJD7QBX3PJH-zxUMQw';
+// Tegelnavigatie (fase 4 van het ontwerp, v101): staat hier nog UIT. Gaat aan
+// zodra de testmatrix op de demo groen is.
+const NAV_TEGELS = false;
