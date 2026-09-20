@@ -234,13 +234,13 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
   insert), daarna VERPLICHT de codes terugzetten, anders kloppen de
   geadverteerde codes op /demo/ niet meer (gebeurde 16 jul):
   `update wedstrijd.wedstrijden set code='DEMOJA' where kijk_code='KIJKJE';`
-- **Vangstfoto's in de demo (20 sep 2026):** zes van de twintig vangsten van de
-  Voorjaarswedstrijd hebben een echte foto (Thijs 14,65 | Piet 12,40 | Jan 11,80 |
-  Dennis 10,25 | Kees 6,20 | Marco 5,15). Daardoor toont de vangstenlijst zowel
-  echte foto's als de placeholder, en staat er ook een thumbnail bij "Grootste vis"
-  in het klassement. Alleen foto's uit `marketing/fotos-site/` (de vrijgegeven map);
+- **Vangstfoto's in de demo: ALLE TWINTIG vangsten hebben er een** (6 op 20 sep, de
+  overige 14 op 21 sep op verzoek van Patrick; drie foto's zijn daarbij twee keer
+  gebruikt, dat mag van hem). De vangstenlijst en het klassement tonen dus overal
+  een echte vis. Alleen foto's uit `marketing/fotos-site/` (de vrijgegeven map);
   de twee met een @BivvyBrothers-watermerk zijn bewust overgeslagen, en de foto's
-  hangen aan mannelijke deelnemersnamen omdat er een man op staat. Verwerking zonder
+  hangen bij voorkeur aan mannelijke deelnemersnamen omdat er een man op staat; bij
+  de aanvulling naar twintig is dat losgelaten, want er zijn te weinig foto's. Verwerking zonder
   metadata + upload via de edge function: `python3 tools/demo_fotos.py --pin <admin-pin>`
   (de pin staat in de database, nooit in deze repo). Het script print daarna de SQL
   om `foto_path` te zetten. **Na een nieuwe seed zijn de foto's weg: script opnieuw
@@ -249,8 +249,10 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
 ## Vangst delen op social media (v45, 14 jul 2026)
 
 Per vangst een deel-knop (vangsten-feed + Mijn vangsten): `tekenVangst()`
-maakt een 1080x1352-afbeelding (Instagram-vriendelijk 4:5) met de vangstfoto
-cover-gecropt (of de karper-placeholder bij handmatige invoer), gewicht groot,
+maakt een 1080x1352-afbeelding (Instagram-vriendelijk 4:5) met **sinds v102 een
+kopbalk** (`tekenKop`: "Loot. Vis. Win." met oranje punten, penseelstreek en het
+icoon rechts, wens Patrick 21 sep: een gedeelde foto hoort boven én onder een kader te
+hebben) en daaronder de vangstfoto cover-gecropt (of de karper-placeholder bij handmatige invoer), gewicht groot,
 visser, wedstrijd + datum en de app-voet. Foto's laden met
 crossOrigin='anonymous' (bucket stuurt ACAO *, dus geen canvas-taint).
 Alle deel-afbeeldingen (uitslag, seizoen, vangst) hebben sinds v45 een

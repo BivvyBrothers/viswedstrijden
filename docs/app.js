@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 101; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 102; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -2148,6 +2148,40 @@ function tekenVoet(ctx, B, H, VOET, rechts = 'loting \u00b7 stekkeuze \u00b7 liv
   ctx.textAlign = 'left';
 }
 
+// Kopbalk voor deel-afbeeldingen (21 sep 2026, wens Patrick): een gedeelde foto
+// hoort boven én onder een kader te hebben, met de slogan bovenaan.
+function tekenKop(ctx, B, KOP) {
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, 0, B, KOP);
+  const mid = KOP / 2 + 15;
+  let x = 64;
+  ctx.textAlign = 'left';
+  ctx.font = '800 44px system-ui, "Segoe UI", Arial, sans-serif';
+  // "Loot. Vis. Win." met oranje punten, net als in de app en op de site
+  [['Loot', '.'], [' Vis', '.'], [' Win', '.']].forEach(([woord, punt]) => {
+    ctx.fillStyle = '#ffffff'; ctx.fillText(woord, x, mid); x += ctx.measureText(woord).width;
+    ctx.fillStyle = '#f0a04b'; ctx.fillText(punt, x, mid); x += ctx.measureText(punt).width;
+  });
+  // penseelstreek onder de slogan
+  ctx.strokeStyle = '#f0a04b'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(64, mid + 16);
+  ctx.quadraticCurveTo((64 + x) / 2, mid + 26, x, mid + 12);
+  ctx.stroke();
+  if (APP_ICOON.complete && APP_ICOON.naturalWidth) {
+    const m = 60, y = (KOP - m) / 2, r = 14, lx = B - 64 - m;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(lx + r, y);
+    ctx.arcTo(lx + m, y, lx + m, y + m, r);
+    ctx.arcTo(lx + m, y + m, lx, y + m, r);
+    ctx.arcTo(lx, y + m, lx, y, r);
+    ctx.arcTo(lx, y, lx + m, y, r);
+    ctx.closePath(); ctx.clip();
+    ctx.drawImage(APP_ICOON, lx, y, m, m);
+    ctx.restore();
+  }
+}
+
 function laadFoto(url, timeoutMs = 12000) {
   return new Promise((ok, nee) => {
     const img = new Image();
@@ -2166,45 +2200,47 @@ function laadFoto(url, timeoutMs = 12000) {
   });
 }
 
-function tekenVangstPlaceholder(ctx, B, H) {
-  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, 0, B, H);
+function tekenVangstPlaceholder(ctx, B, H, top = 0) {
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, top, B, H);
   if (APP_ICOON.complete && APP_ICOON.naturalWidth) {
     const m = 340;
     ctx.save(); ctx.globalAlpha = 0.9;
-    ctx.drawImage(APP_ICOON, (B - m) / 2, (H - m) / 2 - 40, m, m);
+    ctx.drawImage(APP_ICOON, (B - m) / 2, top + (H - m) / 2 - 40, m, m);
     ctx.restore();
   }
 }
 
 // deelbare vangst-afbeelding: foto (of placeholder) + gewicht + visser + app-voet
 async function tekenVangst(v, t) {
-  const B = 1080, FOTO_H = 1010, INFO = 250, VOET = 92;
-  const H = FOTO_H + INFO + VOET; // ~4:5, Instagram-vriendelijk
+  const B = 1080, KOP = 118, FOTO_H = 910, INFO = 232, VOET = 92;
+  const H = KOP + FOTO_H + INFO + VOET; // ~4:5, Instagram-vriendelijk
   const c = document.createElement('canvas');
   c.width = B; c.height = H;
   const ctx = c.getContext('2d');
   const { F, kort } = canvasHulp(ctx);
+  tekenKop(ctx, B, KOP);
   if (v.foto_path) {
     try {
       const img = await laadFoto(fotoUrl(v.foto_path));
       const s = Math.max(B / img.width, FOTO_H / img.height); // cover-crop
       const w2 = img.width * s, h2 = img.height * s;
       ctx.save();
-      ctx.beginPath(); ctx.rect(0, 0, B, FOTO_H); ctx.clip();
-      ctx.drawImage(img, (B - w2) / 2, (FOTO_H - h2) / 2, w2, h2);
+      ctx.beginPath(); ctx.rect(0, KOP, B, FOTO_H); ctx.clip();
+      ctx.drawImage(img, (B - w2) / 2, KOP + (FOTO_H - h2) / 2, w2, h2);
       ctx.restore();
-    } catch { tekenVangstPlaceholder(ctx, B, FOTO_H); }
+    } catch { tekenVangstPlaceholder(ctx, B, FOTO_H, KOP); }
   } else {
-    tekenVangstPlaceholder(ctx, B, FOTO_H);
+    tekenVangstPlaceholder(ctx, B, FOTO_H, KOP);
   }
-  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, FOTO_H, B, INFO + VOET);
+  const onder = KOP + FOTO_H;
+  ctx.fillStyle = '#353d2a'; ctx.fillRect(0, onder, B, INFO + VOET);
   ctx.fillStyle = '#f0a04b'; ctx.font = F(72, true);
-  ctx.fillText(fmtKg(v.gewicht_gram), 64, FOTO_H + 98);
+  ctx.fillText(fmtKg(v.gewicht_gram), 64, onder + 92);
   ctx.fillStyle = '#ffffff'; ctx.font = F(34, true);
-  ctx.fillText(kort(t ? teamNaam(t) : 'vangst', B - 128), 64, FOTO_H + 154);
+  ctx.fillText(kort(t ? teamNaam(t) : 'vangst', B - 128), 64, onder + 146);
   ctx.fillStyle = '#d9dcc2'; ctx.font = F(26);
   const wanneer = new Date(vangstTijd(v)).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
-  ctx.fillText(kort(`${STATE.wedstrijd.naam} \u00b7 ${wanneer}`, B - 128), 64, FOTO_H + 198);
+  ctx.fillText(kort(`${STATE.wedstrijd.naam} \u00b7 ${wanneer}`, B - 128), 64, onder + 190);
   tekenVoet(ctx, B, H, VOET, 'volg de wedstrijd live');
   return c;
 }
