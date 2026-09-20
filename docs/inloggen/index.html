@@ -27,7 +27,13 @@
     text-decoration: none; color: inherit; margin-top: 10px;
   }
   .water-kaart:hover { border-color: var(--blauw-mid); }
-  .water-kaart img { width: 60px; height: 60px; border-radius: 50%; flex: 0 0 auto; }
+  .water-kaart .merk {
+    width: 54px; height: 54px; border-radius: 16px; flex: 0 0 auto;
+    background: var(--blauw-donker); color: var(--oranje);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 21px; font-weight: 800; letter-spacing: -.5px;
+  }
+  .water-kaart { margin-top: 12px; padding: 15px 16px; }
   .water-kaart b { display: block; color: var(--blauw-donker); font-size: 16px; }
   .water-kaart span { color: var(--grijs); font-size: 13px; }
   .water-kaart .pijl { margin-left: auto; color: var(--blauw); font-size: 22px; font-weight: 700; }
@@ -38,33 +44,39 @@
 <body>
 
 <header class="topbar">
-  <a href="/" class="brand"><img src="/logo-rond-512.png" alt="" class="brand-logo"> Viswedstrijd app</a>
+  <a href="/" class="brand"><img src="/logo-rond-512.png" alt="" class="brand-logo"> Viswedstrijdapp</a>
 </header>
 
 <main class="container">
+  <section class="hero card start">
+    <span class="slogan-blok"><span class="tekst">Loot<span class="punt">.</span> Vis<span class="punt">.</span> Win<span class="punt">.</span></span><svg viewBox="0 0 200 15" aria-hidden="true" focusable="false"><path d="M2.5 11.2C34 5.1 96 1.6 174 2.2c8 .1 16 .6 23.5 1.7-7.4.3-15 .1-22.6.1-60-.3-116 2.4-168.5 9.4-2.4.3-4.3-.6-3.9-2.2z" fill="currentColor"/></svg></span>
+    <h1>Waar doe <span class="accent">jij mee?</span></h1>
+    <p class="sub">Kies de omgeving van jouw organisatie.</p>
+  </section>
+
   <section class="card">
-    <p style="text-align:center; margin:4px 0 10px"><img src="/logo-rond-512.png" alt="Viswedstrijdapp" width="120" height="120" style="width:120px; height:120px"></p>
-    <h1 style="color: var(--blauw-donker); text-align:center">Inloggen</h1>
-    <p class="muted klein">Elke organisatie heeft een eigen omgeving met eigen waterkaart en
-    wedstrijden. Kies jouw organisatie; daar log je in als deelnemer, kijker of organisator.</p>
     <a class="water-kaart" href="/nphv/">
-      <img src="/logo-rond-512.png" alt="">
+      <span class="merk" aria-hidden="true">NP</span>
       <div>
         <b>NPHV</b>
-        <span>Nootdorps Pijnackerse Hengelsportvereniging · Plas van der Ende</span>
+        <span>Nootdorps Pijnackerse Hengelsportvereniging &middot; Plas van der Ende</span>
       </div>
-      <span class="pijl" aria-hidden="true">›</span>
+      <span class="pijl" aria-hidden="true">&rsaquo;</span>
     </a>
     <a class="water-kaart" href="/demo/">
-      <img src="/logo-rond-512.png" alt="">
+      <span class="merk" aria-hidden="true">D</span>
       <div>
         <b>Demo</b>
-        <span>Probeer de app met een voorbeeldwedstrijd</span>
+        <span>Ontdek de voorbeeldwedstrijd</span>
       </div>
-      <span class="pijl" aria-hidden="true">›</span>
+      <span class="pijl" aria-hidden="true">&rsaquo;</span>
     </a>
-    <p class="muted klein installeer-tip" style="margin-top:14px">📲 Nieuw hier? <a href="/instructies.html">Bekijk de uitleg</a> over de app en hoe je hem op je beginscherm zet, voor snelle toegang en meldingen bij nieuwe vangsten.</p>
-    <p><a class="terug-link" href="/">‹ terug naar de startpagina</a></p>
+    <p class="muted klein" style="margin-top:14px">Je logt daarna in als deelnemer, kijker of organisator.</p>
+  </section>
+
+  <section class="card">
+    <p class="muted klein installeer-tip" style="margin:0">&#128241; Nieuw hier? <a href="/instructies.html">Bekijk de uitleg</a> over de app en hoe je hem op je beginscherm zet, voor snelle toegang en meldingen bij nieuwe vangsten.</p>
+    <p style="margin:10px 0 0"><a class="terug-link" href="/">&lsaquo; terug naar de startpagina</a></p>
   </section>
 </main>
 

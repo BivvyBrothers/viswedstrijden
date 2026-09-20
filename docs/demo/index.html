@@ -36,13 +36,10 @@
 
 <!-- ============ HOME ============ -->
 <main id="view-home" class="container" hidden>
-  <section class="hero card">
-    <img src="/logo-rond-512.png" alt="" class="hero-logo">
-    <div>
-      <span class="hero-eyebrow">De wedstrijd-app voor aan het water</span>
-      <h1>Viswedstrijden Demo</h1>
-      <p class="sub">Probeer de app met een voorbeeldwedstrijd</p>
-    </div>
+  <section class="hero card start">
+    <span class="slogan-blok"><span class="tekst">Loot<span class="punt">.</span> Vis<span class="punt">.</span> Win<span class="punt">.</span></span><svg viewBox="0 0 200 15" aria-hidden="true" focusable="false"><path d="M2.5 11.2C34 5.1 96 1.6 174 2.2c8 .1 16 .6 23.5 1.7-7.4.3-15 .1-22.6.1-60-.3-116 2.4-168.5 9.4-2.4.3-4.3-.6-3.9-2.2z" fill="currentColor"/></svg></span>
+    <h1>Welkom bij de <span class="accent">demo</span></h1>
+    <p class="sub">Probeer de app met een voorbeeldwedstrijd</p>
   </section>
 
   <section class="card">
@@ -67,55 +64,57 @@
     <p class="muted klein">Andere wedstrijd of andere rol? Log hieronder in.</p>
   </section>
 
-  <section class="card">
-    <h2>Inloggen</h2>
+  <section class="card" id="inlog-kaart">
+    <h2 class="kies-kop">Kies hoe je meedoet</h2>
     <div class="rolknoppen">
-      <button class="rolknop" data-rol="deelnemer"><span class="rol-icoon" aria-hidden="true">🎣</span><span class="rol-tekst"><b>Deelnemer</b><small>meedoen met een wedstrijd</small></span><span class="rol-pijl" aria-hidden="true">›</span></button>
-      <button class="rolknop" data-rol="kijker"><span class="rol-icoon" aria-hidden="true">📺</span><span class="rol-tekst"><b>Kijker</b><small>klassement live volgen</small></span><span class="rol-pijl" aria-hidden="true">›</span></button>
-      <button class="rolknop" data-rol="org"><span class="rol-icoon" aria-hidden="true">🛠️</span><span class="rol-tekst"><b>Organisator</b><small>wedstrijden beheren</small></span><span class="rol-pijl" aria-hidden="true">›</span></button>
+      <button class="rolknop" data-rol="deelnemer"><span class="rol-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-5.4 9.2-5.4c3.3 0 6 1.9 7.4 3.8L22 8v8l-3.4-2.4c-1.4 1.9-4.1 3.8-7.4 3.8C5.6 17.4 2 12 2 12z"/><circle cx="8.2" cy="10.6" r=".9" fill="currentColor"/></svg></span><span class="rol-tekst"><b>Deelnemer</b><small>meedoen met een wedstrijd</small></span><span class="pijl" aria-hidden="true">&rsaquo;</span></button>
+      <button class="rolknop" data-rol="kijker"><span class="rol-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.6 12S5 5.6 12 5.6 22.4 12 22.4 12 19 18.4 12 18.4 1.6 12 1.6 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="rol-tekst"><b>Kijker</b><small>de wedstrijd live volgen</small></span><span class="pijl" aria-hidden="true">&rsaquo;</span></button>
+      <button class="rolknop" data-rol="org"><span class="rol-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><path d="M19.3 14.9a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.4v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1.1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.4-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.4V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.4 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.4 1h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></span><span class="rol-tekst"><b>Organisator</b><small>wedstrijden organiseren</small></span><span class="pijl" aria-hidden="true">&rsaquo;</span></button>
     </div>
 
     <form id="form-deelnemer" class="rolform" hidden>
+      <div class="rolkop"><span class="rol-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-5.4 9.2-5.4c3.3 0 6 1.9 7.4 3.8L22 8v8l-3.4-2.4c-1.4 1.9-4.1 3.8-7.4 3.8C5.6 17.4 2 12 2 12z"/><circle cx="8.2" cy="10.6" r=".9" fill="currentColor"/></svg></span><b>Deelnemer</b></div>
       <p class="muted klein">Nieuw? Vul de wedstrijdcode van de organisator in.
       Al aangemeld? Vul je persoonlijke code in en je gaat verder onder je eigen naam.</p>
-      <div class="row">
+      <div class="rij-invoer">
         <input id="deelnemer-code" type="text" placeholder="wedstrijd- of persoonlijke code" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
         <button type="submit" class="btn primary">Meedoen</button>
       </div>
     </form>
 
     <form id="form-kijker" class="rolform" hidden>
+      <div class="rolkop"><span class="rol-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.6 12S5 5.6 12 5.6 22.4 12 22.4 12 19 18.4 12 18.4 1.6 12 1.6 12z"/><circle cx="12" cy="12" r="3"/></svg></span><b>Kijker</b></div>
       <p class="muted klein">Vul de kijkcode in om het klassement live te volgen (met meldingen bij nieuwe vangsten).</p>
-      <div class="row">
+      <div class="rij-invoer">
         <input id="kijker-code" type="text" placeholder="kijkcode" maxlength="6" autocapitalize="characters" autocomplete="off" required>
         <button type="submit" class="btn primary">Volgen</button>
       </div>
     </form>
 
     <form id="form-orglogin" class="rolform" hidden>
+      <div class="rolkop"><span class="rol-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><path d="M19.3 14.9a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.4v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1.1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.4-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.4V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.4 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.4 1h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></span><b>Organisator</b></div>
       <p class="muted klein">Alleen voor de organisatie.</p>
-      <div class="row">
+      <div class="rij-invoer">
         <input id="org-ww" type="password" placeholder="organisatie-wachtwoord" autocomplete="off" required>
         <button type="submit" class="btn primary">Inloggen</button>
       </div>
       <p id="org-fout" class="fout" hidden></p>
     </form>
 
+    <button type="button" class="rol-terug" id="rol-terug">&larr; Andere rol kiezen</button>
     <p class="muted klein installeer-tip">📲 Nieuw hier? <a href="instructies.html">Bekijk de uitleg</a> over de app en hoe je hem op je beginscherm zet, voor snelle toegang en meldingen bij nieuwe vangsten.</p>
   </section>
 
   <section class="card merk-blok">
     <p class="merk-titel">Zelf viswedstrijden organiseren?</p>
-    <p class="merk-tekst">Voor hengelsportverenigingen en viswaterbeheerders, maar net zo goed
-    voor een groep vrienden die zelf een wedstrijd organiseert. Iedere organisatie krijgt een
-    eigen omgeving met eigen kaart, loting en klassement.
-    <a href="mailto:info@viswedstrijdapp.nl?subject=Wedstrijd-app%20voor%20onze%20wedstrijden">Neem contact op</a>
-    of <a href="/">bekijk wat de app allemaal kan</a>.</p>
-    <p class="merk-logo"><a href="/" aria-label="Viswedstrijdapp"><img src="/logo-rond-512.png" alt="Viswedstrijdapp" width="132" height="132"></a></p>
-    <p class="merk-voet"><a href="https://kemblinck.nl" target="_blank" rel="noopener" aria-label="Een product van KemblincK"><img src="/kemblinck-logo.png" alt="Een product van KemblincK" width="84" height="84"></a></p>
+    <p class="merk-tekst">Voor verenigingen, viswaters en vriendengroepen. Iedere organisatie
+    krijgt een eigen omgeving met eigen kaart, loting en klassement.
+    <a href="/">Bekijk wat de app kan</a> of
+    <a href="mailto:info@viswedstrijdapp.nl?subject=Wedstrijd-app%20voor%20onze%20wedstrijden">neem contact op</a>.</p>
+    <p class="merk-logo"><a href="/" aria-label="Viswedstrijdapp"><img src="/logo-rond-512.png" alt="Viswedstrijdapp" width="76" height="76"></a></p>
     <p class="merk-links">
-      <a href="https://kemblinck.nl" target="_blank" rel="noopener">kemblinck.nl</a>
-      <span aria-hidden="true">·</span>
+      <a href="https://viswedstrijdapp.nl/">viswedstrijdapp.nl</a>
+      <span aria-hidden="true">&middot;</span>
       <a href="mailto:info@viswedstrijdapp.nl">info@viswedstrijdapp.nl</a>
     </p>
   </section>

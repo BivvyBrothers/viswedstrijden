@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 98; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 99; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -648,16 +648,23 @@ function initHome() {
   const startVeld = $('#nw-start'), eindVeld = $('#nw-eind');
   zetStandaardTijden();
 
-  // rolknoppen: klap het bijbehorende invoerveld uit
+  // rolkaarten: één rol kiezen opent alleen dat formulier (v99, ontwerp 19 sep).
+  // De formulieren, id's en handlers blijven ongewijzigd; alleen de presentatie
+  // verandert: de kaarten verdwijnen en er komt een knop 'Andere rol kiezen'.
+  function toonRol(rol) {
+    document.querySelectorAll('.rolknop').forEach((x) => x.classList.toggle('actief', x.dataset.rol === rol));
+    $('#form-deelnemer').hidden = rol !== 'deelnemer';
+    $('#form-kijker').hidden = rol !== 'kijker';
+    $('#form-orglogin').hidden = rol !== 'org';
+    $('#inlog-kaart')?.classList.toggle('gekozen', !!rol);
+    if (rol) $({ deelnemer: '#deelnemer-code', kijker: '#kijker-code', org: '#org-ww' }[rol])?.focus();
+  }
   document.querySelectorAll('.rolknop').forEach((k) => {
-    k.addEventListener('click', () => {
-      document.querySelectorAll('.rolknop').forEach((x) => x.classList.toggle('actief', x === k));
-      $('#form-deelnemer').hidden = k.dataset.rol !== 'deelnemer';
-      $('#form-kijker').hidden = k.dataset.rol !== 'kijker';
-      $('#form-orglogin').hidden = k.dataset.rol !== 'org';
-      const veld = { deelnemer: '#deelnemer-code', kijker: '#kijker-code', org: '#org-ww' }[k.dataset.rol];
-      $(veld)?.focus();
-    });
+    k.addEventListener('click', () => toonRol(k.dataset.rol));
+  });
+  $('#rol-terug')?.addEventListener('click', () => {
+    toonRol(null);
+    $('#inlog-kaart')?.scrollIntoView({ block: 'nearest' });
   });
 
   $('#form-deelnemer').addEventListener('submit', async (e) => {

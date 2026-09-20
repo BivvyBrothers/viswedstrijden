@@ -214,7 +214,7 @@ def bouw_tenant(slug, kort, volledig, water, stekken, zones, kaart_van):
         raise SystemExit(f'LET OP: docs/{slug}/ is aangemaakt; de inlogpagina had al een regel voor {slug}.')
     anker = '    <p class="muted klein installeer-tip"'
     kaartje = (f'    <a class="water-kaart" href="/{slug}/">\n'
-               f'      <img src="/logo-rond-512.png" alt="">\n'
+               f'      <span class="merk" aria-hidden="true">{kh[:2].upper()}</span>\n'
                f'      <div>\n'
                f'        <b>{html.escape(kort, quote=True)}</b>\n'
                f'        <span>{sub}</span>\n'

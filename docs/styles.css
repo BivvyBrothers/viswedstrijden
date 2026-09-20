@@ -57,14 +57,23 @@ input, select { font-size: 16px; }
   background: #fff; border-radius: 14px; padding: 16px;
   margin: 12px 0; box-shadow: 0 1px 4px rgba(42,39,33,.08);
 }
-.hero { background: linear-gradient(150deg, #2c331f, #4d5839 55%, #6d7355); color: #fff;
-  display: flex; align-items: center; gap: 16px; padding: 22px 18px; }
+.hero { background: linear-gradient(150deg, #2c331f, #4d5839 62%, #6d7355); color: #fff;
+  display: flex; align-items: center; gap: 16px; padding: 24px 20px; }
 .hero-logo { width: 84px; height: 84px; border-radius: 50%; flex: 0 0 auto;
   box-shadow: 0 4px 12px rgba(0,0,0,.3); }
-.hero-eyebrow { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .13em;
+.hero-eyebrow { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .13em;
   text-transform: uppercase; color: var(--oranje); margin-bottom: 3px; }
-.hero h1 { margin: 0 0 6px; font-size: 28px; line-height: 1.15; letter-spacing: -.4px; }
-.hero .sub { margin: 0; opacity: .9; }
+.hero h1 { margin: 0 0 6px; font-size: 30px; line-height: 1.12; letter-spacing: -.6px; font-weight: 800; }
+.hero h1 .accent { color: var(--oranje); }
+.hero .sub { margin: 0; opacity: .92; font-size: 15px; }
+
+/* startscherm van een organisatie: hero met de slogan erboven */
+.hero.start { display: block; padding: 26px 20px 28px; }
+.slogan-blok { display: inline-block; margin-bottom: 12px; }
+.slogan-blok .tekst { display: block; font-size: 19px; font-weight: 800; letter-spacing: -.3px;
+  color: #fff; line-height: 1; }
+.slogan-blok .punt { color: var(--oranje); }
+.slogan-blok svg { display: block; width: 100%; height: auto; color: var(--oranje); margin-top: 3px; }
 
 h1 { font-size: 22px; margin: 0 0 6px; color: inherit; }
 h2 { font-size: 17px; margin: 0 0 10px; color: var(--blauw-donker); }
@@ -328,6 +337,19 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
   box-shadow: 0 1px 3px rgba(42, 39, 33, .06);
 }
 .rolknop:hover { border-color: var(--blauw-mid); }
+.rolknop .pijl { margin-left: auto; color: var(--blauw); font-size: 21px; font-weight: 700; flex: 0 0 auto; }
+/* één rol gekozen: alleen dat formulier tonen, de kaarten weg */
+#inlog-kaart.gekozen .rolknoppen, #inlog-kaart.gekozen .kies-kop { display: none; }
+#inlog-kaart .rol-terug { display: none; }
+#inlog-kaart.gekozen .rol-terug {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 14px;
+  background: var(--zand); border: 1.5px solid var(--zand-donker); border-radius: 12px;
+  padding: 11px 16px; font-size: 15px; font-weight: 700; color: var(--blauw-donker); cursor: pointer;
+}
+#inlog-kaart.gekozen .rol-terug:hover { border-color: var(--blauw-mid); }
+.rolform .rolkop { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.rolform .rolkop .rol-icoon { width: 42px; height: 42px; font-size: 21px; }
+.rolform .rolkop b { font-size: 19px; color: var(--blauw-donker); font-weight: 800; }
 .rol-icoon {
   flex: 0 0 auto; width: 46px; height: 46px; border-radius: 13px;
   background: var(--zand); display: flex; align-items: center; justify-content: center;
@@ -542,3 +564,16 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
   position: sticky; top: 0; z-index: 60; background: #a63c2c; color: #fff;
   font-weight: 700; font-size: 14px; padding: 8px 14px; text-align: center;
 }
+
+/* --- toegangsschermen (v99): veld breed, hoofdactie oranje, nette icoonvorm --- */
+.rij-invoer { display: grid; gap: 10px; }
+.rij-invoer input { width: 100%; }
+.rolform .btn.primary {
+  background: var(--oranje); color: var(--oranje-tekst); border-color: var(--oranje);
+  font-weight: 700; min-height: 48px;
+}
+.rolform .btn.primary:hover { background: #e79436; }
+.rol-icoon svg { width: 25px; height: 25px; color: var(--blauw); }
+.rolknop .rol-icoon { background: var(--zand); }
+.merk-blok .merk-logo img { width: 76px; height: 76px; }
+.merk-blok .merk-voet { display: none; }
