@@ -5,7 +5,8 @@
    de root en MOETEN hier absoluut staan, tenant-bestanden relatief. */
 const CACHE = 'demo-shell-v1';
 const SHELL = ['./', 'index.html', 'instructies.html', 'kaart.js', 'config.js', 'manifest.webmanifest',
-  '/styles.css', '/app.js', '/icon-180.png', '/icon-192.png', '/icon-512.png', '/logo-rond-512.png', '/kemblinck-logo.png'];
+  '/styles.css', '/app.js', '/icon-180.png', '/icon-192.png', '/icon-512.png', '/logo-rond-512.png',
+  '/fonts/montserrat-latin.woff2', '/kemblinck-logo.png'];
 
 self.addEventListener('install', (e) => {
   // per stuk cachen: één ontbrekende asset mag de rest van de shell niet blokkeren

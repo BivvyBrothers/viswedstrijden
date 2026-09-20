@@ -3,6 +3,19 @@
    wijziging in de app de site niet kan breken en andersom. Alleen deze pagina
    (docs/index.html) gebruikt dit bestand. Geen externe bronnen (CSP). */
 
+/* Montserrat (SIL Open Font License), zelf gehost: de CSP laat geen externe
+   bronnen toe, dus het variabele font staat in docs/fonts/ (latin 34 KB). */
+@font-face {
+  font-family: 'Montserrat'; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url('fonts/montserrat-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Montserrat'; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url('fonts/montserrat-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
   --groen-donker: #353d2a;   /* topbar, koppen, donkere blokken */
   --groen: #4d5839;          /* knoppen, accenten */
@@ -24,7 +37,8 @@
 html { scroll-behavior: smooth; }
 html, body { margin: 0; padding: 0; max-width: 100%; overflow-x: hidden; }
 body {
-  font-family: 'Avenir Next', Avenir, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Montserrat', 'Avenir Next', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 400;
   background: var(--zand);
   color: var(--tekst);
   font-size: 16px; line-height: 1.55;
@@ -68,10 +82,10 @@ section { scroll-margin-top: 70px; }
   text-transform: uppercase; color: var(--oranje); margin-bottom: 9px;
 }
 h1, h2, h3 { line-height: 1.12; letter-spacing: -.5px; margin: 0 0 14px; }
-h1 { font-size: clamp(34px, 6.4vw, 60px); font-weight: 700; }
-h2 { font-size: clamp(25px, 3.6vw, 38px); font-weight: 700; color: var(--groen-donker); }
+h1 { font-size: clamp(33px, 6.1vw, 57px); font-weight: 800; letter-spacing: -1px; }
+h2 { font-size: clamp(24px, 3.4vw, 36px); font-weight: 800; color: var(--groen-donker); }
 .vlak.groen h2, .hero h2, .slot h2 { color: #fff; }
-h3 { font-size: clamp(18px, 2vw, 21px); font-weight: 700; color: var(--groen-donker); }
+h3 { font-size: clamp(17.5px, 2vw, 20px); font-weight: 800; color: var(--groen-donker); }
 p { margin: 0 0 13px; }
 p:last-child { margin-bottom: 0; }
 .accent { color: var(--oranje); }
@@ -105,11 +119,14 @@ p:last-child { margin-bottom: 0; }
 .hero-inhoud { position: relative; z-index: 2; padding-top: clamp(34px, 5vw, 76px); padding-bottom: clamp(26px, 3vw, 44px); }
 .hero .duo { display: grid; gap: clamp(22px, 3vw, 46px); align-items: center; }
 @media (min-width: 900px) { .hero .duo { grid-template-columns: 1.15fr .85fr; } }
-.hero .slogan {
-  display: block; font-size: 13.5px; font-weight: 700; letter-spacing: .16em;
-  text-transform: uppercase; color: #fff; margin-bottom: 12px;
+.slogan-blok { display: inline-block; margin-bottom: 14px; }
+.slogan-blok .tekst {
+  display: block; font-size: clamp(19px, 2.4vw, 25px); font-weight: 800;
+  letter-spacing: -.3px; color: #fff; line-height: 1;
 }
-.hero .slogan .punt { color: var(--oranje); }
+.slogan-blok .punt { color: var(--oranje); }
+.slogan-blok svg { display: block; width: 100%; height: auto; color: var(--oranje); margin-top: 3px; }
+.slogan-blok.donker .tekst { color: var(--groen-donker); }
 .hero .sub { font-size: clamp(16.5px, 1.8vw, 19px); color: #e9ead9; max-width: 34em; }
 .hero .fijn { margin-top: 16px; font-size: 14px; color: var(--licht-op-groen); }
 /* Telefoon in de echte toestelverhouding van een iPhone 17 Pro Max: 78 x 163,4 mm
@@ -147,7 +164,7 @@ p:last-child { margin-bottom: 0; }
 @media (min-width: 820px) { .praktijk-balk { grid-template-columns: 1.4fr 1fr; align-items: center; } }
 .cijferrij { display: flex; gap: clamp(14px, 3vw, 30px); flex-wrap: wrap; }
 .cijfer { flex: 1 1 96px; }
-.cijfer b { display: block; font-size: clamp(30px, 4vw, 40px); font-weight: 700; color: var(--groen-donker); line-height: 1; }
+.cijfer b { display: block; font-size: clamp(29px, 3.8vw, 38px); font-weight: 800; color: var(--groen-donker); line-height: 1; }
 .cijfer span { display: block; font-size: 12.5px; color: var(--grijs); margin-top: 5px; }
 .citaat {
   margin: 18px 0 0; padding: 13px 17px; background: var(--zand-vlak);
@@ -221,7 +238,7 @@ p:last-child { margin-bottom: 0; }
   display: grid; gap: 16px; align-items: center;
 }
 @media (min-width: 860px) { .prijsblok { grid-template-columns: 1.3fr auto; } }
-.prijsblok .bedrag { font-size: clamp(24px, 3vw, 31px); font-weight: 700; color: var(--oranje); line-height: 1.1; }
+.prijsblok .bedrag { font-size: clamp(23px, 2.9vw, 30px); font-weight: 800; color: var(--oranje); line-height: 1.1; }
 .prijsblok .bedrag small { font-size: 16px; color: #fff; font-weight: 400; }
 .prijsblok p { color: var(--licht-op-groen); font-size: 15px; }
 .prijsblok .knoppen { margin: 0; }
@@ -279,3 +296,7 @@ details p:last-child { margin-bottom: 0; }
 .voet .socials a { display: inline-flex; }
 
 .voet .regels { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 10px; }
+
+.slogan-voet { margin: 0 0 14px; }
+.slogan-voet .slogan-blok { margin-bottom: 0; }
+.voet .slogan-blok .tekst { font-size: 21px; }

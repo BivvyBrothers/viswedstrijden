@@ -17,16 +17,18 @@ im = ImageOps.exif_transpose(Image.open(BRON)).convert("RGB")
 buf = io.BytesIO(); im.save(buf, "JPEG", quality=92)
 foto = base64.b64encode(buf.getvalue()).decode()
 logo = b64(APP / "docs/logo-rond-512.png")
+mont = b64(APP / "docs/fonts/montserrat-latin.woff2")
 
 HTML = f"""<!DOCTYPE html><html><head><meta charset='utf-8'><style>
+@font-face {{ font-family:'Montserrat'; font-style:normal; font-weight:400 900; src:url(data:font/woff2;base64,{mont}) format('woff2'); }}
 * {{ margin:0; padding:0; box-sizing:border-box; }}
 html,body {{ width:1080px; height:1350px; overflow:hidden; }}
-body {{ font-family: 'Avenir Next',Avenir,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#353d2a; color:#fff; position:relative; }}
+body {{ font-family: 'Montserrat','Avenir Next','Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#353d2a; color:#fff; position:relative; }}
 .foto {{ width:1080px; height:800px; overflow:hidden; background:#29271e; }}
 .foto img {{ width:100%; height:100%; object-fit:cover; object-position:center 45%; display:block; }}
 .paneel {{ padding:58px 70px 0; }}
-.kg {{ font-size:152px; font-weight:700; line-height:1; color:#f0a04b; letter-spacing:-3px; }}
-.naam {{ font-size:62px; font-weight:700; margin-top:16px; letter-spacing:-1px; }}
+.kg {{ font-size:150px; font-weight:800; line-height:1; color:#f0a04b; letter-spacing:-3px; }}
+.naam {{ font-size:60px; font-weight:800; margin-top:16px; letter-spacing:-1px; }}
 .voet {{ position:absolute; left:70px; right:70px; bottom:58px; display:flex; align-items:center; justify-content:space-between; }}
 .voet .l {{ display:flex; align-items:center; gap:18px; }}
 .voet img {{ width:76px; height:76px; }}

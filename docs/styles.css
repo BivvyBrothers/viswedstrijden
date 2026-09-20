@@ -1,3 +1,16 @@
+/* Montserrat (SIL Open Font License), zelf gehost: de CSP laat geen externe
+   bronnen toe, dus het variabele font staat in docs//fonts/ (latin 34 KB). */
+@font-face {
+  font-family: 'Montserrat'; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url('/fonts/montserrat-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Montserrat'; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url('/fonts/montserrat-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
   /* camouflage-thema */
   --blauw-donker: #353d2a;   /* donker legergroen (headers, klok) */
@@ -17,7 +30,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: 'Avenir Next', Avenir, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Montserrat', 'Avenir Next', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--zand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='%23dcd9c1'%3E%3Cpath d='M40 60c30-25 85-15 95 15s-20 60-60 55S10 85 40 60z'/%3E%3Cpath d='M280 300c40-20 90 5 85 45s-70 55-100 25 -15-55 15-70z'/%3E%3Cpath d='M330 90c25-18 65-5 60 28s-55 40-75 18 -5-32 15-46z'/%3E%3C/g%3E%3Cg fill='%23d0cdb3'%3E%3Cpath d='M120 260c25-30 75-20 80 10s-30 65-70 50-35-35-10-60z'/%3E%3Cpath d='M240 130c20-22 60-12 62 15s-38 45-62 30-15-28 0-45z'/%3E%3C/g%3E%3Cg fill='%23e0ddc6'%3E%3Cpath d='M60 350c22-16 58-6 56 22s-48 38-66 18-8-26 10-40z'/%3E%3C/g%3E%3C/svg%3E") fixed;
   color: var(--tekst);
   font-size: 16px;

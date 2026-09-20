@@ -712,20 +712,29 @@ moet toevoegen.
   drie oranjes (#d97b29 app, #E8871E icoon/PDF/socials, #f0a04b site) en twee groenen
   (#2f4a2a icoon) door elkaar; die zijn allemaal hiernaar omgezet, ook de PNG-iconen
   (herkleurd, origineel in `marketing/oud/icon-512-v1.png`).
-- **Lettertype:** **Avenir Next** (`font-family: 'Avenir Next', Avenir, 'Segoe UI',
-  Roboto, Helvetica, Arial, sans-serif`), besluit Patrick 20 sep 2026 (v97): de letter
-  van de eerdere social-posts, die hij mooier vindt dan Arial (19 sep, v96). Doorgevoerd
-  op site, app, instructies, beide A4's, handtekening, og-beeld en de social-generators.
-  **Let op: Avenir Next is een Apple-systeemfont.** Op iPhone en Mac zie je precies de
-  posts; op Windows valt het terug op Segoe UI, op Android op Roboto. Wil je overal exact
-  hetzelfde, dan is een zelf gehost vrij font nodig (mag binnen de CSP, kost laadtijd). Geen webfonts (CSP). **Uitzondering: `marketing/gen_profielfoto.py`
-  houdt bewust de systeemletter**, want het ronde logo is een vastgesteld beeldmerk dat
-  al op Instagram, Facebook, de site en de PDF's staat; alleen regenereren na een
-  expliciet besluit van Patrick.
+- **Lettertype: Montserrat** (SIL Open Font License), besluit Patrick 20 sep 2026 (v98).
+  Stack: `'Montserrat', 'Avenir Next', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`.
+  **Zelf gehost** in `docs/fonts/montserrat-latin.woff2` (variabel 400-900, 34 KB) plus
+  `-latin-ext.woff2` (66 KB, laadt alleen bij bijzondere tekens); de CSP staat geen
+  externe bronnen toe, dus Google Fonts kan niet. `@font-face` staat in landing.css en
+  styles.css, het font zit in de SHELL van beide service workers (offline).
+  Gewichten: koppen 800 (ExtraBold), lopende tekst 400, vet 700, eyebrow 700.
+  **Voor PDF's en social-beelden moet Montserrat ook op het SYSTEEM staan**:
+  `~/Library/Fonts/Montserrat-Variable.ttf` (gezet 20 sep). De python-generators
+  bedden het font zelf in via een data-URI, dus die werken sowieso.
+  LES: Chrome exporteert een variabel font naar PDF als Type3 zonder naam, dus een
+  controle op fontnaam in de PDF zegt niets; kijk naar het beeld.
 - **Landingspagina staat LOS van de app (sinds 19 sep, v96):** `docs/index.html` gebruikt
   alleen `docs/landing.css` en niet meer de gedeelde `styles.css`. Een wijziging in de app
   kan de site dus niet meer breken en andersom. `docs/instructies.html` en
   `docs/inloggen/` gebruiken nog wél styles.css.
+- **Koppen afwisselend wit en oranje** (huisstijlregel Patrick 20 sep): elke kop heeft
+  een wit (of donkergroen) eerste deel en een oranje tweede deel, zoals
+  "Ook voor <span class=accent>jullie wedstrijd?</span>". Op de landing via
+  `<span class="accent">`.
+- **Slogan met penseelstreek:** "Loot. Vis. Win." met oranje punten en een oranje
+  streek eronder (inline SVG, `.slogan-blok` in landing.css), naar het voorbeeld van de
+  social-advertentie. Staat in de hero en in de voet van de landingspagina.
 - **Logo's:** `docs/icon-*.png` = het vierkante app-icoon (vis op groen), ALLEEN nog voor
   favicon, manifest/beginscherm-icoon en de push-badge (iOS en Android bepalen daar zelf
   de vorm). Op elke plek IN een pagina staat het ronde logo (besluit Patrick 15 sep):
