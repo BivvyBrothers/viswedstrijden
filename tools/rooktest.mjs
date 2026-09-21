@@ -87,9 +87,21 @@ async function stap(naam, fn) {
     throw e;
   }
 }
+// Navigeren naar DEZELFDE url met dezelfde hash is in Chrome een no-op: de pagina blijft
+// draaien met de oude JS-toestand (ROL bleef zo op 'organisator' staan). Daarom krijgt
+// elke navigatie een eigen parameter, zodat het echt een nieuwe laadbeurt is.
+let TELLER = 0;
+const naar = async (pad) => {
+  TELLER += 1;
+  const [basis, hash] = pad.split('#');
+  const url = `${basis}${basis.includes('?') ? '&' : '?'}r=${TELLER}${hash ? '#' + hash : ''}`;
+  await cdp.stuur('Page.navigate', { url });
+};
+
 const wachtTot = async (expressie, seconden = 15, stapMs = 400) => {
   for (let i = 0; i < (seconden * 1000) / stapMs; i++) {
-    if (await js(`return !!(${expressie});`)) return true;
+    // een ReferenceError betekent hier "de app is nog niet geladen", geen mislukking
+    try { if (await js(`return !!(${expressie});`)) return true; } catch { /* nog even wachten */ }
     await slaap(stapMs);
   }
   throw new Error(`wachtte tevergeefs op: ${expressie}`);
@@ -127,10 +139,10 @@ async function main() {
   const naam = 'ROOKTEST ' + new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
   await stap('app laadt en toont het startscherm', async () => {
-    await cdp.stuur('Page.navigate', { url: `${BASIS}/?rooktest=${Date.now()}` });
+    await naar(`${BASIS}/`);
     await slaap(3500);
     await js(`localStorage.clear(); sessionStorage.clear(); return 1;`);
-    await cdp.stuur('Page.navigate', { url: `${BASIS}/?rooktest=${Date.now()}` });
+    await naar(`${BASIS}/`);
     await wachtTot(`document.querySelector('#view-home') && !document.querySelector('#view-home').hidden`, 20);
     return await js(`return 'versie ' + APP_VERSION;`);
   });
@@ -162,11 +174,14 @@ async function main() {
   });
 
   await stap('deelnemer meldt zich aan en ziet zijn code', async () => {
-    await js(`document.querySelector('#deel-nieuw .sluit, #deel-nieuw [data-sluit]')?.click();
-              sessionStorage.clear(); localStorage.clear();
-              location.hash = '#/w/' + ${JSON.stringify(CODE)}; return 1;`);
-    await cdp.stuur('Page.navigate', { url: `${BASIS}/#/w/${CODE}` });
-    await wachtTot(`document.querySelector('#join-naam')`, 20);
+    // eerst naar de wedstrijd, DAARNA pas de sessie leeg en herladen: het aanmaken zet
+    // de admin-pin in sessionStorage, en met die pin ben je organisator in plaats van
+    // deelnemer (gevonden bij de oefentenant, 21 sep)
+    await naar(`${BASIS}/#/w/${CODE}`);
+    await slaap(2500);
+    await js(`sessionStorage.clear(); localStorage.clear(); return 1;`);
+    await naar(`${BASIS}/#/w/${CODE}`);
+    await wachtTot(`typeof ROL !== 'undefined' && ROL === 'deelnemer' && document.querySelector('#join-naam')`, 25);
     await js(`document.querySelector('#join-naam').value = 'Rooktester';
               document.querySelector('#form-join').requestSubmit(); return 1;`);
     await wachtTot(`document.querySelector('#team-code') && document.querySelector('#team-code').textContent.trim().length >= 4`, 25);
@@ -174,7 +189,7 @@ async function main() {
   });
 
   await stap('sessie-herstel: na herladen nog in de wedstrijd', async () => {
-    await cdp.stuur('Page.navigate', { url: `${BASIS}/#/w/${CODE}` });
+    await naar(`${BASIS}/#/w/${CODE}`);
     await slaap(4000);
     const uit = await js(`return { hash: location.hash, team: !!localStorage.getItem('team:' + ${JSON.stringify(CODE)}),
                                    naam: (document.querySelector('#team-naam')||{}).textContent || '' }`);
@@ -215,7 +230,7 @@ async function main() {
 
   await stap('kijker ziet klassement, kaart en vangsten', async () => {
     if (!KIJK) return 'overgeslagen: geen kijkcode uit het deelvenster';
-    await cdp.stuur('Page.navigate', { url: `${BASIS}/#/k/${KIJK}` });
+    await naar(`${BASIS}/#/k/${KIJK}`);
     await wachtTot(`typeof ROL !== 'undefined' && ROL === 'kijker' && STATE`, 25);
     const uit = await js(`
       const heeft = (n) => { activateTab(n); return !document.querySelector('#tab-' + n).hidden; };
@@ -227,7 +242,7 @@ async function main() {
   });
 
   await stap('terugknop gaat naar het startscherm, niet naar een inlogscherm', async () => {
-    await cdp.stuur('Page.navigate', { url: `${BASIS}/#/w/${CODE}` });
+    await naar(`${BASIS}/#/w/${CODE}`);
     await wachtTot(`STATE && !document.querySelector('#view-wedstrijd').hidden`, 25);
     await js(`document.querySelector('#btn-terug').click(); return 1;`, 800);
     const uit = await js(`return { home: !document.querySelector('#view-home').hidden,
@@ -236,12 +251,64 @@ async function main() {
     if (!uit.verder) throw new Error('de Verder-kaart ontbreekt, dan lijkt de visser uitgelogd');
     return 'Verder-kaart staat er';
   });
+
+  // Als laatste, want de loting vraagt status 'aanmelden' en zet die daarna op
+  // 'stekkeuze'. Dit is de klassieke faalplek bij een NIEUWE tenant: een stekring
+  // die niet bestaat of niet past bij kaart.js, waardoor de loting stil weigert.
+  await stap('loting en stekkeuze werken op de kaart van deze tenant', async () => {
+    await naar(`${BASIS}/`);
+    await slaap(3000);
+    await js(`sessionStorage.setItem('orgww', ${JSON.stringify(ORGWW)}); location.hash = '#/org'; return 1;`);
+    await wachtTot(`typeof ORG_DATA !== 'undefined' && ORG_DATA
+      && (ORG_DATA.wedstrijden || []).some(w => w.code === ${JSON.stringify(CODE)})`, 25);
+    const geklikt = await js(`
+      if (typeof toonOrgVak === 'function') toonOrgVak('actief');
+      await new Promise(r => setTimeout(r, 300));
+      const knop = [...document.querySelectorAll('[data-org-loting]')]
+        .find(b => b.dataset.orgLoting === ${JSON.stringify(CODE)});
+      if (!knop) return 'geen lotingknop bij deze wedstrijd';
+      knop.click(); await new Promise(r => setTimeout(r, 400));
+      knop.click();   // tweede tik bevestigt (tikNogmaals)
+      return 'ok';`);
+    if (geklikt !== 'ok') throw new Error(geklikt);
+    try {
+      await wachtTot(`typeof STATE !== 'undefined' && STATE
+        && STATE.wedstrijd.status === 'stekkeuze'`, 25);
+    } catch (e) {
+      const toastTekst = await js(`return (document.querySelector('.toast') || {}).textContent || ''`);
+      throw new Error('loting kwam niet door' + (toastTekst ? ': ' + toastTekst.trim() : ''));
+    }
+    const loten = await js(`return (STATE.teams || []).map(t => t.lot_nummer)`);
+    if (!loten.length || loten.some((n) => !n)) throw new Error('lotnummers ontbreken: ' + JSON.stringify(loten));
+
+    // pin weg: dan is de tester weer gewoon visser, en met één deelnemer is hij aan de beurt
+    await js(`sessionStorage.removeItem('pin:' + ${JSON.stringify(CODE)}); return 1;`);
+    await naar(`${BASIS}/#/w/${CODE}`);
+    await wachtTot(`typeof ROL !== 'undefined' && ROL === 'deelnemer' && STATE
+      && STATE.wedstrijd.status === 'stekkeuze'`, 25);
+    await js(`activateTab('kaart'); return 1;`, 1200);
+    const stekken = await js(`return [...document.querySelectorAll('#kaart-houder g.stek')]
+      .map(g => parseInt(g.dataset.stek, 10)).filter(n => !isNaN(n))`);
+    if (!stekken.length) throw new Error('de kaart tekent geen stekken (kaart.js van deze tenant?)');
+    const uit = await js(`
+      if (!mijnBeurtNu()) return { fout: 'de deelnemer is niet aan de beurt' };
+      klikStek(${stekken[0]});
+      await new Promise(r => setTimeout(r, 400));
+      const knop = document.querySelector('#btn-kies');
+      if (!knop || knop.disabled) return { fout: 'bevestigknop blijft uit: ' + (knop ? knop.textContent : 'knop ontbreekt') };
+      knop.click();
+      return { ok: true };`);
+    if (uit.fout) throw new Error(uit.fout);
+    await wachtTot(`(STATE.teams || []).some(t => (t.stekken || []).length)`, 25);
+    const mijn = await js(`return (STATE.teams || []).flatMap(t => t.stekken || [])`);
+    return `${stekken.length} stekken op de kaart, lot ${loten.join(',')}, gekozen: ${mijn.join(' + ')}`;
+  });
 }
 
 async function opruimen() {
   if (!CODE) return;
   try {
-    await cdp.stuur('Page.navigate', { url: `${BASIS}/?op=${Date.now()}` });
+    await naar(`${BASIS}/`);
     await slaap(3000);
     await js(`sessionStorage.setItem('orgww', ${JSON.stringify(ORGWW)}); location.hash = '#/org'; return 1;`);
     await slaap(4500);

@@ -59,7 +59,7 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     kh = html.escape(kort, quote=True)
     vh = html.escape(volledig, quote=True)
     wh = html.escape(water, quote=True)
-    sub = f'{vh} · {wh}' if water else vh
+    sub = f'{vh} &middot; {wh}' if water else vh
 
     # --- index.html ---
     t = lees(os.path.join(BRON, 'index.html'))
@@ -83,8 +83,10 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
                 f'<meta name="apple-mobile-web-app-title" content="{kh}">', 1, 'index.html app-title')
     t = vervang(t, 'class="brand-logo"> NPHV Viswedstrijden</a>',
                 f'class="brand-logo"> {kh} Viswedstrijden</a>', 1, 'index.html brand')
-    t = vervang(t, '<h1>Viswedstrijden NPHV</h1>', f'<h1>Viswedstrijden {kh}</h1>', 1, 'index.html h1')
-    t = vervang(t, '<p class="sub">Nootdorps Pijnackerse Hengelsportvereniging · Plas van der Ende</p>',
+    # hero sinds v99: "Welkom bij <accent>NAAM</accent>" met de slogan erboven
+    t = vervang(t, '<h1>Welkom bij <span class="accent">NPHV</span></h1>',
+                f'<h1>Welkom bij <span class="accent">{kh}</span></h1>', 1, 'index.html h1')
+    t = vervang(t, '<p class="sub">Nootdorps Pijnackerse Hengelsportvereniging &middot; Plas van der Ende</p>',
                 f'<p class="sub">{sub}</p>', 1, 'index.html sub')
     # 3D-knop alleen behouden als de bronkaart ook een kaart-3d.jpg heeft
     knop_3d = ('      <p class="kaart-3d-rij"><button type="button" class="btn klein-btn" '
@@ -140,9 +142,15 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     schrijf(os.path.join(doel, 'manifest.webmanifest'),
             json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 
-    # --- config.js: 1-op-1 op de TENANT-slug na ---
+    # --- config.js: tenant-slug en de nieuwe navigatie ---
+    # Een NIEUWE klant begint meteen met het tegeloverzicht en de balk onderaan; NPHV
+    # houdt de oude indeling tot Patrick de vlag daar omzet (fase 4 en 5 van het ontwerp).
     t = lees(os.path.join(BRON, 'config.js'))
     t = vervang(t, "const TENANT = 'nphv';", f"const TENANT = '{slug}';", 1, 'config TENANT')
+    t = vervang(t, 'const NAV_TEGELS = false;', 'const NAV_TEGELS = true;', 1, 'config NAV_TEGELS')
+    t = t.replace('// Tegelnavigatie (fase 4 van het ontwerp, v101): staat hier nog UIT. Gaat aan\n'
+                  '// zodra de testmatrix op de demo groen is.',
+                  '// Tegelnavigatie (fase 4 en 5 van het ontwerp): nieuwe klanten beginnen hiermee.')
     schrijf(os.path.join(doel, 'config.js'), t)
     shutil.copy(os.path.join(BRON, 'version.json'), os.path.join(doel, 'version.json'))
 
@@ -214,7 +222,7 @@ def bouw_tenant(slug, kort, volledig, water, stekken, zones, kaart_van):
         raise SystemExit(f'LET OP: docs/{slug}/ is aangemaakt; de inlogpagina had al een regel voor {slug}.')
     anker = '    <p class="muted klein installeer-tip"'
     kaartje = (f'    <a class="water-kaart" href="/{slug}/">\n'
-               f'      <span class="merk" aria-hidden="true">{kh[:2].upper()}</span>\n'
+               f'      <span class="merk" aria-hidden="true">{html.escape(kort, quote=True)[:2].upper()}</span>\n'
                f'      <div>\n'
                f'        <b>{html.escape(kort, quote=True)}</b>\n'
                f'        <span>{sub}</span>\n'
@@ -227,20 +235,24 @@ def bouw_tenant(slug, kort, volledig, water, stekken, zones, kaart_van):
         raise SystemExit(f'{e}\nLET OP: docs/{slug}/ is WEL aangemaakt; voeg de regel op /inloggen/ handmatig toe.')
     schrijf(root, t)
 
-    print(f'\nTenant docs/{slug}/ aangemaakt en toegevoegd aan de inlogpagina (/inloggen/). Nog doen:')
+    print(f'\nTenant docs/{slug}/ aangemaakt en toegevoegd aan de inlogpagina (/inloggen/).')
+    print(f'Volledige procedure: NIEUWE-KLANT-AANZETTEN.md. Kort, in deze orde:')
     print(f'  1. Controleer docs/{slug}/index.html (teksten) en de kaart in de browser.')
-    print(f'  2. instructies-print.pdf voor deze tenant maken (link is weggelaten).')
-    print(f'  3. Release-checklist in CLAUDE.md nalopen (versies, SHELL-paden, CSP).')
-    print(f'  4. Klant-rijen in de database aanmaken (VERPLICHT voor livegang):')
+    print(f'  2. Klant-rijen in de database (VERPLICHT):')
     print(f"     insert into wedstrijd.klanten (slug, naam) values ('{slug}', '<volledige naam>');")
     print(f"     insert into wedstrijd.klant_instellingen (klant_id, organisator_wachtwoord)")
     print(f"       select id, '<eigen organisatie-wachtwoord>' from wedstrijd.klanten where slug = '{slug}';")
-    print(f'  5. STEKRING van deze klant vullen (VERPLICHT, anders geeft elke stekkeuze')
-    print(f'     `onbekende_stek`). De ring moet exact gelijk zijn aan STEK_POSITIE in')
-    print(f'     docs/{slug}/kaart.js; genereer de SQL met:')
+    print(f'  3. STEKRING vullen (VERPLICHT, anders weigert de loting en geeft elke')
+    print(f'     stekkeuze `onbekende_stek`). Moet exact gelijk zijn aan STEK_POSITIE in')
+    print(f'     docs/{slug}/kaart.js:')
     print(f'       python3 tools/stekring_sql.py --slug {slug}')
-    print(f'  6. LET OP: org-wachtwoord, zones, alleen-lezen EN de stekring zijn per klant')
-    print(f'     (wedstrijd.klant_instellingen + wedstrijd.stek_ring); zie CLAUDE.md.')
+    print(f'  4. Rooktest op de nieuwe omgeving; de laatste stap bewijst stekring + kaart:')
+    print(f'       node tools/rooktest.mjs --orgww "<wachtwoord>" --basis "http://localhost:8642/{slug}"')
+    print(f'  5. Instructieblad voor de wedstrijddag:')
+    print(f'       python3 tools/gen_instructie_a4.py --slug {slug} --kort "{kort}"')
+    print(f'  6. Release-checklist in CLAUDE.md nalopen (versies, SHELL-paden, CSP), dan pushen.')
+    print(f'  LET OP: org-wachtwoord, zones, alleen-lezen EN de stekring zijn per klant')
+    print(f'  (wedstrijd.klant_instellingen + wedstrijd.stek_ring). NAV_TEGELS staat al aan.')
 
 
 if __name__ == '__main__':

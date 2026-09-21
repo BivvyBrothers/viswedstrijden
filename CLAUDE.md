@@ -216,7 +216,19 @@ Kaart wijzigen: pas de tools aan en draai `python3 gen_kaart_js.py` vanuit `tool
 - Sinds 13 aug 2026 heeft elke klant een EIGEN stekring, dus standaardkaart-
   tenants kunnen gewoon stekkeuze en koppelmode draaien. Wel verplicht bij een
   nieuwe tenant: de ring vullen met `tools/stekring_sql.py --slug X`, anders
-  geeft elke stekkeuze `onbekende_stek`.
+  geeft elke stekkeuze `onbekende_stek` EN weigert de loting met
+  `te_veel_teams_voor_stekken` (de capaciteit is `count(*)` op `stek_ring`).
+- **De volledige procedure staat in `NIEUWE-KLANT-AANZETTEN.md`** (21 sep 2026 één
+  keer echt doorlopen op een oefenslug, met rooktest groen, daarna alles verwijderd:
+  map, kaartje op /inloggen/, en de rijen in klanten / klant_instellingen / stek_ring).
+  Het script print dezelfde stappen na het scaffolden. Nieuwe tenants krijgen
+  `NAV_TEGELS = true` in `config.js`; ze beginnen dus met de tegelnavigatie.
+- **Wat die repetitie opleverde** (drie echte defecten, alle gefixt): het script brak op
+  de gewijzigde hero-markup van het NPHV-sjabloon (de assert deed zijn werk, luid),
+  het kaartje op de inlogpagina gooide een `NameError` op een variabele die er niet meer
+  was, en de rooktest bleef als organisator ingelogd door de Chrome-navigatie-no-op.
+  Les: een scaffold-script is pas bewezen als je hem na ELKE sjabloonwijziging één keer
+  echt draait; de asserts vangen de vorm, niet de code eronder.
 
 ## Demo-omgeving (/demo/, 12 jul 2026)
 
@@ -1006,17 +1018,31 @@ volledige wedstrijd door de ECHTE app in headless Chrome met mobiele emulatie (z
 CDP-aanpak als `mobiel_screenshot.mjs`; start Chrome eerst met
 `--remote-debugging-port=9333 --user-data-dir=/tmp/rooktest-profiel`).
 
-Negen stappen: app laadt, organisator logt in, wedstrijd aanmaken die NU loopt, codes
+Tien stappen: app laadt, organisator logt in, wedstrijd aanmaken die NU loopt, codes
 uitlezen, deelnemer meldt zich aan en ziet zijn code, herladen (sessie-herstel), vangst
 registreren MET echte foto-upload, klassement toont die vangst, kijker ziet klassement,
-kaart en vangsten, terugknop geeft het startscherm met de Verder-kaart. **De wegwerp-
+kaart en vangsten, terugknop geeft het startscherm met de Verder-kaart, en als tiende
+**loting + stekkeuze** (organisator start de loting via de org-omgeving, de deelnemer
+kiest een plek op de kaart en bevestigt). Die laatste staat ACHTERAAN omdat
+`w_start_stekkeuze` status `aanmelden` eist; hij bewijst stekring en kaart samen en is
+dus de belangrijkste stap bij een nieuwe tenant. **De wegwerp-
 wedstrijd wordt altijd opgeruimd, ook als een stap faalt** (`opruimen()` in een finally-pad).
 Console-fouten en HTTP 400+ tellen als ROOD; alleen favicon, version.json en
 `navigator.vibrate` (headless-artefact) worden weggefilterd. Verslag in
 `review/rooktest-<datum>.md`, exitcode 1 bij rood.
 
 **Draaien vóór elke livegang**, zeker voordat `NAV_TEGELS` bij NPHV aangaat. Het
-wachtwoord staat NOOIT in de repo: als argument of in `VWA_ORGWW`.
+wachtwoord staat NOOIT in de repo: als argument of in `VWA_ORGWW`. Met `--basis` draait
+hij tegen elke tenant, ook lokaal (`python3 -m http.server 8642 --directory docs`).
+
+**Twee lessen uit het harnas zelf (21 sep):** (1) `Page.navigate` naar DEZELFDE url met
+dezelfde hash is in Chrome een no-op, de oude JS-toestand blijft staan; daarom krijgt elke
+navigatie in `naar()` een eigen `r=<teller>`. Zonder dat bleef `ROL` op 'organisator' en
+leek de aanmeldstap kapot. (2) Na een gedwongen herlaadbeurt bestaan `STATE`/`ROL` nog
+niet, dus een wachtconditie moet `typeof X !== 'undefined'` gebruiken; `wachtTot` vangt
+nu bovendien een ReferenceError op als "nog niet geladen" in plaats van als mislukking.
+Het aanmaken van een wedstrijd zet de admin-pin in sessionStorage: wil je daarna DEELNEMER
+zijn, dan moet die pin weg (of `sessionStorage.clear()` NA het navigeren naar de wedstrijd).
 
 **Eerste vangst van de rooktest (21 sep):** `w_seizoen_stand` gaf een HTTP 400 bij elke
 wedstrijd zonder seizoen, dus elke gebruiker had rode fouten in de console. Migratie
