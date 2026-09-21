@@ -722,6 +722,7 @@ body:not(.nav-tegels) .beheer-blok > summary::before { content: none; }
 /* jaaroverzicht per klant in de beheerdersomgeving */
 .su-jaren { margin: 0 0 10px; }
 .su-jaren summary { cursor: pointer; }
-.su-jaartabel { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: .9rem; }
+.su-jaren > div { overflow-x: auto; }   /* vijf kolommen passen niet op 390 px */
+.su-jaartabel { width: 100%; min-width: 320px; border-collapse: collapse; margin-top: 6px; font-size: .85rem; }
 .su-jaartabel th, .su-jaartabel td { padding: 4px 6px; border-bottom: 1px solid var(--kaart-rand); text-align: left; }
 .su-jaartabel .r { text-align: right; }

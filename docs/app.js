@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 111; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 112; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -1329,7 +1329,9 @@ function suKaart(w, nuMs) {
       <span class="w-icoon ${fase.klasse}" aria-hidden="true">${fase.icoon}</span>
       <span class="su-rij-naam">
         <b>${esc(w.naam)}</b>
-        <span class="muted klein">${fmtDatumTijd(w.start_ts)} \u00b7 ${w.teams} team${w.teams === 1 ? '' : 's'}
+        <span class="muted klein">${fmtDatumTijd(w.start_ts)} \u00b7
+          ${w.deelnemers ?? w.teams} deelnemer${(w.deelnemers ?? w.teams) === 1 ? '' : 's'}${
+            (w.deelnemers != null && w.deelnemers !== w.teams) ? ` (${w.teams} team${w.teams === 1 ? '' : 's'})` : ''}
           \u00b7 ${w.vangsten} vangst${w.vangsten === 1 ? '' : 'en'}</span>
         <span class="w-kenmerken">
           <span class="chip klein-chip ${fase.klasse}">${esc(fase.label)}</span>
@@ -1411,11 +1413,11 @@ function suJaren(klant) {
       <td class="r">${j.vangsten}</td>
     </tr>`).join('');
   return `<details class="su-jaren"><summary class="muted klein">Per jaar (${jaren.length})</summary>
-    <table class="su-jaartabel">
-      <thead><tr><th>jaar</th><th class="r">wedstrijden</th><th class="r">grootste veld</th>
-        <th class="r">deelnemers</th><th class="r">vangsten</th></tr></thead>
+    <div><table class="su-jaartabel">
+      <thead><tr><th>jaar</th><th class="r">wedstr.</th><th class="r">grootste</th>
+        <th class="r">vissers</th><th class="r">vangsten</th></tr></thead>
       <tbody>${rijen}</tbody>
-    </table>
+    </table></div>
     <p class="muted klein" style="margin:6px 0 0">"Grootste veld" bepaalt welk pakket nodig is;
       het aantal wedstrijden per jaar bepaalt of los of een seizoen goedkoper is.</p>
   </details>`;
