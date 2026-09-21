@@ -1111,6 +1111,12 @@ Nieuw in v109, in het blok "Toegang en blokkades":
 - `w_su_overzicht` geeft nu per klant `stekring` (aantal), `stats.grootste` (personen),
   `stats.laatste` (eind van de laatste wedstrijd) en per wedstrijd `deelnemers` naast
   `teams`. Bij koppels scheelt dat een factor twee in wat je denkt te verkopen.
+- **Klantregel en wedstrijdregels tellen DEELNEMERS** (v112), met het aantal teams
+  erachter zodra ze verschillen. Teams is het getal waarop je niet factureert.
+- **Jaaroverzicht per klant** (`suJaren`, uitklapbaar): per kalenderjaar wedstrijden,
+  grootste veld, deelnemers en vangsten. Het grootste veld bepaalt welk pakket nodig
+  is, het aantal wedstrijden per jaar of los of een seizoen goedkoper is. De tabel zit
+  in een scrollvakje: vijf kolommen passen niet op 390 px.
 - **`klant_instellingen.afspraak`** (1 regel, max 200 tekens, v110): wat is er met deze
   klant afgesproken. Dit bestaat omdat de waarschuwing anders permanent aan staat: NPHV
   en de demo hebben allebei bewust geen limiet. Staat er een afspraak, dan is "geen
