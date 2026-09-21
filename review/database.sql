@@ -1162,7 +1162,7 @@ begin
   select z.* into v_seizoen
   from wedstrijd.wedstrijden w join wedstrijd.seizoenen z on z.id = w.seizoen_id
   where upper(w.code) = upper(trim(p_code)) or upper(w.kijk_code) = upper(trim(p_code));
-  if not found then raise exception 'geen_seizoen'; end if;
+  if not found then return null; end if;   -- migratie wedstrijd_seizoen_stand_stil (21 sep 2026)
 
   v_regels := coalesce(v_seizoen.regels, '{}'::jsonb);
   v_telling := coalesce(v_regels->>'telling', 'plaatspunten');
@@ -1232,7 +1232,7 @@ begin
   end loop;
 
   v_aantal_w := v_widx;
-  if v_aantal_w = 0 then raise exception 'seizoen_nog_leeg'; end if;
+  if v_aantal_w = 0 then return null; end if;   -- migratie wedstrijd_seizoen_stand_stil (21 sep 2026)
 
   insert into _sz_res (sleutel, display, widx, punten, gewicht, aantal, gemist)
   select d.sleutel, d.display, w.widx,

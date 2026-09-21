@@ -993,6 +993,32 @@ de PDF's, de foutteksten in app.js of klantmails. Handtekening met logo:
 De demo-omgeving is zelf ook documentatie: nieuwe zichtbare features waar
 mogelijk in de demo laten zien (zoals de demo-competitie).
 
+## Rooktest: het vangnet (fase 7, 21 sep 2026)
+
+**`node tools/rooktest.mjs --orgww "<organisatiewachtwoord van de demo>"`** draait één
+volledige wedstrijd door de ECHTE app in headless Chrome met mobiele emulatie (zelfde
+CDP-aanpak als `mobiel_screenshot.mjs`; start Chrome eerst met
+`--remote-debugging-port=9333 --user-data-dir=/tmp/rooktest-profiel`).
+
+Negen stappen: app laadt, organisator logt in, wedstrijd aanmaken die NU loopt, codes
+uitlezen, deelnemer meldt zich aan en ziet zijn code, herladen (sessie-herstel), vangst
+registreren MET echte foto-upload, klassement toont die vangst, kijker ziet klassement,
+kaart en vangsten, terugknop geeft het startscherm met de Verder-kaart. **De wegwerp-
+wedstrijd wordt altijd opgeruimd, ook als een stap faalt** (`opruimen()` in een finally-pad).
+Console-fouten en HTTP 400+ tellen als ROOD; alleen favicon, version.json en
+`navigator.vibrate` (headless-artefact) worden weggefilterd. Verslag in
+`review/rooktest-<datum>.md`, exitcode 1 bij rood.
+
+**Draaien vóór elke livegang**, zeker voordat `NAV_TEGELS` bij NPHV aangaat. Het
+wachtwoord staat NOOIT in de repo: als argument of in `VWA_ORGWW`.
+
+**Eerste vangst van de rooktest (21 sep):** `w_seizoen_stand` gaf een HTTP 400 bij elke
+wedstrijd zonder seizoen, dus elke gebruiker had rode fouten in de console. Migratie
+`wedstrijd_seizoen_stand_stil` geeft nu `null` terug in plaats van
+`raise exception 'geen_seizoen'` / `'seizoen_nog_leeg'`; de client las null al als "geen
+seizoen", dus oude PWA-clients merken niets. De migratie vervangt alleen die twee regels
+in die ene functie (de definitie wordt live opgehaald en teruggeschreven, met asserts).
+
 ## Release-checklist (multi-tenant, sinds v36)
 
 Bij elke release controleren:
