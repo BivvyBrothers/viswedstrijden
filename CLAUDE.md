@@ -984,6 +984,12 @@ zie ook feedback_docs_consequent.md in de memory). De lijst:
     huisstijl (bron: og-image.html-patroon, headless screenshot 1200x630).
     nieuwe_tenant.py vervangt de og-tags automatisch mee (asserts).
 
+**Betalen (sinds 21 sep 2026):** Mollie-betaallink bij een factuur uit
+`Bedrijf/facturen/gen_factuur.py` (buiten deze repo, want er staan klantgegevens in).
+Prijzen zijn INCLUSIEF btw afgesproken; de factuur splitst zelf naar exclusief plus 21
+procent. Een omgeving gaat pas live NA betaling; de app kent geen betalingen en heeft
+geen koppeling met Mollie nodig.
+
 **Contactadres op ALLE oppervlakken: `info@viswedstrijdapp.nl`** (gedeelde
 mailbox in M365 sinds 14 sep 2026, doorgestuurd naar Patrick). Nooit
 patrick@kemblinck.nl of info@kemblinck.nl in de app, de site, de instructies,
