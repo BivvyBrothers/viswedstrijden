@@ -1108,9 +1108,15 @@ Nieuw in v109, in het blok "Toegang en blokkades":
   oranje zolang er iets ontbreekt. Dit zijn precies de twee dingen die bij een nieuwe
   klant stil fout gaan: een lege stekring (loting weigert, stekkeuze geeft
   `onbekende_stek`) en een vergeten pakketlimiet (onbeperkt deelnemers).
-- `w_su_overzicht` geeft nu per klant `stekring` (aantal), `stats.grootste` (personen)
-  en per wedstrijd `deelnemers` naast `teams`. Bij koppels scheelt dat een factor twee
-  in wat je denkt te verkopen.
+- `w_su_overzicht` geeft nu per klant `stekring` (aantal), `stats.grootste` (personen),
+  `stats.laatste` (eind van de laatste wedstrijd) en per wedstrijd `deelnemers` naast
+  `teams`. Bij koppels scheelt dat een factor twee in wat je denkt te verkopen.
+- **`klant_instellingen.afspraak`** (1 regel, max 200 tekens, v110): wat is er met deze
+  klant afgesproken. Dit bestaat omdat de waarschuwing anders permanent aan staat: NPHV
+  en de demo hebben allebei bewust geen limiet. Staat er een afspraak, dan is "geen
+  limiet" een keuze (groen); staat er niets, dan blijft het oranje. `w_su_pakket` slaat
+  pakket en afspraak samen op; de oude 3-argument versie is verwijderd zodat PostgREST
+  niet de verkeerde kiest.
 
 **Testen zonder in te loggen:** het scherm is te vullen met nagebootste `SU_DATA` en
 een `renderSu()` via `tools/mobiel_screenshot.mjs` (zo zijn beide varianten bewezen).
