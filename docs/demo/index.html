@@ -131,12 +131,33 @@
     <p class="muted klein">Deel per wedstrijd de <b>deelnemerscode</b> met de vissers en de <b>kijkcode</b> met iedereen die mag meekijken.</p>
   </section>
 
-  <section class="card">
+  <!-- Organisatieoverzicht (v104, fase 5 van het ontwerp; alleen met NAV_TEGELS).
+       De onderdelen hieronder blijven ONGEWIJZIGD staan, ze worden alleen een voor
+       een getoond. Zonder de vlag blijft deze kaart verborgen en staat alles onder
+       elkaar zoals voorheen. -->
+  <section class="card org-overzicht" id="org-overzicht" hidden>
+    <div class="org-stats">
+      <div class="org-stat"><b id="org-stat-wedstrijden">0</b><span>actieve wedstrijden</span></div>
+      <div class="org-stat"><b id="org-stat-seizoenen">0</b><span>seizoenen</span></div>
+    </div>
+    <div class="org-rijen">
+      <button class="org-rij" data-orgnaar="actief"><span><b>Actieve wedstrijden</b><small>wat er nu loopt, met codes en beheer</small></span><span class="pijl" aria-hidden="true">&rsaquo;</span></button>
+      <button class="org-rij" data-orgnaar="nieuw"><span><b>Nieuwe wedstrijd</b><small>een wedstrijd aanmaken en delen</small></span><span class="pijl" aria-hidden="true">&rsaquo;</span></button>
+      <button class="org-rij" data-orgnaar="seizoen"><span><b>Seizoenen (competitie)</b><small>doorlopend klassement over meerdere dagen</small></span><span class="pijl" aria-hidden="true">&rsaquo;</span></button>
+      <button class="org-rij" data-orgnaar="zones"><span><b>Vaste zone-indeling</b><small>de standaardzones van jullie water</small></span><span class="pijl" aria-hidden="true">&rsaquo;</span></button>
+      <button class="org-rij" data-orgnaar="eerder"><span><b>Eerdere wedstrijden</b><small>afgelopen wedstrijden terugkijken</small></span><span class="pijl" aria-hidden="true">&rsaquo;</span></button>
+    </div>
+  </section>
+
+  <button class="btn licht org-terug" id="org-terug" hidden>&lsaquo; Terug naar het overzicht</button>
+
+
+  <section class="card" data-orgvak="actief">
     <h2>Actieve wedstrijden</h2>
     <div id="org-actief"></div>
   </section>
 
-  <section class="card">
+  <section class="card" data-orgvak="nieuw">
     <h2>Nieuwe wedstrijd</h2>
     <p id="nw-sjabloon" class="sjabloon-hint" hidden></p>
     <form id="form-nieuw" class="stack">
@@ -171,7 +192,7 @@
     </form>
   </section>
 
-  <section class="card">
+  <section class="card" data-orgvak="seizoen">
     <h2>Seizoenen (competitie)</h2>
     <p class="muted klein">Een seizoen telt de uitslagen van meerdere wedstrijden op tot een
     doorlopend klassement (regels naar de Sportvisunie-reglementen, per seizoen instelbaar).
@@ -216,7 +237,7 @@
     </form>
   </section>
 
-  <section class="card" id="org-zones-card">
+  <section class="card" data-orgvak="zones" id="org-zones-card">
     <h2>Vaste zone-indeling van de plas</h2>
     <p class="muted klein">Deze indeling geldt automatisch voor elke nieuwe wedstrijd.
     Eén regel per zone, formaat <b>Naam: steknummers</b>, bijv. <b>Zone A: 20-30</b> of <b>B: 55</b>
@@ -227,7 +248,7 @@
     <p id="org-zones-ok" class="ok" hidden></p>
   </section>
 
-  <section class="card">
+  <section class="card" data-orgvak="eerder">
     <h2>Eerdere wedstrijden</h2>
     <div id="org-verleden"></div>
   </section>
@@ -524,8 +545,8 @@
         <button id="b-tijden" class="btn">Tijden opslaan</button>
         <p id="b-fout" class="fout" hidden></p>
       </div>
-      <div class="card">
-        <h2>Zones <span class="muted">(optioneel)</span></h2>
+      <details class="card beheer-blok">
+        <summary><h2>Zones <span class="muted">(optioneel)</span></h2></summary>
         <p class="muted klein">Nieuwe wedstrijden krijgen automatisch de vaste zone-indeling van de plas
         (te beheren op de homepagina, achter het organisatie-wachtwoord). Pas hieronder alleen aan als deze
         wedstrijd afwijkt, bijv. een zone die dicht is. Formaat: <b>Naam: steknummers</b>, 1 regel per zone.
@@ -534,26 +555,26 @@
         <button id="b-zones-opslaan" class="btn">Zones opslaan</button>
         <p id="b-zones-fout" class="fout" hidden></p>
         <p id="b-zones-ok" class="ok" hidden></p>
-      </div>
-      <div class="card">
-        <h2>Wedstrijdregels</h2>
+      </details>
+      <details class="card beheer-blok">
+        <summary><h2>Wedstrijdregels</h2></summary>
         <p class="muted klein">Deelnemers en kijkers zien dit als uitklapbaar blok onder de klok. Leeg = geen regels-blok.</p>
         <textarea id="b-regels" rows="5" maxlength="3000" placeholder="bijv. Maximaal 2 hengels per visser"></textarea>
         <button id="b-regels-opslaan" class="btn">Regels opslaan</button>
         <p id="b-regels-ok" class="ok" hidden></p>
-      </div>
-      <div class="card">
-        <h2>Loting</h2>
+      </details>
+      <details class="card beheer-blok">
+        <summary><h2>Loting</h2></summary>
         <p class="muted">Start de loting als alle deelnemers aangemeld zijn. De site bepaalt willekeurig de volgorde; daarna kiest iedereen op zijn beurt een stek op de kaart.</p>
         <div class="row">
           <button id="b-loting" class="btn primary">🎲 Start loting</button>
           <button id="b-reset" class="btn gevaar">Reset loting</button>
         </div>
-      </div>
-      <div class="card">
-        <h2>Deelnemers</h2>
+      </details>
+      <details class="card beheer-blok">
+        <summary><h2>Deelnemers</h2></summary>
         <div id="b-teams"></div>
-      </div>
+      </details>
       <div class="card" id="b-wacht-card" hidden>
         <h2>Na de eindtijd binnengekomen</h2>
         <p class="muted klein">Deze vangsten zijn tijdens de wedstrijd ingevoerd maar konden

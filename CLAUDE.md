@@ -695,6 +695,26 @@ dan is de app exact als v100.** Nu: demo aan, NPHV uit tot de testmatrix daar gr
 - Nog open voor NPHV: instructiepagina's en draaiboek beschrijven straks de nieuwe
   navigatie, en de schermopnamen op de landingspagina moeten dan opnieuw.
 
+## Organisatiebeheer in panelen en blokken (v104, 21 sep 2026, fase 5 van het ontwerp)
+
+Zelfde vlag als fase 4 (`NAV_TEGELS` in `config.js`): demo aan, NPHV uit. Zonder de vlag
+staat alles onder elkaar zoals in v103.
+
+- **Organisatieomgeving** (`#view-org`): je komt binnen op `#org-overzicht` met twee
+  statkaartjes (actieve wedstrijden, seizoenen) en vijf rijen: Actieve wedstrijden,
+  Nieuwe wedstrijd, Seizoenen, Vaste zone-indeling, Eerdere wedstrijden. Elke rij toont
+  één `[data-orgvak]`-sectie en zet `#org-terug` erboven. **De secties zelf zijn
+  ONGEWIJZIGD**: `toonOrgVak()` doet niets anders dan `hidden` zetten, dus alle
+  formulieren, id's en handlers blijven staan. `renderOrgOverzicht()` vult de
+  statkaartjes uit `ORG_DATA` en `ORG_SEIZOENEN`; `route()` roept `toonOrgVak(null)` aan
+  zodat je altijd op het overzicht binnenkomt.
+- **Beheer-tab binnen een wedstrijd**: Zones, Wedstrijdregels, Loting en Deelnemers zijn
+  `<details class="card beheer-blok">` geworden. `zetBeheerBlokken()` klapt ze dicht als
+  de vlag aan staat en laat ze open als de vlag uit staat (dan is het beeld gelijk aan
+  v103). Bewust NIET uitklapbaar: de kaart met naam, codes en tijden, "Na de eindtijd
+  binnengekomen" (`#b-wacht-card`, dat vraagt actie) en "Vangsten corrigeren" (dat is het
+  werk van de wedstrijddag).
+
 ## Wedstrijd als sjabloon (v67, 13 aug 2026)
 
 Knop **📋 Als sjabloon** op elke wedstrijdkaart in de organisatie-omgeving
