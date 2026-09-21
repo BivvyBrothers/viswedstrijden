@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 108; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 109; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -29,6 +29,7 @@ const FOUTEN = {
   meldingen_gesloten: 'Deze wedstrijd is afgelopen; meldingen aanzetten kan niet meer.',
   seizoen_niet_gevonden: 'Seizoen niet gevonden.',
   beheerder_wachtwoord_onjuist: 'Beheerderswachtwoord onjuist.',
+  pakket_kleiner_dan_bestaande_wedstrijd: 'Deze klant heeft al een wedstrijd met meer deelnemers dan dit pakket. Kies een groter pakket.',
   beheerder_wachtwoord_te_kort: 'Beheerderswachtwoord moet minimaal 12 tekens zijn (spaties aan de randen tellen niet mee).',
   org_wachtwoord_te_kort: 'Organisatie-wachtwoord moet minimaal 6 tekens zijn (spaties aan de randen tellen niet mee).',
   wachtwoord_gelijk_aan_org: 'Kies een ander wachtwoord: dit is al het organisatie-wachtwoord.',
@@ -1355,10 +1356,34 @@ function suKlantNaam() {
   return (SU_DATA?.klanten || []).find((x) => x.slug === SU_KLANT)?.naam || SU_KLANT || 'deze klant';
 }
 
+// De staffel uit de prijslijst; 'geen limiet' hoort bij NPHV en de demo.
+const PAKKETTEN = [
+  { waarde: null, label: 'geen limiet' },
+  { waarde: 10, label: 'tot 10 deelnemers (\u20ac 79 per wedstrijd)' },
+  { waarde: 25, label: 'tot 25 deelnemers (\u20ac 119 per wedstrijd)' },
+  { waarde: 50, label: 'tot 50 deelnemers (\u20ac 159 per wedstrijd)' },
+];
+
+// Wat bij een nieuwe klant stil fout gaat: een lege stekring (loting weigert,
+// stekkeuze geeft 'onbekende_stek') en een vergeten pakket (onbeperkt meedoen).
+function suGezondheid(klant, ki) {
+  if (!klant) return '';
+  const punten = [];
+  if (!klant.stekring) {
+    punten.push('<b>stekring is LEEG</b>: loting en stekkeuze werken niet. Vullen met tools/stekring_sql.py.');
+  } else {
+    punten.push(`stekring: ${klant.stekring} stekken`);
+  }
+  if (!ki.max_deelnemers) punten.push('geen pakketlimiet: deze klant kan onbeperkt deelnemers laten meedoen.');
+  // .melding is oranje (let op), .melding.groen is de rustige variant
+  const inOrde = klant.stekring && ki.max_deelnemers;
+  return `<p class="melding${inOrde ? ' groen' : ''} klein" style="margin:0 0 10px">${punten.join(' \u00b7 ')}</p>`;
+}
+
 // instellingen van de klant die in de beheerder-tab geselecteerd staat
 function suKlantInstellingen() {
   const k = (SU_DATA?.klanten || []).find((x) => x.slug === SU_KLANT);
-  return (k && k.instellingen) || { alleen_lezen: false, heeft_standaard_zones: false };
+  return (k && k.instellingen) || { alleen_lezen: false, heeft_standaard_zones: false, max_deelnemers: null };
 }
 
 function renderSu() {
@@ -1374,13 +1399,24 @@ function renderSu() {
   const klanten = SU_DATA.klanten || [];
   if (!klanten.some((k) => k.slug === SU_KLANT)) SU_KLANT = klanten.length ? klanten[0].slug : null;
   const ki = suKlantInstellingen();
-  const klantNaam = (SU_DATA.klanten || []).find((x) => x.slug === SU_KLANT)?.naam || SU_KLANT || '?';
+  const actieveKlant = (SU_DATA.klanten || []).find((x) => x.slug === SU_KLANT) || null;
+  const klantNaam = actieveKlant?.naam || SU_KLANT || '?';
   $('#su-instellingen').innerHTML = `
     <p class="muted klein" style="margin-top:0">Deze instellingen gelden voor
       <b>${esc(klantNaam)}</b>. Kies hierboven een andere klant om die aan te passen.</p>
     <p class="muted klein">alleen-lezen: <b>${ki.alleen_lezen ? 'AAN (nieuwe wedstrijden geblokkeerd)' : 'uit'}</b>
       \u00b7 vaste zones: ${ki.heeft_standaard_zones ? 'ja' : 'nee'}
       \u00b7 push-sleutels (platform): ${i.heeft_vapid && i.heeft_push_secret ? 'ok' : 'ONTBREKEN'}</p>
+    ${suGezondheid(actieveKlant, ki)}
+    <label class="su-kiezer">Pakket (deelnemers per wedstrijd)
+      <select id="su-pakket">${PAKKETTEN.map((p) =>
+        `<option value="${p.waarde === null ? '' : p.waarde}"${
+          (ki.max_deelnemers || null) === p.waarde ? ' selected' : ''}>${esc(p.label)}</option>`).join('')}</select>
+    </label>
+    <p class="muted klein" style="margin:4px 0 10px">Grootste wedstrijd tot nu toe:
+      <b>${(actieveKlant && actieveKlant.stats && actieveKlant.stats.grootste) || 0} deelnemers</b>.
+      Een pakket lager dan dat getal weigert de server.</p>
+    <button id="su-pakket-opslaan" class="btn">Pakket opslaan voor ${esc(klantNaam)}</button>
     <button id="su-alleen-lezen" class="btn${ki.alleen_lezen ? '' : ' gevaar'}">${ki.alleen_lezen
       ? `Zet alleen-lezen UIT voor ${esc(klantNaam)}` : `Zet alleen-lezen AAN voor ${esc(klantNaam)}`}</button>`;
   // servertijd + verstreken tijd sinds het ophalen, anders blijft een wedstrijd
@@ -1455,6 +1491,20 @@ function renderSu() {
       renderSu();
     };
   });
+  const pakketKnop = $('#su-pakket-opslaan');
+  if (pakketKnop) pakketKnop.onclick = async () => {
+    const keuze = $('#su-pakket').value;
+    try {
+      await rpc('w_su_pakket', {
+        p_wachtwoord: sessie.suWw() || '',
+        p_klant: SU_KLANT,
+        p_max: keuze === '' ? null : parseInt(keuze, 10),
+      });
+      toast(keuze === '' ? 'Pakket: geen limiet meer.' : `Pakket gezet op ${keuze} deelnemers per wedstrijd.`);
+      suActiviteit();
+      laadSu();
+    } catch (err) { toast(foutTekst(err)); }
+  };
   $('#su-alleen-lezen').onclick = () => tikNogmaals($('#su-alleen-lezen'), '\u26a0\ufe0f Tik nogmaals', async () => {
     try {
       await rpc('w_su_alleen_lezen', {
