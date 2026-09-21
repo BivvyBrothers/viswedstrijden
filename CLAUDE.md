@@ -856,10 +856,12 @@ technische details die bij het bouwen nodig zijn.
   `marketing/advertentie-vierkant.png` (1080x1080) en `advertentie-staand.png`
   (1080x1350). Het telefoonscherm in de advertentie is het TEGELOVERZICHT uit fase 4
   van het ontwerp; zolang dat niet live staat belooft de advertentie een scherm dat de
-  bezoeker nog niet ziet. Prijs in het beeld: vanaf € 10 per persoon per wedstrijd.
+  bezoeker nog niet ziet (fase 4 staat sinds 20 sep op de demo, NPHV volgt).
+  **Prijs in het beeld: vanaf € 79 per wedstrijd**, met de staffel en het seizoen
+  eronder; per persoon rekenen we sinds 20 sep niet meer.
   De kop van dat tegeloverzicht is ALLEEN het ronde logo met daaronder "Loot. Vis. Win."
   (besluit Patrick 20 sep); de kleine karperfoto uit de mockup van ChatGPT vervalt, ook
-  straks in de app zelf.
+  in de app zelf.
 
 ## Samenwerking vormgeving met ChatGPT (sinds 18 sep 2026)
 
@@ -883,6 +885,14 @@ Actuele schermopnames voor ChatGPT: `ontwerp/huidige-schermen/` (mobiel via
 `tools/mobiel_screenshot.mjs`, desktop via headless Chrome 1280 breed); verversen na
 elke zichtbare wijziging. Huisstijl blijft vast (sectie hierboven); ChatGPT werkt
 daarbinnen.
+
+## Verkoopmiddelen (fase 6, 21 sep 2026)
+
+De presentatie van 6 juli is VERVALLEN en staat in `presentatie/oud-2026-07/`; hij had de
+oude huisstijl, de oude prijs en oude schermen. `presentatie/LEESMIJ.md` vertelt wat je
+nu gebruikt: de site zelf, de demo met twee knoppen, `prijzenblad.pdf`, de print-uitleg,
+de twee advertenties in `marketing/` en de mailhandtekening. Is er toch een presentatie
+nodig, dan uit de huidige assets, via ronde 4 in de ChatGPT-briefing.
 
 ## Documentatie-oppervlakken (WERKAFSPRAAK sinds 15 jul 2026)
 
