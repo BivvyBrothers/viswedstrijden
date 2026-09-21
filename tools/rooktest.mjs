@@ -144,7 +144,20 @@ async function main() {
     await js(`localStorage.clear(); sessionStorage.clear(); return 1;`);
     await naar(`${BASIS}/`);
     await wachtTot(`document.querySelector('#view-home') && !document.querySelector('#view-home').hidden`, 20);
-    return await js(`return 'versie ' + APP_VERSION;`);
+    // Draait de app op de versie die de server serveert? Zo niet, dan herlaadt de
+    // app zichzelf straks midden in een stap (checkVersie) en lijkt die stap kapot.
+    // Twee keer hard herladen is genoeg om de service worker bij te praten.
+    for (let poging = 0; poging < 3; poging++) {
+      const stand = await js(`
+        const r = await fetch('version.json?x=' + Date.now(), { cache: 'no-store' });
+        const j = await r.json();
+        return { app: APP_VERSION, server: j.v };`);
+      if (stand.app >= stand.server) return `versie ${stand.app}`;
+      await naar(`${BASIS}/`);
+      await slaap(4000);
+    }
+    const eind = await js(`return APP_VERSION;`);
+    throw new Error(`de app blijft op versie ${eind} terwijl de server hoger staat`);
   });
 
   await stap('organisator logt in', async () => {

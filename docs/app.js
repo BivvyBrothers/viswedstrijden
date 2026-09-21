@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 107; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 108; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -501,7 +501,12 @@ async function checkVersie() {
       // gaan door een herlaad (Codex ronde 3)
       const vangstBezig = FORMULIER_BEZIG
         || !!($('#v-gewicht')?.value) || !!($('#v-foto')?.files?.length);
-      if (!typt && !alGeprobeerd && !WACHTRIJ_BEZIG && !vangstBezig) {
+      // aanmelden is net zo kwetsbaar: herlaad je midden in w_join, dan staat de
+      // deelnemer wél in de wedstrijd maar heeft hij zijn persoonlijke code nooit
+      // gezien (rooktest 21 sep, gevonden tijdens de uitrol van v107)
+      const aanmeldBezig = AANMELD_BEZIG
+        || !!($('#join-naam')?.value) || !!($('#herstel-code')?.value);
+      if (!typt && !alGeprobeerd && !WACHTRIJ_BEZIG && !vangstBezig && !aanmeldBezig) {
         sessionStorage.setItem('herlaad-poging', String(j.v));
         location.reload();
       }
@@ -2757,6 +2762,7 @@ async function wachtrijAlles() {
 
 let FALLBACK_POGING = null;  // upload-poging van de directe route (geen IndexedDB)
 let FORMULIER_BEZIG = false;  // vangstformulier wordt verwerkt (compressie/opslag/verzenden)
+let AANMELD_BEZIG = false;    // w_join of een herstel loopt: nooit herladen (code gaat anders verloren)
 
 // serverfouten die NIET vanzelf overgaan: opnieuw proberen heeft geen zin
 // kies_eerst_je_plek staat hier bewust NIET in: zodra de organisator alsnog
@@ -3216,6 +3222,7 @@ function initWedstrijd() {
   $('#form-join').addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#join-fout'); foutEl.hidden = true;
+    AANMELD_BEZIG = true;
     try {
       const isKoppel = STATE?.wedstrijd?.mode === 'koppel';
       const duoAan = !isKoppel && !!$('#join-duo')?.checked;
@@ -3241,6 +3248,7 @@ function initWedstrijd() {
       $('#form-join')?.reset();
       await laadState(false);
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+    finally { AANMELD_BEZIG = false; }
   });
   $('#form-herstel')?.addEventListener('submit', async (e) => {
     e.preventDefault();

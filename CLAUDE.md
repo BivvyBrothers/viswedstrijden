@@ -1040,6 +1040,15 @@ Console-fouten en HTTP 400+ tellen als ROOD; alleen favicon, version.json en
 wachtwoord staat NOOIT in de repo: als argument of in `VWA_ORGWW`. Met `--basis` draait
 hij tegen elke tenant, ook lokaal (`python3 -m http.server 8642 --directory docs`).
 
+**Derde les (21 sep, bij de uitrol van v107):** de rooktest werd rood op "deelnemer
+meldt zich aan" terwijl de server in orde was. Oorzaak: de tab draaide nog op de vorige
+versie, en `checkVersie()` herlaadt de app dan vanzelf, precies tijdens die stap. Dat
+was geen testfout maar een echte bug: bij een herlaad midden in `w_join` staat de
+deelnemer WEL in de wedstrijd maar heeft hij zijn persoonlijke code nooit gezien.
+Sinds v108 blokkeert `AANMELD_BEZIG` (plus een ingevuld `#join-naam` of `#herstel-code`)
+die automatische herlaad, net als bij een vangst in bewerking. De rooktest wacht nu in
+stap 1 tot de geladen `APP_VERSION` gelijk is aan `version.json`.
+
 **Twee lessen uit het harnas zelf (21 sep):** (1) `Page.navigate` naar DEZELFDE url met
 dezelfde hash is in Chrome een no-op, de oude JS-toestand blijft staan; daarom krijgt elke
 navigatie in `naar()` een eigen `r=<teller>`. Zonder dat bleef `ROL` op 'organisator' en
