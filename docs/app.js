@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 104; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 105; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -670,8 +670,33 @@ function zetBeheerBlokken() {
   if (BEHEER_BLOKKEN_GEZET) return;
   const blokken = document.querySelectorAll('#tab-beheer .beheer-blok');
   if (!blokken.length) return;
-  blokken.forEach((d) => { d.open = !TEGELS(); });
+  blokken.forEach((d) => {
+    d.open = !TEGELS();
+    // zonder de vlag mag niemand ze dichtklappen: dan is het beeld exact v103
+    // (Codex fase 5, punt 4)
+    if (!TEGELS()) d.addEventListener('toggle', () => { if (!d.open) d.open = true; });
+  });
   BEHEER_BLOKKEN_GEZET = true;
+}
+
+// Een foutmelding of bevestiging mag niet in een verborgen paneel of een
+// dichtgeklapt blok blijven staan (Codex fase 5, punt 2): zodra er een zichtbaar
+// wordt, halen we het onderdeel eromheen naar voren.
+function volgMeldingen() {
+  if (!window.MutationObserver) return;
+  const kijk = new MutationObserver((lijst) => {
+    for (const m of lijst) {
+      const el = m.target;
+      if (!(el instanceof HTMLElement) || el.hidden) continue;
+      if (!el.matches('.fout, .ok')) continue;
+      const blok = el.closest('.beheer-blok');
+      if (blok && !blok.open) blok.open = true;
+      const vak = el.closest('#view-org [data-orgvak]');
+      if (vak && vak.hidden) toonOrgVak(vak.dataset.orgvak);
+    }
+  });
+  document.querySelectorAll('#view-org .fout, #view-org .ok, #tab-beheer .fout, #tab-beheer .ok')
+    .forEach((el) => kijk.observe(el, { attributes: true, attributeFilter: ['hidden'] }));
 }
 
 function renderTabs() {
@@ -1070,7 +1095,7 @@ async function laadOrg(eerste) {
 // De onderdelen zelf zijn ONGEWIJZIGD: dit toont er één tegelijk en zet een
 // terugknop erboven. Zonder NAV_TEGELS staat alles onder elkaar zoals voorheen.
 let ORG_VAK = null;
-function toonOrgVak(sleutel) {
+function toonOrgVak(sleutel, metFocus = false) {
   ORG_VAK = sleutel;
   const aan = TEGELS();
   const overzicht = $('#org-overzicht');
@@ -1080,15 +1105,35 @@ function toonOrgVak(sleutel) {
   document.querySelectorAll('#view-org [data-orgvak]').forEach((el) => {
     el.hidden = aan ? (el.dataset.orgvak !== sleutel) : false;
   });
-  if (aan) window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (!aan) return;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // toetsenbord en schermlezer moeten meeverhuizen (Codex fase 5, punt 3)
+  if (!metFocus) return;
+  if (sleutel) {
+    const kop = document.querySelector(`#view-org [data-orgvak="${sleutel}"] h2`);
+    if (kop) { kop.setAttribute('tabindex', '-1'); kop.focus({ preventScroll: true }); }
+  } else {
+    document.querySelector(`#org-overzicht [data-orgnaar="${ORG_VAK_VORIG || 'actief'}"]`)?.focus({ preventScroll: true });
+  }
 }
+let ORG_VAK_VORIG = null;
 function renderOrgOverzicht() {
   if (!TEGELS()) return;
   const nuMs = new Date(ORG_DATA?.server_now || Date.now()).getTime();
   const alle = ORG_DATA?.wedstrijden || [];
-  const actief = alle.filter((w) => new Date(w.eind_ts).getTime() >= nuMs).length;
-  const w = $('#org-stat-wedstrijden'); if (w) w.textContent = actief;
+  const actief = alle.filter((w) => new Date(w.eind_ts).getTime() >= nuMs);
+  const w = $('#org-stat-wedstrijden'); if (w) w.textContent = actief.length;
   const z = $('#org-stat-seizoenen'); if (z) z.textContent = (ORG_SEIZOENEN || []).length;
+  // wat er aandacht vraagt hoort op het overzicht te staan, niet alleen in het
+  // verborgen paneel (Codex fase 5, punt 5)
+  const wacht = actief.filter((x) => x.status === 'aanmelden').length;
+  const sub = document.querySelector('#org-overzicht [data-orgnaar="actief"] small');
+  if (sub) {
+    sub.textContent = actief.length
+      ? `${actief.length} ${actief.length === 1 ? 'wedstrijd' : 'wedstrijden'}`
+        + (wacht ? `, ${wacht} nog niet geloot` : '')
+      : 'nog geen actieve wedstrijd';
+  }
 }
 
 /* ---------- seizoenenbeheer (organisatie) ---------- */
@@ -1119,7 +1164,7 @@ function renderOrgSeizoenen() {
   const el = $('#org-seizoenen');
   if (!el || ORG_SEIZOENEN === null) return;
   if (!ORG_SEIZOENEN.length) {
-    el.innerHTML = '<p class="muted">Nog geen seizoenen. Maak er hieronder een aan en koppel daarna wedstrijden via de wedstrijdkaarten hierboven.</p>';
+    el.innerHTML = '<p class="muted">Nog geen seizoenen. Maak er hier een aan en koppel daarna wedstrijden via de wedstrijdkaarten bij Actieve wedstrijden.</p>';
     return;
   }
   el.innerHTML = ORG_SEIZOENEN.map((z) => {
@@ -1502,6 +1547,7 @@ let SJABLOON = null;   // { code, naam, seizoen_id, ex } zolang het formulier ge
 function vulSjabloon(code) {
   const w = (ORG_DATA?.wedstrijden || []).find((x) => x.code === code);
   if (!w) return;
+  toonOrgVak('nieuw');   // anders vult hij een formulier in een verborgen paneel (Codex fase 5, punt 1)
   const start = new Date(w.start_ts);
   const eind = new Date(w.eind_ts);
   const duurMs = eind.getTime() - start.getTime();
@@ -1562,7 +1608,7 @@ function renderOrg() {
   const voorbij = alle.filter((w) => new Date(w.eind_ts).getTime() < nuMs);
   $('#org-actief').innerHTML = actief.length
     ? actief.map((w) => orgWedstrijdKaart(w, nuMs)).join('')
-    : '<p class="muted">Geen actieve wedstrijden. Maak er hieronder een aan.</p>';
+    : '<p class="muted">Geen actieve wedstrijden. Maak er een aan bij Nieuwe wedstrijd.</p>';
   $('#org-verleden').innerHTML = voorbij.length
     ? voorbij.map((w) => orgWedstrijdKaart(w, nuMs)).join('')
     : '<p class="muted">Nog geen afgeronde wedstrijden.</p>';
@@ -2911,9 +2957,10 @@ function initWedstrijd() {
   // organisatieomgeving: rijen openen een onderdeel, de knop erboven gaat terug
   document.addEventListener('click', (e) => {
     const rij = e.target.closest('#org-overzicht [data-orgnaar]');
-    if (rij) { toonOrgVak(rij.dataset.orgnaar); return; }
-    if (e.target.closest('#org-terug')) toonOrgVak(null);
+    if (rij) { ORG_VAK_VORIG = rij.dataset.orgnaar; toonOrgVak(rij.dataset.orgnaar, true); return; }
+    if (e.target.closest('#org-terug')) toonOrgVak(null, true);
   });
+  volgMeldingen();
 
   // bewust begrensd tot de nieuwe navigatie-onderdelen, zodat deze handler nooit
   // een bestaande knop elders kan kapen (Codex fase 4)

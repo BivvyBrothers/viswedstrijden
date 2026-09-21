@@ -707,11 +707,19 @@ staat alles onder elkaar zoals in v103.
   ONGEWIJZIGD**: `toonOrgVak()` doet niets anders dan `hidden` zetten, dus alle
   formulieren, id's en handlers blijven staan. `renderOrgOverzicht()` vult de
   statkaartjes uit `ORG_DATA` en `ORG_SEIZOENEN`; `route()` roept `toonOrgVak(null)` aan
-  zodat je altijd op het overzicht binnenkomt.
+  zodat je altijd op het overzicht binnenkomt. Uit de Codex-review (bewaard als
+  `review/codex-fase5-uit.md`): "Als sjabloon" opent nu eerst het paneel Nieuwe wedstrijd
+  (anders vulde het een verborgen formulier), de rij Actieve wedstrijden vertelt hoeveel
+  er lopen en hoeveel er nog niet geloot zijn, de focus verhuist mee naar de kop van het
+  paneel en bij terug naar de rij, en `volgMeldingen()` (MutationObserver) opent het
+  paneel of blok zodra daar een `.fout` of `.ok` zichtbaar wordt. Bewust niet gedaan: de
+  `h2` uit de `summary` halen (geldige HTML; kopnavigatie kan per schermlezer verschillen,
+  dat testen we als er een gebruiker mee werkt).
 - **Beheer-tab binnen een wedstrijd**: Zones, Wedstrijdregels, Loting en Deelnemers zijn
   `<details class="card beheer-blok">` geworden. `zetBeheerBlokken()` klapt ze dicht als
-  de vlag aan staat en laat ze open als de vlag uit staat (dan is het beeld gelijk aan
-  v103). Bewust NIET uitklapbaar: de kaart met naam, codes en tijden, "Na de eindtijd
+  de vlag aan staat; staat de vlag uit, dan zet hij ze open EN houdt hij ze open (een
+  `toggle`-luisteraar zet `open` terug), en de CSS haalt de pijl en de klikcursor weg.
+  Zo is het beeld zonder vlag echt gelijk aan v103, niet alleen bij het laden. Bewust NIET uitklapbaar: de kaart met naam, codes en tijden, "Na de eindtijd
   binnengekomen" (`#b-wacht-card`, dat vraagt actie) en "Vangsten corrigeren" (dat is het
   werk van de wedstrijddag).
 

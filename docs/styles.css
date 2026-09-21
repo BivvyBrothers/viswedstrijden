@@ -709,6 +709,8 @@ body.meer-open { overflow: hidden; }
   min-height: 48px; margin: -4px 0;
 }
 .beheer-blok > summary::-webkit-details-marker { display: none; }
+body:not(.nav-tegels) .beheer-blok > summary { cursor: default; }
+body:not(.nav-tegels) .beheer-blok > summary::before { content: none; }
 .beheer-blok > summary::before {
   content: '\203a'; font-size: 22px; font-weight: 700; color: var(--olijf);
   transition: transform .15s ease; line-height: 1;
