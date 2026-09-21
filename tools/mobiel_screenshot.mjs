@@ -67,6 +67,11 @@ await cdp.stuur('Emulation.setDeviceMetricsOverride', {
 });
 await cdp.stuur('Emulation.setUserAgentOverride', { userAgent: UA });
 await cdp.stuur('Page.enable');
+// /app.js komt met max-age=600 van GitHub Pages, dus vlak na een release laat een
+// screenshot anders de VORIGE versie zien (gebeurde 21 sep bij v109). Voor een
+// controleopname willen we altijd wat er nu op de server staat.
+await cdp.stuur('Network.enable');
+await cdp.stuur('Network.setCacheDisabled', { cacheDisabled: true });
 await cdp.stuur('Page.navigate', { url });
 await slaap(Number(wacht) || 5000);   // de app pollt; even laten laden
 if (js) {

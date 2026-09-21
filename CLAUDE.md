@@ -1094,6 +1094,33 @@ dus de app moet ook echt tegenhouden dat er meer mensen meedoen dan afgesproken.
   `update wedstrijd.klant_instellingen set max_deelnemers = 10 where klant_id = ...`
   (79 euro = 10, 119 = 25, 159 = 50, seizoen = wat is afgesproken).
 
+## Beheerdersomgeving: pakket en gezondheid per klant (v109, 21 sep 2026)
+
+Route `#/beheerder` (geen knop in de UI), sessie verloopt na 15 minuten stil zitten.
+Nieuw in v109, in het blok "Toegang en blokkades":
+
+- **Pakket per klant** als keuzelijst met de staffel (geen limiet, 10, 25, 50) en een
+  opslaanknop -> `w_su_pakket(p_wachtwoord, p_klant, p_max)`. De server weigert een
+  pakket dat kleiner is dan de grootste wedstrijd die de klant al hield
+  (`pakket_kleiner_dan_bestaande_wedstrijd`), anders zou een bestaande wedstrijd
+  ineens te vol zijn. Eronder staat hoe groot die grootste wedstrijd was.
+- **Gezondheidsregel** (`suGezondheid`): groen als stekring én pakket in orde zijn,
+  oranje zolang er iets ontbreekt. Dit zijn precies de twee dingen die bij een nieuwe
+  klant stil fout gaan: een lege stekring (loting weigert, stekkeuze geeft
+  `onbekende_stek`) en een vergeten pakketlimiet (onbeperkt deelnemers).
+- `w_su_overzicht` geeft nu per klant `stekring` (aantal), `stats.grootste` (personen)
+  en per wedstrijd `deelnemers` naast `teams`. Bij koppels scheelt dat een factor twee
+  in wat je denkt te verkopen.
+
+**Testen zonder in te loggen:** het scherm is te vullen met nagebootste `SU_DATA` en
+een `renderSu()` via `tools/mobiel_screenshot.mjs` (zo zijn beide varianten bewezen).
+Het beheerderswachtwoord hoort daar niet voor nodig te zijn, en Claude typt het niet.
+
+**LES (21 sep):** `/app.js` komt met `cache-control: max-age=600` van GitHub Pages, dus
+vlak na een release toont een controleopname de VORIGE versie. `mobiel_screenshot.mjs`
+zet daarom `Network.setCacheDisabled`. Ziet een verificatie er onveranderd uit, kijk
+dan eerst naar `APP_VERSION` in de pagina voordat je de code gaat zoeken.
+
 ## Release-checklist (multi-tenant, sinds v36)
 
 Bij elke release controleren:
