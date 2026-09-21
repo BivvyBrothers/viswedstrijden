@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 109; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 110; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -29,6 +29,7 @@ const FOUTEN = {
   meldingen_gesloten: 'Deze wedstrijd is afgelopen; meldingen aanzetten kan niet meer.',
   seizoen_niet_gevonden: 'Seizoen niet gevonden.',
   beheerder_wachtwoord_onjuist: 'Beheerderswachtwoord onjuist.',
+  afspraak_te_lang: 'De afspraak mag maximaal 200 tekens zijn.',
   pakket_kleiner_dan_bestaande_wedstrijd: 'Deze klant heeft al een wedstrijd met meer deelnemers dan dit pakket. Kies een groter pakket.',
   beheerder_wachtwoord_te_kort: 'Beheerderswachtwoord moet minimaal 12 tekens zijn (spaties aan de randen tellen niet mee).',
   org_wachtwoord_te_kort: 'Organisatie-wachtwoord moet minimaal 6 tekens zijn (spaties aan de randen tellen niet mee).',
@@ -1374,16 +1375,27 @@ function suGezondheid(klant, ki) {
   } else {
     punten.push(`stekring: ${klant.stekring} stekken`);
   }
-  if (!ki.max_deelnemers) punten.push('geen pakketlimiet: deze klant kan onbeperkt deelnemers laten meedoen.');
+  // Een limiet die er niet is, is pas een probleem als er ook geen afspraak is
+  // vastgelegd. Zonder dat onderscheid staat deze regel permanent op oranje bij
+  // een pilot of de demo, en dan kijkt niemand er meer naar.
+  const pakketGeregeld = !!ki.max_deelnemers || !!ki.afspraak;
+  if (ki.max_deelnemers) punten.push(`pakket: ${ki.max_deelnemers} deelnemers`);
+  else if (ki.afspraak) punten.push('geen limiet, zo afgesproken');
+  else punten.push('<b>geen pakket en geen afspraak</b>: deze klant kan onbeperkt deelnemers laten meedoen.');
+  if (klant.stats && klant.stats.laatste) {
+    punten.push(`laatste wedstrijd: ${new Date(klant.stats.laatste).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })}`);
+  } else {
+    punten.push('nog geen wedstrijd gehouden');
+  }
   // .melding is oranje (let op), .melding.groen is de rustige variant
-  const inOrde = klant.stekring && ki.max_deelnemers;
+  const inOrde = klant.stekring && pakketGeregeld;
   return `<p class="melding${inOrde ? ' groen' : ''} klein" style="margin:0 0 10px">${punten.join(' \u00b7 ')}</p>`;
 }
 
 // instellingen van de klant die in de beheerder-tab geselecteerd staat
 function suKlantInstellingen() {
   const k = (SU_DATA?.klanten || []).find((x) => x.slug === SU_KLANT);
-  return (k && k.instellingen) || { alleen_lezen: false, heeft_standaard_zones: false, max_deelnemers: null };
+  return (k && k.instellingen) || { alleen_lezen: false, heeft_standaard_zones: false, max_deelnemers: null, afspraak: null };
 }
 
 function renderSu() {
@@ -1413,10 +1425,14 @@ function renderSu() {
         `<option value="${p.waarde === null ? '' : p.waarde}"${
           (ki.max_deelnemers || null) === p.waarde ? ' selected' : ''}>${esc(p.label)}</option>`).join('')}</select>
     </label>
+    <label class="su-kiezer">Afspraak met deze klant <span class="muted">(1 regel, ook zichtbaar bij "geen limiet")</span>
+      <input id="su-afspraak" type="text" maxlength="200" placeholder="bijv. pilot 2026, onbeperkt | of: seizoen tot 25, betaald 21-09-2026"
+        value="${esc(ki.afspraak || '')}">
+    </label>
     <p class="muted klein" style="margin:4px 0 10px">Grootste wedstrijd tot nu toe:
       <b>${(actieveKlant && actieveKlant.stats && actieveKlant.stats.grootste) || 0} deelnemers</b>.
       Een pakket lager dan dat getal weigert de server.</p>
-    <button id="su-pakket-opslaan" class="btn">Pakket opslaan voor ${esc(klantNaam)}</button>
+    <button id="su-pakket-opslaan" class="btn">Pakket en afspraak opslaan voor ${esc(klantNaam)}</button>
     <button id="su-alleen-lezen" class="btn${ki.alleen_lezen ? '' : ' gevaar'}">${ki.alleen_lezen
       ? `Zet alleen-lezen UIT voor ${esc(klantNaam)}` : `Zet alleen-lezen AAN voor ${esc(klantNaam)}`}</button>`;
   // servertijd + verstreken tijd sinds het ophalen, anders blijft een wedstrijd
@@ -1499,8 +1515,9 @@ function renderSu() {
         p_wachtwoord: sessie.suWw() || '',
         p_klant: SU_KLANT,
         p_max: keuze === '' ? null : parseInt(keuze, 10),
+        p_afspraak: ($('#su-afspraak')?.value || '').trim() || null,
       });
-      toast(keuze === '' ? 'Pakket: geen limiet meer.' : `Pakket gezet op ${keuze} deelnemers per wedstrijd.`);
+      toast(keuze === '' ? 'Opgeslagen: geen limiet, met je afspraak erbij.' : `Pakket gezet op ${keuze} deelnemers per wedstrijd.`);
       suActiviteit();
       laadSu();
     } catch (err) { toast(foutTekst(err)); }
