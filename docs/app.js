@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 110; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 111; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -1398,6 +1398,29 @@ function suKlantInstellingen() {
   return (k && k.instellingen) || { alleen_lezen: false, heeft_standaard_zones: false, max_deelnemers: null, afspraak: null };
 }
 
+// Per jaar: hoeveel wedstrijden en hoe groot. Dit is het gesprek "los of een
+// seizoen": drie losse wedstrijden van 25 man kosten meer dan een seizoen.
+function suJaren(klant) {
+  const jaren = (klant && klant.jaren) || [];
+  if (!jaren.length) return '';
+  const rijen = jaren.map((j) => `<tr>
+      <td>${j.jaar}</td>
+      <td class="r">${j.wedstrijden}</td>
+      <td class="r">${j.grootste}</td>
+      <td class="r">${j.deelnemers}</td>
+      <td class="r">${j.vangsten}</td>
+    </tr>`).join('');
+  return `<details class="su-jaren"><summary class="muted klein">Per jaar (${jaren.length})</summary>
+    <table class="su-jaartabel">
+      <thead><tr><th>jaar</th><th class="r">wedstrijden</th><th class="r">grootste veld</th>
+        <th class="r">deelnemers</th><th class="r">vangsten</th></tr></thead>
+      <tbody>${rijen}</tbody>
+    </table>
+    <p class="muted klein" style="margin:6px 0 0">"Grootste veld" bepaalt welk pakket nodig is;
+      het aantal wedstrijden per jaar bepaalt of los of een seizoen goedkoper is.</p>
+  </details>`;
+}
+
 function renderSu() {
   if (!SU_DATA) return;
   $('#su-login').hidden = true;
@@ -1467,7 +1490,10 @@ function renderSu() {
     ${klantKiezer}
     ${actieve ? `<p class="muted klein su-klant-info">/${esc(actieve.slug)} \u00b7
       ${actieve.stats.wedstrijden} wedstrijd${actieve.stats.wedstrijden === 1 ? '' : 'en'} \u00b7
-      ${actieve.stats.teams} teams \u00b7 ${actieve.stats.vangsten} vangsten</p>` : ''}
+      ${actieve.stats.deelnemers} deelnemers${
+        actieve.stats.deelnemers !== actieve.stats.teams ? ` (${actieve.stats.teams} teams)` : ''} \u00b7
+      ${actieve.stats.vangsten} vangsten</p>
+      ${suJaren(actieve)}` : ''}
     <div class="su-zoekrij">
       <input id="su-zoek" type="search" placeholder="zoek op naam of code" value="${esc(SU_ZOEK)}"
         autocomplete="off" enterkeyhint="search">

@@ -718,3 +718,10 @@ body:not(.nav-tegels) .beheer-blok > summary::before { content: none; }
 .beheer-blok[open] > summary::before { transform: rotate(90deg); }
 .beheer-blok > summary h2 { margin: 0; }
 .beheer-blok[open] > summary { margin-bottom: 10px; }
+
+/* jaaroverzicht per klant in de beheerdersomgeving */
+.su-jaren { margin: 0 0 10px; }
+.su-jaren summary { cursor: pointer; }
+.su-jaartabel { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: .9rem; }
+.su-jaartabel th, .su-jaartabel td { padding: 4px 6px; border-bottom: 1px solid var(--kaart-rand); text-align: left; }
+.su-jaartabel .r { text-align: right; }
