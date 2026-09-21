@@ -4,6 +4,15 @@ Praktische checklist voor de organisator, van voorbereiding tot prijsuitreiking.
 Alles werkt vanaf je telefoon; het organisatie-wachtwoord heb je uit je hoofd of
 in je wachtwoordmanager (staat nergens op papier of in de app).
 
+**Waar staat wat (sinds 21 sep 2026).** Binnen een wedstrijd staat onderaan een
+vaste balk: **Overzicht**, **Kaart**, **Vangsten** en **Meer**. Waar hieronder
+"Beheer" staat, ga je dus naar **Meer → Beheer**. Vier onderdelen staan daar in
+uitklapbare blokken (Zones, Wedstrijdregels, Loting, Deelnemers): tik op de kop
+om er een open te vouwen. De rest (tijden, vangsten corrigeren, afsluiten) staat
+er gewoon onder. De organisatie-omgeving zelf (wedstrijden
+aanmaken, seizoenen, instellingen) bereik je via **Meer → Naar het
+organisatie-overzicht**.
+
 ## De week ervoor
 
 1. **Wedstrijd aanmaken:** startpagina → Organisator → inloggen → Nieuwe wedstrijd.

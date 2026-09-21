@@ -676,7 +676,12 @@ Codex-review v88 (`review/codex-v88-uit.md`, 10 bevindingen) gaf migratie
 ## Tegelnavigatie: overzicht + balk onderaan (v101, 20 sep 2026, fase 4 van het ontwerp)
 
 **Per tenant aan te zetten met `const NAV_TEGELS = true` in `config.js`. Staat hij uit,
-dan is de app exact als v100.** Nu: demo aan, NPHV uit tot de testmatrix daar groen is.
+dan is de app exact als v100.** **Sinds v106 (21 sep 2026) staat de vlag bij BEIDE tenants
+aan**, na de testmatrix, Patricks toesteltest en een groene rooktest; nieuwe tenants
+krijgen hem meteen aan van `nieuwe_tenant.py`. De vlag blijft in de code als terugweg:
+op `false` zetten geeft de oude navigatie terug zonder verdere wijziging. Bij het omzetten
+van NPHV is de navigatie-uitleg in de drie instructiepagina's en in
+`draaiboek-wedstrijddag.md` meegegaan (Meer -> Beheer).
 
 - **`#tab-overzicht`** is een gewone `.tab` (dus dezelfde toon/verberg-logica) en is de
   thuisbasis binnen een wedstrijd: het ronde logo met "Loot. Vis. Win." op een
