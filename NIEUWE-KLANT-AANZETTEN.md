@@ -39,6 +39,25 @@ insert into wedstrijd.klant_instellingen (klant_id, organisator_wachtwoord)
   select id, '<eigen organisatiewachtwoord>' from wedstrijd.klanten where slug = 'oefen';
 ```
 
+## 3b. Pakketlimiet zetten (hoort bij de prijsafspraak)
+
+De prijs gaat per staffel, dus leg het afgesproken aantal deelnemers ook in de
+app vast. Zonder deze regel kan de klant onbeperkt mensen laten meedoen.
+
+```sql
+update wedstrijd.klant_instellingen set max_deelnemers = 10
+  where klant_id = (select id from wedstrijd.klanten where slug = 'oefen');
+```
+
+Kies: `10` bij 79 euro, `25` bij 119, `50` bij 159, bij een seizoen het aantal
+dat is afgesproken. Het telt **personen**: bij een koppelwedstrijd past de helft
+van dat aantal aan koppels. Laat je de kolom leeg, dan is er geen limiet (zo
+staan NPHV en de demo).
+
+De organisator ziet de grens in het formulier ("Jullie pakket: maximaal X
+deelnemers") en de server weigert meer: `boven_pakket` bij het aanmaken,
+`pakket_vol` bij het aanmelden.
+
 ## 4. Stekring vullen (deze wordt het vaakst vergeten)
 
 De stekring bepaalt de loting. Zonder ring geeft elke stekkeuze `onbekende_stek`, en
@@ -87,3 +106,4 @@ Commit en push `docs/` (GitHub Pages). Controleer daarna op de echte site:
 | Klant-rij (stap 3) | Organisator kan niet inloggen, wedstrijd aanmaken mislukt |
 | Rooktest (stap 5) | Je ontdekt bovenstaande pas op de wedstrijddag |
 | Kaartje /inloggen/ | Klant moet de diepe link bewaren, verliest hem |
+| Pakketlimiet (stap 3b) | Klant kan meer deelnemers laten meedoen dan betaald |

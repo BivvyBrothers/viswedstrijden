@@ -153,8 +153,9 @@
           <option value="koppel">Koppels (2 stekken naast elkaar)</option>
         </select>
       </label>
-      <label>Maximaal aantal deelnemers <span class="muted">(optioneel; bij koppels telt een koppel als 1)</span>
+      <label>Maximaal aantal deelnemers <span class="muted">(bij koppels telt een koppel als 1)</span>
         <input id="nw-max" type="number" inputmode="numeric" min="2" max="200" placeholder="onbeperkt">
+        <span id="nw-max-hint" class="muted klein" hidden></span>
       </label>
       <label>Wedstrijdregels <span class="muted">(optioneel; deelnemers zien dit na het inloggen)</span>
         <textarea id="nw-regels" rows="5" maxlength="3000" placeholder="bijv.&#10;- Maximaal 2 hengels per visser&#10;- Onthaakmat en schepnet verplicht&#10;- Alle vissoorten tellen mee&#10;- Vis direct terugzetten na weging en foto"></textarea>

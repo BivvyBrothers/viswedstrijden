@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 106; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 107; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -19,6 +19,8 @@ const FOUTEN = {
   naam_bestaat_al: 'Deze naam is al aangemeld. Ben jij dat en wil je verder onder deze naam? Gebruik dan je herstel-link, of vraag de organisator die voor je op te zoeken in Beheer.',
   wedstrijd_vol: 'De wedstrijd zit vol: het maximale aantal deelnemers is bereikt.',
   ongeldig_maximum: 'Het maximum moet tussen 2 en 200 liggen.',
+  boven_pakket: 'Dat aantal past niet in jullie pakket. Wil je meer deelnemers? Mail info@viswedstrijdapp.nl, dan zetten we het pakket om.',
+  pakket_vol: 'De wedstrijd zit vol: het aantal deelnemers uit jullie pakket is bereikt. De organisator kan het pakket laten verhogen via info@viswedstrijdapp.nl.',
   regels_te_lang: 'De wedstrijdregels zijn te lang (max. 3000 tekens).',
   pin_onjuist: 'Pincode onjuist.',
   pin_te_kort: 'Pincode moet minimaal 4 tekens zijn.',
@@ -1560,6 +1562,7 @@ function vulSjabloon(code) {
   $('#nw-mode').value = w.mode;
   $('#nw-max').value = w.max_teams || '';
   $('#nw-regels').value = w.regels || '';
+  zetPakketHint();      // een sjabloon van vóór een pakketwijziging kan te hoog staan
   $('#nw-start').value = naarLocalInput(nieuweStart.toISOString());
   $('#nw-eind').value = naarLocalInput(nieuwEind.toISOString());
 
@@ -1592,9 +1595,41 @@ function toonSjabloonHint() {
     ['#nw-naam', '#nw-max', '#nw-regels', '#nw-start', '#nw-eind'].forEach((s2) => { $(s2).value = ''; });
     $('#nw-mode').value = 'individueel';
     zetStandaardTijden();
+    zetPakketHint();
     toonSjabloonHint();
   };
 }
+
+// Pakketlimiet: hoeveel deelnemers mag deze klant per wedstrijd? Staat in
+// ORG_DATA.pakket_max (null = geen limiet). De server bewaakt het echt; dit
+// zet alleen het invoerveld goed, zodat niemand tevergeefs een te hoog getal
+// invult. Bij koppels telt een koppel voor twee personen.
+function zetPakketHint() {
+  const veld = $('#nw-max');
+  const hint = $('#nw-max-hint');
+  if (!veld || !hint) return;
+  const limiet = ORG_DATA && ORG_DATA.pakket_max;
+  if (!limiet) {                      // geen pakketlimiet: laat alles zoals het was
+    veld.max = 200;
+    veld.placeholder = 'onbeperkt';
+    hint.hidden = true;
+    return;
+  }
+  const koppel = ($('#nw-mode') || {}).value === 'koppel';
+  const maxTeams = koppel ? Math.max(Math.floor(limiet / 2), 1) : limiet;
+  veld.max = maxTeams;
+  veld.placeholder = String(maxTeams);
+  hint.hidden = false;
+  hint.textContent = koppel
+    ? `Jullie pakket: maximaal ${limiet} deelnemers per wedstrijd, dus ${maxTeams} koppels. Leeg laten mag: dan wordt het ${maxTeams}.`
+    : `Jullie pakket: maximaal ${limiet} deelnemers per wedstrijd. Leeg laten mag: dan wordt het ${limiet}.`;
+  if (veld.value && parseInt(veld.value, 10) > maxTeams) veld.value = maxTeams;
+}
+
+// individueel <-> koppel verandert hoeveel teams er in het pakket passen
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.id === 'nw-mode') zetPakketHint();
+});
 
 function renderOrg() {
   if (!ORG_DATA) return;
@@ -1614,6 +1649,7 @@ function renderOrg() {
     : '<p class="muted">Nog geen afgeronde wedstrijden.</p>';
 
   renderOrgOverzicht();
+  zetPakketHint();
 
   const orgPinVan = (code) => (ORG_DATA?.wedstrijden || []).find((w) => w.code === code)?.admin_pin || null;
   document.querySelectorAll('[data-org-open]').forEach((b) => {

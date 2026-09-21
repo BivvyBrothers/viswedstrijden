@@ -1056,6 +1056,35 @@ wedstrijd zonder seizoen, dus elke gebruiker had rode fouten in de console. Migr
 seizoen", dus oude PWA-clients merken niets. De migratie vervangt alleen die twee regels
 in die ene functie (de definitie wordt live opgehaald en teruggeschreven, met asserts).
 
+## Pakketlimiet: deelnemers per klant (21 sep 2026, v107)
+
+De prijs gaat per wedstrijd en per staffel (tot 10, tot 25, tot 50 deelnemers),
+dus de app moet ook echt tegenhouden dat er meer mensen meedoen dan afgesproken.
+
+- **`wedstrijd.klant_instellingen.max_deelnemers`** (int, null = geen limiet).
+  Het telt **PERSONEN, geen teams**: bij koppelmode zitten er twee personen in
+  een teamrij (naam + naam2), bij een duo staan het twee rijen. Helpers:
+  `wedstrijd.pakket_limiet(klant)`, `wedstrijd.personen_in_wedstrijd(wedstrijd)`
+  en `wedstrijd.teams_binnen_pakket(klant, mode)` (koppel = limiet/2).
+- **Drie plekken bewaken het**, migraties `wedstrijd_pakketlimiet_deelnemers`,
+  `wedstrijd_pakketlimiet_rpcs` en `wedstrijd_org_overzicht_pakket`:
+  1. `w_maak_wedstrijd`: een maximum boven het pakket geeft `boven_pakket`; geen
+     maximum invullen betekent voortaan "het maximum van het pakket".
+  2. `w_admin_wedstrijd`: idem bij achteraf ophogen; "maximum wissen" valt terug
+     op het pakketmaximum in plaats van op onbeperkt.
+  3. `w_join`: **het echte slot.** Hoe `max_teams` ook in de database staat, er
+     kunnen nooit meer personen meedoen dan het pakket toelaat (`pakket_vol`).
+     Bewezen in een testtransactie: met `max_teams` handmatig op 50 gezet werd de
+     vijfde deelnemer bij een pakket van 4 alsnog geweigerd.
+- `w_org_wedstrijden` geeft `pakket_max` mee plus per wedstrijd `deelnemers`
+  (personen). De client zet daarmee het invoerveld goed (`zetPakketHint()`),
+  bij het wisselen individueel/koppel en na "Als sjabloon". Dat is comfort, geen
+  beveiliging: de server beslist.
+- **Bestaande klanten staan bewust op null** (geen limiet), dus voor NPHV en de
+  demo verandert er niets. Bij een nieuwe klant hoort de limiet bij de afspraak:
+  `update wedstrijd.klant_instellingen set max_deelnemers = 10 where klant_id = ...`
+  (79 euro = 10, 119 = 25, 159 = 50, seizoen = wat is afgesproken).
+
 ## Release-checklist (multi-tenant, sinds v36)
 
 Bij elke release controleren:
