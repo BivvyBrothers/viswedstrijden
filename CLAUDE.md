@@ -1133,6 +1133,26 @@ vlak na een release toont een controleopname de VORIGE versie. `mobiel_screensho
 zet daarom `Network.setCacheDisabled`. Ziet een verificatie er onveranderd uit, kijk
 dan eerst naar `APP_VERSION` in de pagina voordat je de code gaat zoeken.
 
+## Uitlegfilm op de startpagina (17 okt 2026)
+
+Blok `#film` direct onder de hero van `docs/index.html` (de knop "Zo werkt het" in
+de hero wijst ernaar). Bestanden in `docs/film/`: `uitlegfilm-1920x1080.mp4` (H.264,
+50 s, 3,1 MB) en `uitlegfilm-poster.jpg` (eindbeeld, 1600x900). Gemaakt door Patrick met
+het ontwerpgereedschap in Claude; prompt en bronbeelden in `ontwerp/film-werking/`.
+
+`docs/film.js` (defer, apart bestand want de CSP staat geen inline script toe):
+- `preload="none"`: de film laadt pas als hij voor 40% in beeld is, en pauzeert weer
+  zodra hij eruit gaat. Geen 3 MB voor wie nooit zo ver scrolt.
+- Altijd zonder geluid starten (browsers blokkeren automatisch geluid). De knop
+  "Geluid aan" verschijnt ALLEEN als het bestand een geluidsspoor heeft
+  (`webkitAudioDecodedByteCount`/`audioTracks`), dus een nieuwe mp4 met muziek is
+  genoeg om hem te laten verschijnen; geen codewijziging nodig.
+- Afspelen/Pauzeer-knop: bewegend beeld langer dan 5 seconden moet te pauzeren zijn.
+- `prefers-reduced-motion`: geen automatisch afspelen, alleen de poster.
+
+Open: de staande versie (1080x1920) voor telefoons; op 390 px is de tekst in de
+liggende film klein.
+
 ## Release-checklist (multi-tenant, sinds v36)
 
 Bij elke release controleren:

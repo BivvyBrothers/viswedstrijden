@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="landing.css">
 <link rel="icon" href="icon-192.png">
 <script src="landing.js"></script>
+<script src="film.js" defer></script>
 </head>
 <body>
 
@@ -53,7 +54,7 @@
           viswater of vriendengroep.</p>
           <div class="knoppen">
             <a class="knop primair" href="demo/#/k/KIJKJE">Bekijk de demo &rarr;</a>
-            <a class="knop licht" href="#zo-werkt-het">Zo werkt het</a>
+            <a class="knop licht" href="#film">Zo werkt het</a>
           </div>
           <p class="fijn">Deelnemen met een code en je naam. Geen account, geen App Store.</p>
         </div>
@@ -69,6 +70,28 @@
         <span><b>Vanaf &euro; 79 per wedstrijd</b> of &euro; 199 per jaar, onbeperkt</span>
         <span class="vw">Eigen omgeving, kaart en inrichting inbegrepen</span>
       </div>
+    </div>
+  </section>
+
+  <!-- 01b de film -->
+  <section class="vlak groen film-blok" id="film">
+    <div class="breed">
+      <span class="eyebrow">In 50 seconden</span>
+      <h2>Zo werkt <span class="accent">de app</span></h2>
+      <div class="film-kader">
+        <video id="uitlegfilm" muted loop playsinline preload="none"
+          poster="film/uitlegfilm-poster.jpg" width="1920" height="1080"
+          aria-label="Uitlegfilm over de viswedstrijdapp" aria-describedby="film-uitleg">
+          <source src="film/uitlegfilm-1920x1080.mp4" type="video/mp4">
+        </video>
+        <div class="film-knoppen">
+          <button type="button" class="film-knop" id="film-speel" aria-pressed="false">Afspelen</button>
+          <button type="button" class="film-knop" id="film-geluid" aria-pressed="false" hidden>Geluid aan</button>
+        </div>
+      </div>
+      <p class="film-uitleg klein" id="film-uitleg">Een wedstrijd aanmaken, meedoen met een code,
+      loten en je stek kiezen, een vangst doorgeven en het live klassement, ook voor wie
+      thuis meekijkt.</p>
     </div>
   </section>
 
