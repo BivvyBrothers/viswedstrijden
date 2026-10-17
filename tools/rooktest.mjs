@@ -20,7 +20,8 @@
 //   2. node tools/rooktest.mjs --orgww "<wachtwoord van de demo-organisatie>" \
 //        [--basis https://viswedstrijdapp.nl/demo]
 // Uitvoer: regels op de terminal en een verslag in review/rooktest-<datum>.md
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const PORT = process.env.CDP_PORT || 9333;
@@ -32,6 +33,14 @@ const arg = (naam, standaard = null) => {
 const ORGWW = arg('--orgww') || process.env.VWA_ORGWW;
 const BASIS = (arg('--basis', 'https://viswedstrijdapp.nl/demo')).replace(/\/$/, '');
 const FOTO = arg('--foto', fileURLToPath(new URL('../docs/schermen/vangst-klein.jpg', import.meta.url)));
+// Schermopnamen onderweg (voor de site, de film of een handleiding). Met --schermen
+// schrijft de test op elk sleutelmoment een PNG weg, en met --naam, --visser en
+// --gewicht krijgt de wegwerpwedstrijd presentabele gegevens in plaats van "ROOKTEST".
+const SCHERMEN = arg('--schermen');
+const WEDSTRIJDNAAM = arg('--naam');
+const VISSER = arg('--visser', 'Rooktester');
+const GEWICHT = arg('--gewicht', '4,20');
+const GRAM = Math.round(parseFloat(GEWICHT.replace(',', '.')) * 1000);
 if (!ORGWW) { console.error('geef --orgww mee (of zet VWA_ORGWW)'); process.exit(1); }
 
 const W = 390, H = 844;
@@ -74,6 +83,27 @@ async function js(expressie, wacht = 0) {
   });
   if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || 'js-fout');
   return r.result?.value;
+}
+async function opname(naam, wacht = 700) {
+  if (!SCHERMEN) return;
+  await slaap(wacht);
+  mkdirSync(SCHERMEN, { recursive: true });
+  // Terwijl de app een grote foto verkleint kan de opname even geen beeld geven.
+  // Een paar keer opnieuw proberen; lukt het niet, dan melden en doorgaan: een
+  // opname mag de test nooit laten falen.
+  for (let poging = 0; poging < 5; poging++) {
+    // met tijdslimiet: een opname die nooit antwoordt mag de test niet laten hangen
+    const r = await Promise.race([
+      cdp.stuur('Page.captureScreenshot', { format: 'png' }),
+      slaap(8000).then(() => null),
+    ]);
+    if (r && r.data) {
+      writeFileSync(join(SCHERMEN, `${naam}.png`), Buffer.from(r.data, 'base64'));
+      return;
+    }
+    await slaap(1500);
+  }
+  console.log(`  (opname ${naam} overgeslagen: geen beeld)`);
 }
 async function stap(naam, fn) {
   try {
@@ -136,7 +166,7 @@ async function main() {
   });
 
   console.log(`Rooktest op ${BASIS}`);
-  const naam = 'ROOKTEST ' + new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const naam = WEDSTRIJDNAAM || 'ROOKTEST ' + new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
   await stap('app laadt en toont het startscherm', async () => {
     await naar(`${BASIS}/`);
@@ -165,6 +195,7 @@ async function main() {
     await js(`document.querySelector('#org-ww').value = ${JSON.stringify(ORGWW)};
               document.querySelector('#form-orglogin').requestSubmit(); return 1;`);
     await wachtTot(`!document.querySelector('#view-org').hidden`, 20);
+    await opname('01-organisatie', 1500);
     return 'organisatieomgeving open';
   });
 
@@ -175,9 +206,12 @@ async function main() {
     await js(`document.querySelector('#nw-naam').value = ${JSON.stringify(naam)};
               document.querySelector('#nw-start').value = ${JSON.stringify(start)};
               document.querySelector('#nw-eind').value = ${JSON.stringify(eind)};
-              document.querySelector('#nw-max').value = '';
-              document.querySelector('#form-nieuw').requestSubmit(); return 1;`);
+              document.querySelector('#nw-max').value = ''; return 1;`);
+    await js(`document.querySelector('#nw-naam').scrollIntoView({ block: 'start' }); return 1;`);
+    await opname('02-nieuwe-wedstrijd');
+    await js(`document.querySelector('#form-nieuw').requestSubmit(); return 1;`);
     await wachtTot(`!document.querySelector('#deel-nieuw').hidden`, 25);
+    await opname('03-codes-delen', 1000);
     const codes = await js(`return { code: document.querySelector('#dn-code').textContent.trim(),
                                      kijk: (document.querySelector('#dn-kijk') || {}).textContent }`);
     CODE = codes.code;
@@ -195,9 +229,11 @@ async function main() {
     await js(`sessionStorage.clear(); localStorage.clear(); return 1;`);
     await naar(`${BASIS}/#/w/${CODE}`);
     await wachtTot(`typeof ROL !== 'undefined' && ROL === 'deelnemer' && document.querySelector('#join-naam')`, 25);
-    await js(`document.querySelector('#join-naam').value = 'Rooktester';
-              document.querySelector('#form-join').requestSubmit(); return 1;`);
+    await js(`document.querySelector('#join-naam').value = ${JSON.stringify(VISSER)}; return 1;`);
+    await opname('04-meedoen-naam');
+    await js(`document.querySelector('#form-join').requestSubmit(); return 1;`);
     await wachtTot(`document.querySelector('#team-code') && document.querySelector('#team-code').textContent.trim().length >= 4`, 25);
+    await opname('05-persoonlijke-code', 1200);
     return 'persoonlijke code zichtbaar';
   });
 
@@ -219,10 +255,12 @@ async function main() {
     if (!node.nodeId) throw new Error('fotoveld niet gevonden');
     await cdp.stuur('DOM.setFileInputFiles', { nodeId: node.nodeId, files: [FOTO] });
     await js(`document.querySelector('#v-foto').dispatchEvent(new Event('change', { bubbles: true }));
-              document.querySelector('#v-gewicht').value = '4,20'; return 1;`, 500);
+              document.querySelector('#v-gewicht').value = ${JSON.stringify(GEWICHT)}; return 1;`, 500);
+    await js(`document.querySelector('#form-vangst').scrollIntoView({ block: 'center' }); return 1;`);
+    await opname('06-vangst-invullen', 1500);
     await js(`document.querySelector('#form-vangst').requestSubmit(); return 1;`);
     try {
-      await wachtTot(`(STATE && STATE.vangsten || []).some(v => v.gewicht_gram === 4200)`, 60);
+      await wachtTot(`(STATE && STATE.vangsten || []).some(v => v.gewicht_gram === ${GRAM})`, 60);
     } catch (e) {
       const diag = await js(`return {
         fout: (document.querySelector('#v-fout')||{}).textContent || '',
@@ -232,12 +270,14 @@ async function main() {
         gewicht: document.querySelector('#v-gewicht').value };`);
       throw new Error(e.message + ' | ' + JSON.stringify(diag));
     }
-    return '4,20 kg staat in de state';
+    await opname('07-vangst-binnen', 1200);
+    return `${GEWICHT} kg staat in de state`;
   });
 
   await stap('klassement toont de vangst', async () => {
     await js(`activateTab('klassement'); return 1;`, 800);
-    await wachtTot(`/4,20/.test(document.querySelector('#klassement-inhoud').textContent)`, 20);
+    await wachtTot(`document.querySelector('#klassement-inhoud').textContent.includes(${JSON.stringify(GEWICHT)})`, 20);
+    await opname('08-klassement');
     return 'zichtbaar in het klassement';
   });
 
@@ -309,10 +349,13 @@ async function main() {
       await new Promise(r => setTimeout(r, 400));
       const knop = document.querySelector('#btn-kies');
       if (!knop || knop.disabled) return { fout: 'bevestigknop blijft uit: ' + (knop ? knop.textContent : 'knop ontbreekt') };
-      knop.click();
       return { ok: true };`);
     if (uit.fout) throw new Error(uit.fout);
+    await js(`document.querySelector('#kaart-melding').scrollIntoView({ block: 'center' }); return 1;`);
+    await opname('09-stek-kiezen');
+    await js(`document.querySelector('#btn-kies').click(); return 1;`);
     await wachtTot(`(STATE.teams || []).some(t => (t.stekken || []).length)`, 25);
+    await opname('10-stek-gekozen', 1200);
     const mijn = await js(`return (STATE.teams || []).flatMap(t => t.stekken || [])`);
     return `${stekken.length} stekken op de kaart, lot ${loten.join(',')}, gekozen: ${mijn.join(' + ')}`;
   });
