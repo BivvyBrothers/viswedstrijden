@@ -322,6 +322,7 @@ details p:last-child { margin-bottom: 0; }
 .film-knop:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .film-knop[hidden] { display: none; }
 .film-uitleg { margin-top: 14px; max-width: 760px; }
+.film-kader.staand { aspect-ratio: 9 / 16; max-width: min(100%, calc(76vh * 9 / 16)); margin-left: auto; margin-right: auto; }
 @media (max-width: 560px) {
   .film-kader { border-radius: 12px; }
   .film-knoppen { right: 8px; bottom: 8px; }

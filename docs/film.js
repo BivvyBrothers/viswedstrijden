@@ -12,6 +12,17 @@
   const speel = document.getElementById('film-speel');
   const geluid = document.getElementById('film-geluid');
   const rustig = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Op een smal scherm de staande versie: daar is de tekst in de liggende film te
+  // klein. Dit gebeurt vóór het eerste laden (preload="none"), dus geen dubbele download.
+  if (window.matchMedia && window.matchMedia('(max-width: 600px)').matches) {
+    const bron = v.querySelector('source');
+    bron.src = 'film/uitlegfilm-1080x1920.mp4';
+    v.poster = 'film/uitlegfilm-poster-staand.jpg';
+    v.setAttribute('width', '1080'); v.setAttribute('height', '1920');
+    v.closest('.film-kader').classList.add('staand');
+    v.load();
+  }
   let zelfGepauzeerd = false;
 
   const toonStand = () => {

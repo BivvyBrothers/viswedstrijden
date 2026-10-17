@@ -1150,8 +1150,15 @@ het ontwerpgereedschap in Claude; prompt en bronbeelden in `ontwerp/film-werking
 - Afspelen/Pauzeer-knop: bewegend beeld langer dan 5 seconden moet te pauzeren zijn.
 - `prefers-reduced-motion`: geen automatisch afspelen, alleen de poster.
 
-Open: de staande versie (1080x1920) voor telefoons; op 390 px is de tekst in de
-liggende film klein.
+**Staande versie op telefoons:** `film.js` kiest bij `max-width: 600px` vóór het eerste
+laden `uitlegfilm-1080x1920.mp4` en `uitlegfilm-poster-staand.jpg` en zet `.staand` op
+het kader (9:16, maximaal 76vh hoog). Op 390 px was de tekst in de liggende film te klein.
+
+**Muziek (17 okt):** zelf gecomponeerd en dus vrij van rechten, 50 s, 96 bpm, D groot
+(D-A-Bm-G), opbouw volgt de scènes; bron en script in `ontwerp/film-werking/muziek/`
+(`maak_muziek.py`, `voeg_samen.swift` voegt het AAC-geluid toe zonder het beeld
+opnieuw te coderen). Beide mp4's op de site hebben nu een geluidsspoor, dus de knop
+"Geluid aan" verschijnt vanzelf. De film start nog steeds zonder geluid.
 
 ## Release-checklist (multi-tenant, sinds v36)
 
