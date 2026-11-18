@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 113; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 114; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -1435,6 +1435,7 @@ function suKlantNaam() {
 const PAKKETTEN = [
   { waarde: null, label: 'geen limiet' },
   { waarde: 10, label: 'tot 10 deelnemers (\u20ac 79 per wedstrijd)' },
+  { waarde: 15, label: 'tot 15 deelnemers (startactie, \u20ac 30 eenmalig)' },
   { waarde: 25, label: 'tot 25 deelnemers (\u20ac 119 per wedstrijd)' },
   { waarde: 50, label: 'tot 50 deelnemers (\u20ac 159 per wedstrijd)' },
 ];
@@ -2453,7 +2454,8 @@ function tekenVoet(ctx, B, H, VOET, rechts = 'loting \u00b7 stekkeuze \u00b7 liv
     ctx.restore();
     x += m + 22;
   }
-  ctx.fillStyle = '#f0a04b'; ctx.font = '800 30px "Courier New", monospace';
+  // ook het adres in Montserrat: het was de enige typemachineletter in het beeld
+  ctx.fillStyle = '#f0a04b'; ctx.font = `800 30px ${CANVAS_FONT}`;
   ctx.fillText('viswedstrijdapp.nl', x, H - VOET / 2 + 11);
   ctx.fillStyle = '#9ba183'; ctx.font = `400 22px ${CANVAS_FONT}`;
   ctx.textAlign = 'right';

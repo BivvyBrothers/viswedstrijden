@@ -1260,6 +1260,41 @@ en bleef de bevestigknop terecht uit. De test was op NPHV dus nooit groen te kri
 server controleert per klant, dus geen lek, maar wie het demo-wachtwoord krijgt kan bij
 NPHV organiseren). Wijzigen kan in de beheerdersomgeving.
 
+## Startactie en visuele ronde (v114, 18 nov 2026)
+
+**STARTACTIE (besluit Patrick 18 nov, omdat de app nog niet hard loopt):** eenmalig de
+eerste wedstrijd voor **€ 30, maximaal 15 deelnemers**, alles inbegrepen. Geen einddatum
+afgesproken. Op de site op drie plekken, alle drie gemarkeerd met "STARTACTIE":
+1. de rode balk `.actiebalk` direct onder de topbar (met een eigen mailknop, onderwerp
+   "Startactie viswedstrijdapp"),
+2. de rode regel `.staffel li.actie` bovenaan de staffel in het prijsblok,
+3. één alinea in de vraag "Wat kost een eigen omgeving?".
+Rood is `--actie-rood #b3261e` (wit erop 6,5:1) en hoort ALLEEN bij een tijdelijke actie,
+het is geen huisstijlkleur. **Loopt de actie af: die drie plekken en het CSS-blok
+"STARTACTIE" weghalen.** In de beheerdersomgeving staat het pakket "tot 15 deelnemers
+(startactie)" in de keuzelijst; zet bij een actieklant `max_deelnemers = 15` en schrijf
+in het afspraakveld dat het de startactie was (de vervolgwedstrijd gaat tegen de gewone
+staffel). Niet aangepast: prijzenblad, advertenties, kemblinck.nl en de JSON-LD (die
+noemen de vaste prijzen).
+
+**Visuele ronde (acht punten, op verzoek van Patrick):**
+- `kaart3d-stekken`: de plaat staat nu vrij op donkergroen (witte happen en de afgekapte
+  legenda weg; achtergrond bepaald met samenhangende vlakken vanaf de rand).
+- **Nieuwe opnamen, allemaal een LOPENDE wedstrijd** in plaats van "AFGELOPEN":
+  `scherm-overzicht` (demo, klok loopt) en `scherm-kaart-nphv` (Carpclassic halverwege,
+  kaart groot in beeld). De toestand is in de browser geënsceneerd, niet in de database:
+  `clearInterval(POLL)`, daarna `TIJD_OFFSET` zo zetten dat `nu()` binnen de wedstrijd
+  valt (en voor de demo ook `start_ts`/`eind_ts`), dan `renderAlles(true)`. Bij de
+  NPHV-opname `#topcode` leeggemaakt en `#loting-card` verborgen (namen).
+- `uitsnede-seizoen` opnieuw: stond nog in de oude letter.
+- Blok "Alles vanaf één scherm" met drie punten ernaast; kaart "Delen" met een groter
+  beeld; staffel zonder inspringing; drie cijfers naast elkaar op de telefoon.
+- **Grote afspeelknop** `#film-groot` midden op de film zolang hij stilstaat (`film.js`).
+- **Adres in de voet van alle deelbeelden in Montserrat** (was Courier New): `tekenVoet`
+  in app.js, `tools/gen_vangstbeeld_site.py`, `marketing/gen_social.py` en
+  `sjablonen/vangstposts/gen_vangstposts.py`. De drie Carpclassic-generators onder
+  `klanten/NPHV/social/` zijn geschiedenis en bewust niet aangepast.
+
 ## Release-checklist (multi-tenant, sinds v36)
 
 Bij elke release controleren:

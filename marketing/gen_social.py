@@ -14,7 +14,7 @@ body { font-family:'Montserrat','Avenir Next','Segoe UI',Roboto,Helvetica,Arial,
 .badge { width:170px; height:170px; display:block; }
 .oranje { color:#f0a04b; }
 .voet { position:absolute; left:90px; right:90px; bottom:74px; display:flex; align-items:baseline; justify-content:space-between; }
-.voet .adres { font-family:'Courier New',monospace; font-weight:800; font-size:34px; color:#f0a04b; letter-spacing:.5px; }
+.voet .adres { font-weight:800; font-size:34px; color:#f0a04b; letter-spacing:-.3px; }
 .voet .kem { font-size:24px; }
 """
 def html(body, klass, extra=""):

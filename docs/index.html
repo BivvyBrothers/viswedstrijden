@@ -48,6 +48,16 @@
 
 <main id="inhoud">
 
+  <!-- STARTACTIE (18 nov 2026): eenmalig, eerste wedstrijd voor 30 euro tot 15 deelnemers.
+       Loopt de actie af: dit blok, de regel .staffel .actie en de zin in de vragen weghalen. -->
+  <aside class="actiebalk" aria-label="Startactie">
+    <div class="breed">
+      <span class="actie-label">Startactie</span>
+      <span class="actie-tekst"><b>Jullie eerste wedstrijd voor &euro; 30</b> <span>Eenmalig, tot 15 deelnemers, alles inbegrepen.</span></span>
+      <a class="actie-knop" href="mailto:info@viswedstrijdapp.nl?subject=Startactie%20viswedstrijdapp&amp;body=Hallo%2C%0A%0AWij%20doen%20graag%20mee%20met%20de%20startactie%3A%20onze%20eerste%20wedstrijd%20voor%20%E2%82%AC%2030%20%28tot%2015%20deelnemers%29.%0A%0AOrganisatie%3A%0ANaam%20van%20het%20water%3A%0ADatum%20van%20de%20wedstrijd%3A%0ADuur%20%28van%20hoe%20laat%20tot%20hoe%20laat%29%3A%0AVerwacht%20aantal%20deelnemers%3A%0A%0AGroeten%2C%0A">Doe mee &rarr;</a>
+    </div>
+  </aside>
+
   <!-- 01 introductie -->
   <section class="hero" id="top">
     <div class="hero-foto">
@@ -94,6 +104,9 @@
           aria-label="Uitlegfilm over de viswedstrijdapp" aria-describedby="film-uitleg">
           <source src="film/uitlegfilm-1920x1080.mp4" type="video/mp4">
         </video>
+        <button type="button" class="film-groot" id="film-groot" aria-label="Film afspelen" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" fill="currentColor"/></svg>
+        </button>
         <div class="film-knoppen" hidden>
           <button type="button" class="film-knop" id="film-speel" aria-pressed="false">Afspelen</button>
           <button type="button" class="film-knop" id="film-geluid" aria-pressed="false" hidden>Geluid aan</button>
@@ -151,17 +164,29 @@
         </div>
       </div>
 
-      <div class="beeldduo mockup-duo" style="margin-top:clamp(26px,4vw,44px)">
+      <div class="beeldduo scherm-duo" style="margin-top:clamp(26px,4vw,44px)">
         <div>
-          <h3>Alles vanaf <span class="accent">één scherm</span></h3>
-          <p class="klein">Wie de app opent ziet meteen waar het om gaat: het viswater met
-          de stekken, de loting, het klassement en de vangsten. Onderin staat een vaste
-          balk, zodat je met één tik naar de kaart of de vangsten gaat, ook met natte
-          handen. De knop om een vangst door te geven zweeft daarboven, op elk scherm.</p>
+          <h3 class="groot">Alles vanaf <span class="accent">één scherm</span></h3>
+          <p>Wie de app opent ziet meteen waar het om gaat. Onderin staat een vaste balk,
+          zodat je met één tik naar de kaart of de vangsten gaat, ook met natte handen.</p>
+          <ul class="punten">
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3z"></path><path d="M9 3v15M15 6v15"></path></svg>
+              <div><b>Viswater en loting</b><span>De kaart met alle stekken, wie waar zit en jouw eigen plek.</span></div>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg>
+              <div><b>Klassement en vangsten</b><span>De stand van nu en elke gevangen vis met foto.</span></div>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v8M8 12h8"></path></svg>
+              <div><b>Vangst doorgeven</b><span>De oranje knop zweeft op elk scherm, je hoeft nooit te zoeken.</span></div>
+            </li>
+          </ul>
         </div>
         <div class="beeld">
-          <div class="telefoon-frame" style="max-width:280px;margin:0 auto">
-            <img src="schermen/scherm-overzicht.webp" alt="Het startscherm van een wedstrijd in de app: vier tegels voor viswater, loting, klassement en vangsten, met onderin een vaste navigatiebalk" width="780" height="1688" loading="lazy">
+          <div class="telefoon-frame" style="max-width:290px;margin:0 auto">
+            <img src="schermen/scherm-overzicht.webp" alt="Het startscherm van een lopende wedstrijd in de app: de klok tot het einde, vier tegels voor viswater, loting, klassement en vangsten, en onderin een vaste navigatiebalk" width="780" height="1688" loading="lazy">
           </div>
         </div>
       </div>
@@ -200,7 +225,7 @@
         </div>
       </div>
       <figure style="margin:clamp(26px,4vw,44px) 0 0">
-        <img src="schermen/kaart3d-stekken.webp" alt="De 3D-dieptescan van de Plas van der Ende met de stekken en zones uit de app eroverheen" width="1540" height="799" loading="lazy" style="border-radius:16px">
+        <img src="schermen/kaart3d-stekken.webp" alt="De 3D-dieptescan van de Plas van der Ende met de stekken en zones uit de app eroverheen" width="1465" height="782" loading="lazy" style="border-radius:16px">
         <figcaption class="klein" style="margin-top:10px">Waar het mee begint: de dieptescan
         van jullie water, hier in 3D met de stekken en zones uit de app eroverheen. Zo'n scan,
         een oude papieren kaart of een tekening; wij maken er de interactieve kaart van.</figcaption>
@@ -267,7 +292,7 @@
           één tik als afbeelding op WhatsApp, Instagram of Facebook, met foto, gewicht en
           wedstrijdnaam erop. En na het aanmaken van een wedstrijd staat de uitnodiging met
           code en link klaar voor de groepsapp.</p>
-          <img src="schermen/uitslag-gedeeld.webp" alt="De einduitslag als deelbare afbeelding: top tien met gewicht en aantal vissen, en de grootste vis eronder" width="1080" height="1214" loading="lazy" style="max-width:320px;margin-left:auto;margin-right:auto">
+          <img src="schermen/uitslag-gedeeld.webp" alt="De einduitslag als deelbare afbeelding: top tien met gewicht en aantal vissen, en de grootste vis eronder" width="1080" height="1214" loading="lazy" class="deelbeeld">
         </div>
       </div>
     </div>
@@ -333,6 +358,7 @@
         <div>
           <div class="bedrag">Vanaf &euro; 79 per wedstrijd <small>alles inbegrepen</small></div>
           <ul class="staffel">
+            <li class="actie"><span><em>Startactie</em> eerste wedstrijd, tot 15 deelnemers</span><b>&euro; 30</b></li>
             <li><span>tot 10 deelnemers</span><b>&euro; 79</b></li>
             <li><span>11 tot 25 deelnemers</span><b>&euro; 119</b></li>
             <li><span>26 tot 50 deelnemers</span><b>&euro; 159</b></li>
@@ -388,6 +414,8 @@
           &euro; 79, van 11 tot 25 deelnemers &euro; 119 en van 26 tot 50 deelnemers
           &euro; 159. Grotere wedstrijden doen we in overleg. Omgerekend is dat ongeveer
           &euro; 3 tot &euro; 8 per deelnemer, en het loopt nooit verder op.</p>
+          <p><b>Startactie:</b> jullie eerste wedstrijd kost eenmalig &euro; 30, voor
+          maximaal 15 deelnemers en met alles erbij wat hierboven staat.</p>
           <p>Vissen jullie vaker, dan is een seizoen voordeliger: onbeperkt wedstrijden
           vanaf &euro; 199 per jaar (tot 25 deelnemers), &euro; 299 tot 60 deelnemers en
           &euro; 449 onbeperkt. Stap je binnen een maand na een losse wedstrijd over, dan

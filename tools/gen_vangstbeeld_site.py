@@ -32,7 +32,7 @@ body {{ font-family: 'Montserrat','Avenir Next','Segoe UI',Roboto,Helvetica,Aria
 .voet {{ position:absolute; left:70px; right:70px; bottom:58px; display:flex; align-items:center; justify-content:space-between; }}
 .voet .l {{ display:flex; align-items:center; gap:18px; }}
 .voet img {{ width:76px; height:76px; }}
-.voet .adres {{ font-family:'Courier New',monospace; font-weight:700; font-size:32px; color:#f0a04b; }}
+.voet .adres {{ font-weight:800; font-size:32px; color:#f0a04b; letter-spacing:-.3px; }}
 .voet .kem {{ font-size:22px; color:#9ba183; }}
 </style></head><body>
 <div class='foto'><img src='data:image/jpeg;base64,{foto}'></div>

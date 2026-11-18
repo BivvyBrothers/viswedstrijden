@@ -32,10 +32,12 @@
   speel.parentElement.hidden = false;
   let zelfGepauzeerd = false;
 
+  const groot = document.getElementById('film-groot');   // grote knop midden op het beeld
   const toonStand = () => {
     const loopt = !v.paused;
     speel.textContent = loopt ? 'Pauzeer' : 'Afspelen';
     speel.setAttribute('aria-pressed', String(loopt));
+    if (groot) groot.hidden = loopt;   // alleen zichtbaar zolang de film stilstaat
   };
   const heeftGeluid = () => Boolean(
     v.mozHasAudio || (v.webkitAudioDecodedByteCount > 0) || (v.audioTracks && v.audioTracks.length));
@@ -50,6 +52,7 @@
   speel.addEventListener('click', () => {
     if (v.paused) { zelfGepauzeerd = false; start(); } else { zelfGepauzeerd = true; v.pause(); }
   });
+  if (groot) groot.addEventListener('click', () => { zelfGepauzeerd = false; start(); });
   geluid.addEventListener('click', () => {
     v.muted = !v.muted;
     geluid.textContent = v.muted ? 'Geluid aan' : 'Geluid uit';
