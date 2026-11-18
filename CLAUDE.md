@@ -1185,10 +1185,17 @@ bevinding is in de code nagelopen, en Codex las daarna de diff tegen
 - **Eigen `404.html`** in huisstijl (was de kale GitHub-pagina).
 - Springlink "Ga naar de inhoud", zichtbare focusrand, gedempte tekst `--grijs #55523f`
   (zelfde als de app; de oude tint haalde 4,39:1 op zand).
-- **Niet aangepast, wel gezien:** oranje tekst op een LICHTE achtergrond (bovenkopjes en
-  het oranje deel van koppen) haalt 1,7:1 tot 2,1:1 en is dus slecht leesbaar. Dat is de
-  huisstijlregel van 20 sep; een donkerder oranje voor kleine tekst op licht is aan
-  Patrick voorgelegd, niet doorgevoerd.
+- **Oranje donker `#92510c` (`--oranje-donker`, besluit Patrick 18 nov):** KLEINE oranje
+  tekst op een LICHTE achtergrond gebruikt deze tint: de bovenkopjes (`.eyebrow`), het
+  plusje bij de vragen, en in de app het sterretje bij een gecorrigeerde vangst en het
+  beheerkopje. Het merk-oranje haalt daar 1,7:1, deze tint 4,8:1 op zand en 6,2:1 op wit.
+  Op donkergroen blijft alles het gewone oranje. Het oranje deel van GROTE koppen op licht
+  is bewust NIET aangepast (huisstijlregel van 20 sep; haalt 1,7:1 tot 2,1:1).
+- **De kijkcode van de Carpclassic stond leesbaar in `scherm-kaart-nphv.png`** (sinds de
+  heropname van 21 sep; de regel "`#topcode` leegmaken" was toen overgeslagen). Daarmee
+  kon iedere bezoeker de wedstrijd van NPHV openen, met namen en vangstfoto's. Op 18 nov
+  uit het beeld gehaald. **Na elke schermopname van een echte klant: inzoomen op de
+  topbar en controleren dat er geen code in staat.**
 
 **Service worker (beide tenants, `sw.js`):**
 - **Geduldgrens van 4 seconden** (`NET_GEDULD_MS`): hangt het netwerk, dan komt de

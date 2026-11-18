@@ -32,6 +32,8 @@
   --rood: #a63c2c;
   --oranje: #f0a04b;         /* huisstijl-oranje (zelfde als site, icoon en socials) */
   --oranje-tekst: #2c331f;   /* tekst op oranje: donker, wit haalt het contrast niet */
+  --oranje-donker: #92510c;  /* kleine oranje tekst op een LICHTE kaart (4,5:1); het
+                                merk-oranje haalt daar 1,6:1. Zelfde tint als de site. */
   --kaart-blauw: #1d4e79;    /* stekmarkers op de (blauwe) kaart */
 }
 * { box-sizing: border-box; }
@@ -282,7 +284,7 @@ table.klassement th.r { text-align: right; }
   background: none; border: none; padding: 6px 10px; line-height: 1; }
 .lightbox .sluit:focus-visible { outline: 2px solid #fff; border-radius: 8px; }
 /* afsluiting van de wedstrijd (v88) */
-.ster { color: var(--oranje); font-weight: 800; cursor: help; margin-left: 4px; }
+.ster { color: var(--oranje-donker); font-weight: 800; cursor: help; margin-left: 4px; }
 .b-rij select.team-edit { max-width: 42%; }
 .b-rij input.tijd-edit { max-width: 46%; }
 .foto-ok-label { color: var(--groen); font-size: 12px; margin-left: 4px; }
@@ -422,7 +424,7 @@ textarea:focus { outline: 2px solid var(--blauw-mid); border-color: var(--blauw-
 .org-w-kop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* beheerdersomgeving (KemblincK support) */
-.su-eyebrow { color: var(--oranje); }
+.su-eyebrow { color: var(--oranje-donker); }
 .su-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .su-stat {
   flex: 1 1 88px; background: var(--zand); border-radius: 10px;

@@ -23,6 +23,8 @@
   --groen-olijf: #6d7355;
   --oranje: #f0a04b;         /* accent, primaire actie, sloganpunten */
   --oranje-tekst: #2c331f;   /* tekst OP oranje: altijd donker */
+  --oranje-donker: #92510c;  /* KLEINE oranje tekst op een LICHTE achtergrond: het merk-oranje
+                                haalt daar 1,7:1, deze tint 4,8:1 op zand en 6,2:1 op wit */
   --zand: #e6e4d0;           /* paginakleur */
   --zand-licht: #edeadb;
   --zand-vlak: #dfdcc6;      /* rustige vlakken binnen een witte kaart */
@@ -89,8 +91,10 @@ section { scroll-margin-top: 70px; }
 .vlak.groen { background: var(--groen-donker); color: #fff; }
 .eyebrow {
   display: block; font-size: 12.5px; font-weight: 700; letter-spacing: .14em;
-  text-transform: uppercase; color: var(--oranje); margin-bottom: 9px;
+  text-transform: uppercase; color: var(--oranje-donker); margin-bottom: 9px;
 }
+/* op donkergroen blijft het bovenkopje het heldere merk-oranje (5,3:1) */
+.vlak.groen .eyebrow, .hero .eyebrow, .slot .eyebrow, .prijsblok .eyebrow, .voet .eyebrow { color: var(--oranje); }
 h1, h2, h3 { line-height: 1.12; letter-spacing: -.5px; margin: 0 0 14px; }
 h1 { font-size: clamp(33px, 6.1vw, 57px); font-weight: 800; letter-spacing: -1px; }
 h2 { font-size: clamp(24px, 3.4vw, 36px); font-weight: 800; color: var(--groen-donker); }
@@ -270,7 +274,7 @@ summary {
   min-height: 48px; align-items: center;
 }
 summary::-webkit-details-marker { display: none; }
-summary::after { content: '+'; color: var(--oranje); font-size: 24px; font-weight: 700; line-height: 1; }
+summary::after { content: '+'; color: var(--oranje-donker); font-size: 24px; font-weight: 700; line-height: 1; }
 details[open] summary::after { content: '\2212'; }
 details p { padding-bottom: 15px; font-size: 15px; color: var(--grijs); }
 details p:last-child { margin-bottom: 0; }
