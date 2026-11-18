@@ -1160,6 +1160,99 @@ het kader (9:16, maximaal 76vh hoog). Op 390 px was de tekst in de liggende film
 opnieuw te coderen). Beide mp4's op de site hebben nu een geluidsspoor, dus de knop
 "Geluid aan" verschijnt vanzelf. De film start nog steeds zonder geluid.
 
+## Controle- en verbeterronde v113 (18 nov 2026)
+
+Opdracht Patrick: "controleer de code en de website en verbeter deze". Aanpak: Codex las
+de hele frontend (twee runs, `review/codex-v113-app-uit.md` en `-site-uit.md`), elke
+bevinding is in de code nagelopen, en Codex las daarna de diff tegen
+(`review/codex-v113-diff-uit.md`, twee regressies, beide verwerkt). Rooktest groen op
+/demo én /nphv.
+
+**Website (landingspagina):**
+- **Beelden als WebP**: samen 0,9 MB in plaats van 2,0 MB. De PNG's en JPG's blijven de
+  BRON. **Na elke nieuwe schermopname of foto `python3 tools/naar_webp.py` draaien**,
+  anders toont de site het oude beeld (`--check` meldt wat verouderd is). Het logo in de
+  topbar is `logo-rond-112.webp` (5 kB) in plaats van de 512-versie (103 kB).
+- **Filmposter via `data-poster` en `data-poster-staand`**: met een gewoon
+  poster-attribuut haalde een telefoon eerst de liggende poster op en daarna de staande.
+  De video heeft `controls` in de HTML als terugval zonder script; `film.js` zet die uit
+  en toont de eigen knoppen.
+- **Vindbaarheid**: `robots.txt`, `sitemap.xml`, `rel="canonical"` op elke pagina (ook
+  de tenantpagina's, `nieuwe_tenant.py` vervangt hem mee) en gestructureerde gegevens
+  (Organization, WebSite, SoftwareApplication met de prijzen 79 tot 449) als JSON-LD.
+  Een JSON-LD-blok wordt niet uitgevoerd en valt dus niet onder `script-src`. **Wijzigt
+  een prijs, pas dan ook `lowPrice`/`highPrice` in dat blok aan.**
+- **Eigen `404.html`** in huisstijl (was de kale GitHub-pagina).
+- Springlink "Ga naar de inhoud", zichtbare focusrand, gedempte tekst `--grijs #55523f`
+  (zelfde als de app; de oude tint haalde 4,39:1 op zand).
+- **Niet aangepast, wel gezien:** oranje tekst op een LICHTE achtergrond (bovenkopjes en
+  het oranje deel van koppen) haalt 1,7:1 tot 2,1:1 en is dus slecht leesbaar. Dat is de
+  huisstijlregel van 20 sep; een donkerder oranje voor kleine tekst op licht is aan
+  Patrick voorgelegd, niet doorgevoerd.
+
+**Service worker (beide tenants, `sw.js`):**
+- **Geduldgrens van 4 seconden** (`NET_GEDULD_MS`): hangt het netwerk, dan komt de
+  bewaarde versie uit de cache en ligt het verse antwoord klaar voor de volgende keer.
+  Voorheen wachtte de app tot het verzoek zelf opgaf, aan het water soms een halve minuut.
+  Ook bij een serverstoring (5xx) gaat de bewaarde versie voor.
+- De terugval bij een navigatie zocht via `caches.match()` toch door ALLE caches (de
+  isolatie uit v83 gold alleen voor de eerste lookup); nu alleen de eigen tenantcache,
+  met een eigen "Geen verbinding"-pagina als ook die leeg is.
+- Het bewaren in de cache hangt aan `e.waitUntil`. Meldingen kijken alleen naar vensters
+  van de eigen omgeving (`self.registration.scope`): een melding van de demo haalde
+  anders een NPHV-tab of de website naar voren.
+- Getest met een nagebootste omgeving in Node (snel, traag, hangend, geen netwerk, 503,
+  404); het harnas is eenmalig en staat niet in de repo.
+
+**App (`app.js`), allemaal kleine, gerichte herstellingen:**
+- `isStoring(err)`: een verbroken verbinding of timeout is geen inhoudelijk nee. De
+  organisator verliest zijn pin niet meer bij een haperende `w_admin_check`, en een
+  teamlink (`?t=`) overleeft een storing (`probeerTeamlink()` herhaalt na elke poll,
+  bewust BUITEN `laadState`).
+- `STATE_BEZIG_GEN`: per scherm één stateverzoek; voorheen startte elke poll een nieuw
+  verzoek zolang het eerste nog niet binnen was.
+- Aanmelden, naam wijzigen, vangst doorgeven, handmatige vangst en meldingen leggen de
+  wedstrijdcode vast VOOR de eerste `await` (`mijnCode`). Het token van een aanmelding
+  werd anders opgeslagen onder de wedstrijd die op dat moment in beeld stond.
+- **Onopgeslagen correcties in Beheer blijven staan** bij een verversing (`concept`-Map
+  in `renderBeheer`; `VANGST_OPSLAAN` bevat wat er op dat moment verstuurd wordt).
+- `parseGewicht` leest streng: "12,45", "12.45", "12,45 kg". "-5" werd vroeger vijf kilo.
+- `NIEUW_BEZIG` blokkeert de automatische herlaad tijdens het aanmaken van een wedstrijd.
+- Beheerder: `SU_REQ` hoogt op bij uitloggen (laat antwoord toont niets meer), en de
+  bevestiging van een wachtwoordreset geldt voor één klant.
+- Meldingen uitzetten: bij een storing wordt het browserabonnement niet meer opgezegd
+  (dat schakelde ook de andere wedstrijden uit).
+- Wachtrij: `wedstrijd_niet_gevonden` is definitief (blokkeerde anders alle latere
+  vangsten); een leesfout van IndexedDB geeft geen "geregistreerd" meer.
+- Deelafbeelding: gedeelde plaats en dezelfde grootste-vis-regel als het klassement.
+- Toegankelijkheid: `aria-current` op de actieve tab en balkknop, foto's te openen met
+  Enter of spatie, veldnamen op de invoervelden zonder label, dialoogrol op het
+  uitnodigingsvenster.
+- **Bewust niet gedaan:** `method="post"` op de wachtwoordformulieren (alle views zijn
+  verborgen tot `app.js` draait, en het iOS-recept voor de wachtwoordmanager is te
+  kwetsbaar om zonder toesteltest te wijzigen); upload-idempotentie op de server (een
+  verloren antwoord geeft hooguit een weesfoto, geen dubbele vangst); late vangsten in
+  de terugvalroute zonder IndexedDB; `'unsafe-inline'` voor styles in de CSP.
+
+**Database:** migratie `wedstrijd_vangstmelding_komma`: de pushmelding zegt nu
+"17,90 kg" in plaats van "17.90 kg" (`w_registreer_vangst`, `w_admin_voeg_vangst`, bij
+naam, vooraf bewezen in een transactie met rollback).
+
+**Gevonden en gerepareerd, los van de review:** `tools/nieuwe_tenant.py` was sinds v106
+STUK: het zocht `const NAV_TEGELS = false;` in het NPHV-sjabloon, terwijl die vlag daar
+op 21 sep op true ging. Elke nieuwe tenant zou op die assert stranden. Opnieuw bewezen
+door het script in een kopie van de repo te draaien (les van fase 8 opnieuw geleerd: een
+scaffold-script na ELKE sjabloonwijziging één keer echt draaien).
+
+**Rooktest:** de lotingstap tikt nu op een stek die IN een zone ligt als de wedstrijd
+zones heeft; op NPHV (vaste indeling A t/m S) lag de eerste stek van de kaart erbuiten
+en bleef de bevestigknop terecht uit. De test was op NPHV dus nooit groen te krijgen.
+
+**Open voor Patrick:** het organisatiewachtwoord van NPHV en dat van de demo zijn gelijk
+(gezien op 18 nov omdat de rooktest met het demo-wachtwoord ook op /nphv/ inlogde; de
+server controleert per klant, dus geen lek, maar wie het demo-wachtwoord krijgt kan bij
+NPHV organiseren). Wijzigen kan in de beheerdersomgeving.
+
 ## Release-checklist (multi-tenant, sinds v36)
 
 Bij elke release controleren:
@@ -1185,6 +1278,9 @@ Bij elke release controleren:
    (landing.js: kale root-hashes zijn legacy-NPHV; nieuwe tenants delen
    ALTIJD links met tenantpad, alleen de demo-kijkcode heeft een mapping).
 8. Bij features: de documentatie-oppervlakken-lijst hierboven volledig langslopen.
+9. Nieuwe schermopname of foto op de landingspagina: `python3 tools/naar_webp.py`
+   (de site laadt alleen de .webp); `--check` hoort "alles bij" te zeggen.
+10. Rooktest op /demo én /nphv (NPHV heeft zones en de echte kaart, de demo niet).
 
 ## Lokaal draaien en testen
 

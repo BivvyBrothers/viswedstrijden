@@ -27,7 +27,7 @@
   --zand-licht: #edeadb;
   --zand-vlak: #dfdcc6;      /* rustige vlakken binnen een witte kaart */
   --tekst: #29271e;
-  --grijs: #6b6853;
+  --grijs: #55523f;          /* gedempte tekst; zelfde tint als de app, 5,9:1 op zand */
   --licht-op-groen: #d9dcc2;
   --wit: #fff;
   --rand: #d7d4bc;
@@ -46,6 +46,16 @@ body {
 }
 img { max-width: 100%; height: auto; display: block; }
 a { color: var(--groen); }
+
+/* springlink voor toetsenbord en schermlezer: pas zichtbaar bij focus */
+.spring {
+  position: absolute; left: 12px; top: -60px; z-index: 40;
+  background: var(--oranje); color: var(--oranje-tekst); font-weight: 700;
+  padding: 10px 16px; border-radius: 0 0 10px 10px; text-decoration: none;
+}
+.spring:focus { top: 0; }
+a:focus-visible, summary:focus-visible { outline: 3px solid var(--oranje); outline-offset: 2px; border-radius: 4px; }
+.vlak:not(.groen) a:focus-visible, .vragen summary:focus-visible { outline-color: var(--groen-donker); }
 
 /* ---------- topbar ---------- */
 .topbar {
@@ -102,10 +112,7 @@ p:last-child { margin-bottom: 0; }
 .knop.primair:hover { background: #e79436; }
 .knop.licht { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.55); }
 .knop.licht:hover { background: rgba(255,255,255,.22); }
-.knop.donker { background: var(--groen); color: #fff; }
-.knop.donker:hover { background: #3f4a2e; }
 .knop.rand { background: transparent; color: var(--groen-donker); border-color: var(--groen-olijf); }
-.knop img { width: 22px; height: 22px; border-radius: 50%; }
 .knoppen { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0 0; }
 
 /* ---------- 01 hero ---------- */
@@ -126,7 +133,6 @@ p:last-child { margin-bottom: 0; }
 }
 .slogan-blok .punt { color: var(--oranje); }
 .slogan-blok svg { display: block; width: 100%; height: auto; color: var(--oranje); margin-top: 3px; }
-.slogan-blok.donker .tekst { color: var(--groen-donker); }
 .hero .sub { font-size: clamp(16.5px, 1.8vw, 19px); color: #e9ead9; max-width: 34em; }
 .hero .fijn { margin-top: 16px; font-size: 14px; color: var(--licht-op-groen); }
 /* Telefoon in de echte toestelverhouding van een iPhone 17 Pro Max: 78 x 163,4 mm
@@ -320,7 +326,7 @@ details p:last-child { margin-bottom: 0; }
   background: var(--oranje); border: 0; border-radius: 999px; padding: 9px 16px;
   cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
 .film-knop:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-.film-knop[hidden] { display: none; }
+.film-knop[hidden], .film-knoppen[hidden] { display: none; }
 .film-uitleg { margin-top: 14px; max-width: 760px; }
 .film-kader.staand { aspect-ratio: 9 / 16; max-width: min(100%, calc(76vh * 9 / 16)); margin-left: auto; margin-right: auto; }
 @media (max-width: 560px) {

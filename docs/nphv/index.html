@@ -10,6 +10,7 @@
 <meta property="og:title" content="Viswedstrijden NPHV · Plas van der Ende">
 <meta property="og:description" content="Viswedstrijden van de NPHV (Nootdorps Pijnackerse Hengelsportvereniging) op de Plas van der Ende: loting, stekkeuze, vangstregistratie, live klassement en seizoenscompetitie.">
 <meta property="og:url" content="https://viswedstrijdapp.nl/nphv/">
+<link rel="canonical" href="https://viswedstrijdapp.nl/nphv/">
 <meta property="og:image" content="https://viswedstrijdapp.nl/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -30,7 +31,7 @@
 
 <header class="topbar">
   <button id="btn-terug" class="terug-knop" aria-label="Terug" hidden>‹</button>
-  <a href="#/" class="brand"><img src="/logo-rond-512.png" alt="" class="brand-logo"> NPHV Viswedstrijden</a>
+  <a href="#/" class="brand"><img src="/logo-rond-512.png" alt="" width="30" height="30" class="brand-logo"> NPHV Viswedstrijden</a>
   <span id="topcode" class="topcode"></span>
 </header>
 
@@ -61,7 +62,7 @@
       <p class="muted klein">Nieuw? Vul de wedstrijdcode van de organisator in.
       Al aangemeld? Vul je persoonlijke code in en je gaat verder onder je eigen naam.</p>
       <div class="rij-invoer">
-        <input id="deelnemer-code" type="text" placeholder="wedstrijd- of persoonlijke code" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
+        <input id="deelnemer-code" aria-label="Wedstrijdcode of persoonlijke code" type="text" placeholder="wedstrijd- of persoonlijke code" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
         <button type="submit" class="btn primary">Meedoen</button>
       </div>
     </form>
@@ -70,7 +71,7 @@
       <div class="rolkop"><span class="rol-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.6 12S5 5.6 12 5.6 22.4 12 22.4 12 19 18.4 12 18.4 1.6 12 1.6 12z"/><circle cx="12" cy="12" r="3"/></svg></span><b>Kijker</b></div>
       <p class="muted klein">Vul de kijkcode in om het klassement live te volgen (met meldingen bij nieuwe vangsten).</p>
       <div class="rij-invoer">
-        <input id="kijker-code" type="text" placeholder="kijkcode" maxlength="6" autocapitalize="characters" autocomplete="off" required>
+        <input id="kijker-code" aria-label="Kijkcode" type="text" placeholder="kijkcode" maxlength="6" autocapitalize="characters" autocomplete="off" required>
         <button type="submit" class="btn primary">Volgen</button>
       </div>
     </form>
@@ -79,7 +80,7 @@
       <div class="rolkop"><span class="rol-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><path d="M19.3 14.9a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.4v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1.1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.4-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.4V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.4 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.4 1h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></span><b>Organisator</b></div>
       <p class="muted klein">Alleen voor de organisatie.</p>
       <div class="rij-invoer">
-        <input id="org-ww" type="password" placeholder="organisatie-wachtwoord" autocomplete="off" required>
+        <input id="org-ww" aria-label="Organisatiewachtwoord" type="password" placeholder="organisatie-wachtwoord" autocomplete="off" required>
         <button type="submit" class="btn primary">Inloggen</button>
       </div>
       <p id="org-fout" class="fout" hidden></p>
@@ -226,7 +227,7 @@
     <p class="muted klein">Deze indeling geldt automatisch voor elke nieuwe wedstrijd.
     Eén regel per zone, formaat <b>Naam: steknummers</b>, bijv. <b>Zone A: 20-30</b> of <b>B: 55</b>
     (een zone mag ook uit 1 stek bestaan). Leeg = loting per losse stek.</p>
-    <textarea id="org-zones" rows="8"></textarea>
+    <textarea id="org-zones" aria-label="Vaste zone-indeling, één zone per regel" rows="8"></textarea>
     <button id="org-zones-opslaan" class="btn primary">Vaste indeling opslaan</button>
     <p id="org-zones-fout" class="fout" hidden></p>
     <p id="org-zones-ok" class="ok" hidden></p>
@@ -246,7 +247,7 @@
     <p class="muted klein">Alleen voor de app-beheerder.</p>
     <form id="form-sulogin" class="rolform">
       <div class="row">
-        <input id="su-ww" type="password" placeholder="beheerderswachtwoord" autocomplete="current-password" maxlength="64" required>
+        <input id="su-ww" aria-label="Beheerderswachtwoord" type="password" placeholder="beheerderswachtwoord" autocomplete="current-password" maxlength="64" required>
         <button type="submit" class="btn primary">Inloggen</button>
       </div>
       <p id="su-fout" class="fout" hidden></p>
@@ -275,7 +276,7 @@
         <p class="muted klein">Organisatie-wachtwoord resetten (als de organisator het kwijt is).
         Dit geldt voor de klant die hierboven geselecteerd staat.</p>
         <div class="row">
-          <input id="su-orgww-nieuw" type="password" minlength="6" maxlength="64" placeholder="nieuw organisatie-wachtwoord" autocomplete="new-password" required>
+          <input id="su-orgww-nieuw" aria-label="Nieuw organisatiewachtwoord" type="password" minlength="6" maxlength="64" placeholder="nieuw organisatie-wachtwoord" autocomplete="new-password" required>
           <button type="button" class="btn klein-btn" data-toon-ww="#su-orgww-nieuw" aria-label="Toon of verberg wachtwoord">👁</button>
           <button type="submit" class="btn">Reset</button>
         </div>
@@ -284,11 +285,11 @@
         <p class="muted klein">Eigen beheerderswachtwoord wijzigen (min. 12 tekens). Dit is de enige
         beheerderstoegang: bewaar het nieuwe wachtwoord direct in je wachtwoordmanager.</p>
         <div class="row">
-          <input id="su-ww-nieuw" type="password" minlength="12" maxlength="64" placeholder="nieuw beheerderswachtwoord" autocomplete="new-password" required>
+          <input id="su-ww-nieuw" aria-label="Nieuw beheerderswachtwoord" type="password" minlength="12" maxlength="64" placeholder="nieuw beheerderswachtwoord" autocomplete="new-password" required>
           <button type="button" class="btn klein-btn" data-toon-ww="#su-ww-nieuw" aria-label="Toon of verberg wachtwoord">👁</button>
         </div>
         <div class="row" style="margin-top:8px">
-          <input id="su-ww-nieuw2" type="password" minlength="12" maxlength="64" placeholder="herhaal nieuw beheerderswachtwoord" autocomplete="new-password" required>
+          <input id="su-ww-nieuw2" aria-label="Herhaal het nieuwe beheerderswachtwoord" type="password" minlength="12" maxlength="64" placeholder="herhaal nieuw beheerderswachtwoord" autocomplete="new-password" required>
           <button type="submit" class="btn">Wijzig</button>
         </div>
       </form>
@@ -434,7 +435,7 @@
         met je persoonlijke inlogcode; meld je niet opnieuw aan.</p>
         <form id="form-herstel" class="herstel-rij" autocomplete="on">
           <input class="vh ww-username" type="text" name="username" autocomplete="username" value="wedstrijd" tabindex="-1" aria-hidden="true">
-          <input id="herstel-code" type="password" name="password" maxlength="8" autocapitalize="characters"
+          <input id="herstel-code" aria-label="Je persoonlijke inlogcode" type="password" name="password" maxlength="8" autocapitalize="characters"
             autocomplete="current-password" spellcheck="false" placeholder="bijv. AB2CD3">
           <button type="button" class="btn klein-btn oog" data-toon-code="#herstel-code" aria-label="toon code">👁</button>
           <button type="submit" class="btn">Inloggen</button>
@@ -536,7 +537,7 @@
         (te beheren op de homepagina, achter het organisatie-wachtwoord). Pas hieronder alleen aan als deze
         wedstrijd afwijkt, bijv. een zone die dicht is. Formaat: <b>Naam: steknummers</b>, 1 regel per zone.
         Leeg = loting per losse stek. Alleen aan te passen vóór de loting.</p>
-        <textarea id="b-zones" rows="6" placeholder="Zone A: 20-30&#10;Zone B: 32-44&#10;Zone C: 54-70"></textarea>
+        <textarea id="b-zones" aria-label="Zones van deze wedstrijd, één zone per regel" rows="6" placeholder="Zone A: 20-30&#10;Zone B: 32-44&#10;Zone C: 54-70"></textarea>
         <button id="b-zones-opslaan" class="btn">Zones opslaan</button>
         <p id="b-zones-fout" class="fout" hidden></p>
         <p id="b-zones-ok" class="ok" hidden></p>
@@ -544,7 +545,7 @@
       <details class="card beheer-blok">
         <summary><h2>Wedstrijdregels</h2></summary>
         <p class="muted klein">Deelnemers en kijkers zien dit als uitklapbaar blok onder de klok. Leeg = geen regels-blok.</p>
-        <textarea id="b-regels" rows="5" maxlength="3000" placeholder="bijv. Maximaal 2 hengels per visser"></textarea>
+        <textarea id="b-regels" aria-label="Wedstrijdregels" rows="5" maxlength="3000" placeholder="bijv. Maximaal 2 hengels per visser"></textarea>
         <button id="b-regels-opslaan" class="btn">Regels opslaan</button>
         <p id="b-regels-ok" class="ok" hidden></p>
       </details>
@@ -637,9 +638,9 @@
   </div>
 </div>
 
-<div id="deel-nieuw" class="lightbox" hidden>
+<div id="deel-nieuw" class="lightbox" role="dialog" aria-modal="true" aria-labelledby="dn-titel" hidden>
   <div class="card" style="max-width:440px; width:92vw; text-align:left">
-    <h2>🎉 <span id="dn-naam"></span> staat klaar!</h2>
+    <h2 id="dn-titel">🎉 <span id="dn-naam"></span> staat klaar!</h2>
     <p class="muted klein">Nodig nu de vissers uit; dat kan meteen vanuit hier.</p>
     <p class="muted klein" style="margin-bottom:2px">Deelnemerscode (voor de vissers):</p>
     <p style="margin-top:0"><b id="dn-code" class="codegroot"></b>

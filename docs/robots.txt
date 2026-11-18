@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /info.html
+
+Sitemap: https://viswedstrijdapp.nl/sitemap.xml

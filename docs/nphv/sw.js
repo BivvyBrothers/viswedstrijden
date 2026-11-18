@@ -23,26 +23,56 @@ self.addEventListener('activate', (e) => e.waitUntil((async () => {
   await self.clients.claim();
 })()));
 
+// Netwerk eerst, maar niet eindeloos: aan het water hangt een verzoek soms een halve
+// minuut op één streepje bereik. Na NET_GEDULD_MS geven we wat er in de cache staat;
+// het verse antwoord komt dan alsnog binnen en ligt klaar voor de volgende keer.
+const NET_GEDULD_MS = 4000;
+const OFFLINE_PAGINA = '<!doctype html><html lang="nl"><meta charset="utf-8">'
+  + '<meta name="viewport" content="width=device-width, initial-scale=1">'
+  + '<title>Geen verbinding</title><body style="font-family:sans-serif;padding:24px;background:#353d2a;color:#fff">'
+  + '<h1>Geen verbinding</h1><p>De app kon niet geladen worden. Probeer het opnieuw zodra je weer bereik hebt.</p></body></html>';
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.url.includes('version.json')) return; // versiecheck altijd live, nooit uit cache
-  e.respondWith(
-    fetch(req).then((r) => {
-      if (r.ok) {
-        const kopie = r.clone();
-        caches.open(CACHE).then((c) => c.put(req, kopie)).catch(() => {});
-      }
-      return r;
-    }).catch(() =>
-      // alleen de EIGEN tenantcache: caches.match zonder cache zoekt door alle caches
-      // en kan zo een oudere gedeelde app.js van de andere tenant teruggeven
-      caches.open(CACHE).then((c) => c.match(req, { ignoreSearch: true })).then((m) => m
-        || (req.mode === 'navigate'
-          ? caches.match('./').then((thuis) => thuis || caches.match('index.html'))
-          : Response.error())))
-  );
+  // alleen de EIGEN tenantcache: caches.match zonder cache zoekt door alle caches
+  // en kan zo een oudere gedeelde app.js van de andere tenant teruggeven
+  const eigen = caches.open(CACHE);
+  const uitCache = (wat) => eigen.then((c) => c.match(wat, { ignoreSearch: true }));
+  const net = fetch(req);
+  // bewaren hoort bij de levensduur van dit event, anders kan de browser de worker
+  // stoppen voordat het antwoord in de cache staat
+  e.waitUntil(net.then((r) => {
+    if (!r.ok) return null;
+    const kopie = r.clone();
+    return eigen.then((c) => c.put(req, kopie));
+  }).catch(() => {}));
+  e.respondWith((async () => {
+    let klok;
+    const traag = new Promise((klaar) => { klok = setTimeout(() => klaar(null), NET_GEDULD_MS); });
+    try {
+      const r = await Promise.race([net, traag]);
+      if (r && r.status < 500) return r;
+      // netwerk hangt of de server geeft een storing: liever de bewaarde versie
+      const bewaard = await uitCache(req);
+      if (bewaard) return bewaard;
+      return r || await net;
+    } catch {
+      const bewaard = await uitCache(req);
+      if (bewaard) return bewaard;
+      if (req.mode !== 'navigate') return Response.error();
+      return (await uitCache('./')) || (await uitCache('index.html'))
+        || new Response(OFFLINE_PAGINA, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    } finally {
+      clearTimeout(klok);
+    }
+  })());
 });
+
+// Alleen vensters van DEZE omgeving: alle omgevingen delen dezelfde origin, en een
+// melding van de ene mag niet het tabblad van de andere (of de website) naar voren halen.
+const vanDezeOmgeving = (c) => c.url.startsWith(self.registration.scope);
 
 self.addEventListener('push', (e) => {
   let d = {};
@@ -52,7 +82,7 @@ self.addEventListener('push', (e) => {
     // (dan volstaat de in-app toast); zonder route-info altijd tonen
     if (d.url) {
       const vensters = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      if (vensters.some((c) => c.visibilityState === 'visible' && c.url.includes(d.url))) return;
+      if (vensters.some((c) => vanDezeOmgeving(c) && c.visibilityState === 'visible' && c.url.includes(d.url))) return;
     }
     await self.registration.showNotification(d.title || 'Viswedstrijd', {
       body: d.body || 'Nieuwe vangst!',
@@ -69,7 +99,10 @@ self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const route = e.notification.data && e.notification.data.url;
   e.waitUntil((async () => {
-    const lijst = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const lijst = (await self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+      .filter(vanDezeOmgeving);
+    // een venster dat al op deze wedstrijd staat gaat voor
+    if (route) lijst.sort((a, b) => Number(b.url.includes(route)) - Number(a.url.includes(route)));
     for (const c of lijst) {
       // bestaand venster: eerst naar de juiste wedstrijd navigeren, dan focussen
       if (route && !c.url.includes(route) && 'navigate' in c) {

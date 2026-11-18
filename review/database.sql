@@ -659,7 +659,7 @@ begin
   begin
     v_wie := coalesce(v_team.team_naam, v_team.naam || coalesce(' & ' || v_team.naam2, ''));
     perform extensions.http_post_ignore(v_w.id, v_team.id, v_w.naam,
-      'Nieuwe vangst: ' || round(p_gewicht_gram / 1000.0, 2) || ' kg door ' || v_wie);
+      'Nieuwe vangst: ' || replace(round(p_gewicht_gram / 1000.0, 2)::text, '.', ',') || ' kg door ' || v_wie);
   exception when others then null;
   end;
 
@@ -1478,7 +1478,7 @@ begin
   begin
     v_wie := coalesce(v_team.team_naam, v_team.naam || coalesce(' & ' || v_team.naam2, ''));
     perform extensions.http_post_ignore(v_w.id, v_team.id, v_w.naam,
-      'Nieuwe vangst: ' || round(p_gewicht_gram / 1000.0, 2) || ' kg door ' || v_wie);
+      'Nieuwe vangst: ' || replace(round(p_gewicht_gram / 1000.0, 2)::text, '.', ',') || ' kg door ' || v_wie);
   exception when others then null;
   end;
   return json_build_object('id', v_id);

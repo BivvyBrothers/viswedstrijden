@@ -15,6 +15,14 @@
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="nl_NL">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://viswedstrijdapp.nl/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","@id":"https://viswedstrijdapp.nl/#organisatie","name":"Viswedstrijdapp","url":"https://viswedstrijdapp.nl/","logo":"https://viswedstrijdapp.nl/logo-rond-512.png","email":"info@viswedstrijdapp.nl","sameAs":["https://www.instagram.com/viswedstrijdapp/","https://www.facebook.com/profile.php?id=61591695216719"],"parentOrganization":{"@type":"Organization","name":"KemblincK","url":"https://kemblinck.nl/"}},
+{"@type":"WebSite","@id":"https://viswedstrijdapp.nl/#site","url":"https://viswedstrijdapp.nl/","name":"Viswedstrijdapp","inLanguage":"nl-NL","publisher":{"@id":"https://viswedstrijdapp.nl/#organisatie"}},
+{"@type":"SoftwareApplication","name":"Viswedstrijdapp","url":"https://viswedstrijdapp.nl/","applicationCategory":"SportsApplication","operatingSystem":"iOS, Android, web","inLanguage":"nl-NL","description":"De app voor viswedstrijden: digitale loting, stekkeuze op de waterkaart, vangsten met foto, live klassement en seizoenscompetitie. Zonder accounts, zonder App Store.","image":"https://viswedstrijdapp.nl/og.png","publisher":{"@id":"https://viswedstrijdapp.nl/#organisatie"},"offers":{"@type":"AggregateOffer","priceCurrency":"EUR","lowPrice":"79","highPrice":"449","offerCount":"6"}}
+]}
+</script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
 <meta name="theme-color" content="#353d2a">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -25,8 +33,9 @@
 </head>
 <body>
 
+<a class="spring" href="#inhoud">Ga naar de inhoud</a>
 <header class="topbar">
-  <a href="./" class="merk"><img src="logo-rond-512.png" alt=""> Viswedstrijdapp</a>
+  <a href="./" class="merk"><img src="logo-rond-112.webp" alt="" width="34" height="34"> Viswedstrijdapp</a>
   <nav class="hoofdnav" aria-label="Hoofdmenu">
     <a href="#zo-werkt-het">Zo werkt het</a>
     <a href="#mogelijkheden">Mogelijkheden</a>
@@ -37,12 +46,12 @@
   <a class="top-login" href="inloggen/">Inloggen</a>
 </header>
 
-<main>
+<main id="inhoud">
 
   <!-- 01 introductie -->
   <section class="hero" id="top">
     <div class="hero-foto">
-      <img src="schermen/avondlicht-1600.jpg" alt="" width="1600" height="900" fetchpriority="high">
+      <img src="schermen/avondlicht-1600.webp" alt="" width="1600" height="900" fetchpriority="high">
     </div>
     <div class="hero-waas"></div>
     <div class="hero-inhoud breed">
@@ -60,7 +69,7 @@
         </div>
         <div class="hero-telefoon">
           <div class="telefoon-frame">
-            <img src="schermen/scherm-klassement.png" alt="Het live klassement in de app, met per visser het gewicht en de opbouw per gevangen vis, en onderin de vaste navigatiebalk" width="780" height="1688">
+            <img src="schermen/scherm-klassement.webp" alt="Het live klassement in de app, met per visser het gewicht en de opbouw per gevangen vis, en onderin de vaste navigatiebalk" width="780" height="1688">
           </div>
         </div>
       </div>
@@ -79,12 +88,13 @@
       <span class="eyebrow">In 50 seconden</span>
       <h2>Zo werkt <span class="accent">de app</span></h2>
       <div class="film-kader">
-        <video id="uitlegfilm" muted loop playsinline preload="none"
-          poster="film/uitlegfilm-poster.jpg" width="1920" height="1080"
+        <video id="uitlegfilm" muted loop playsinline controls preload="none"
+          data-poster="film/uitlegfilm-poster.webp" data-poster-staand="film/uitlegfilm-poster-staand.webp"
+          width="1920" height="1080"
           aria-label="Uitlegfilm over de viswedstrijdapp" aria-describedby="film-uitleg">
           <source src="film/uitlegfilm-1920x1080.mp4" type="video/mp4">
         </video>
-        <div class="film-knoppen">
+        <div class="film-knoppen" hidden>
           <button type="button" class="film-knop" id="film-speel" aria-pressed="false">Afspelen</button>
           <button type="button" class="film-knop" id="film-geluid" aria-pressed="false" hidden>Geluid aan</button>
         </div>
@@ -151,7 +161,7 @@
         </div>
         <div class="beeld">
           <div class="telefoon-frame" style="max-width:280px;margin:0 auto">
-            <img src="schermen/scherm-overzicht.png" alt="Het startscherm van een wedstrijd in de app: vier tegels voor viswater, loting, klassement en vangsten, met onderin een vaste navigatiebalk" width="780" height="1688" loading="lazy">
+            <img src="schermen/scherm-overzicht.webp" alt="Het startscherm van een wedstrijd in de app: vier tegels voor viswater, loting, klassement en vangsten, met onderin een vaste navigatiebalk" width="780" height="1688" loading="lazy">
           </div>
         </div>
       </div>
@@ -164,7 +174,7 @@
       <div class="beeldduo omgekeerd">
         <div class="beeld">
           <div class="telefoon-frame" style="max-width:290px;margin:0 auto">
-            <img src="schermen/scherm-kaart-nphv.png" alt="De dieptekaart van de Plas van der Ende in de app, met zones, dieptelijnen en vrije en bezette stekken" width="780" height="1688" loading="lazy">
+            <img src="schermen/scherm-kaart-nphv.webp" alt="De dieptekaart van de Plas van der Ende in de app, met zones, dieptelijnen en vrije en bezette stekken" width="780" height="1688" loading="lazy">
           </div>
         </div>
         <div>
@@ -190,7 +200,7 @@
         </div>
       </div>
       <figure style="margin:clamp(26px,4vw,44px) 0 0">
-        <img src="schermen/kaart3d-stekken.jpg" alt="De 3D-dieptescan van de Plas van der Ende met de stekken en zones uit de app eroverheen" width="1540" height="799" loading="lazy" style="border-radius:16px">
+        <img src="schermen/kaart3d-stekken.webp" alt="De 3D-dieptescan van de Plas van der Ende met de stekken en zones uit de app eroverheen" width="1540" height="799" loading="lazy" style="border-radius:16px">
         <figcaption class="klein" style="margin-top:10px">Waar het mee begint: de dieptescan
         van jullie water, hier in 3D met de stekken en zones uit de app eroverheen. Zo'n scan,
         een oude papieren kaart of een tekening; wij maken er de interactieve kaart van.</figcaption>
@@ -228,8 +238,8 @@
           </div>
         </div>
         <div class="klassement-beeld">
-          <img src="schermen/uitsnede-klassement.jpg" alt="Het klassement in de app: per deelnemer het aantal vissen en het totaalgewicht" width="732" height="734" loading="lazy">
-          <img src="schermen/vangst-klassement.jpg" alt="Een vangst zoals de app die deelt: foto, gewicht en naam van de visser" width="864" height="1080" loading="lazy">
+          <img src="schermen/uitsnede-klassement.webp" alt="Het klassement in de app: per deelnemer het aantal vissen en het totaalgewicht" width="732" height="734" loading="lazy">
+          <img src="schermen/vangst-klassement.webp" alt="Een vangst zoals de app die deelt: foto, gewicht en naam van de visser" width="864" height="1080" loading="lazy">
         </div>
       </div>
       <p class="klein" style="margin-top:20px">Valt het bereik weg? Dan bewaart de app de
@@ -248,7 +258,7 @@
           automatisch uit, volgens de landelijke wedstrijdreglementen: plaatspunten of
           totaalgewicht, aftrekwedstrijden en nette regels voor niet-vangers en gemiste
           wedstrijden. Per seizoen en per wedstrijd instelbaar.</p>
-          <img src="schermen/uitsnede-seizoen.jpg" alt="Het seizoensklassement in de app: per deelnemer de plaats per wedstrijd, met doorgestreepte aftrekresultaten en het puntentotaal" width="732" height="734" loading="lazy">
+          <img src="schermen/uitsnede-seizoen.webp" alt="Het seizoensklassement in de app: per deelnemer de plaats per wedstrijd, met doorgestreepte aftrekresultaten en het puntentotaal" width="732" height="734" loading="lazy">
         </div>
         <div class="witte-kaart">
           <span class="eyebrow">Delen</span>
@@ -257,7 +267,7 @@
           één tik als afbeelding op WhatsApp, Instagram of Facebook, met foto, gewicht en
           wedstrijdnaam erop. En na het aanmaken van een wedstrijd staat de uitnodiging met
           code en link klaar voor de groepsapp.</p>
-          <img src="schermen/uitslag-gedeeld.png" alt="De einduitslag als deelbare afbeelding: top tien met gewicht en aantal vissen, en de grootste vis eronder" width="1080" height="1214" loading="lazy" style="max-width:320px;margin-left:auto;margin-right:auto">
+          <img src="schermen/uitslag-gedeeld.webp" alt="De einduitslag als deelbare afbeelding: top tien met gewicht en aantal vissen, en de grootste vis eronder" width="1080" height="1214" loading="lazy" style="max-width:320px;margin-left:auto;margin-right:auto">
         </div>
       </div>
     </div>
@@ -302,7 +312,7 @@
           hun telefoon bewaren.</p>
         </div>
         <div class="beeld">
-          <img src="schermen/beginscherm-mockup.jpg" alt="Het icoon van de viswedstrijdapp op het beginscherm van een iPhone, tussen de andere apps" width="1600" height="1200" loading="lazy">
+          <img src="schermen/beginscherm-mockup.webp" alt="Het icoon van de viswedstrijdapp op het beginscherm van een iPhone, tussen de andere apps" width="1600" height="1200" loading="lazy">
         </div>
       </div>
     </div>
@@ -407,7 +417,7 @@
   <!-- 10 slot -->
   <section class="slot">
     <div class="hero-foto">
-      <img src="schermen/avondlicht-1600.jpg" alt="" width="1600" height="900" loading="lazy">
+      <img src="schermen/avondlicht-1600.webp" alt="" width="1600" height="900" loading="lazy">
     </div>
     <div class="hero-waas"></div>
     <div class="binnen breed">
@@ -425,7 +435,7 @@
 
 <footer class="voet">
   <div class="breed">
-    <img class="logo" src="logo-rond-512.png" alt="Viswedstrijdapp" width="92" height="92">
+    <img class="logo" src="logo-rond-512.png" alt="Viswedstrijdapp" width="92" height="92" loading="lazy">
     <p class="slogan-voet"><span class="slogan-blok"><span class="tekst">Loot<span class="punt">.</span> Vis<span class="punt">.</span> Win<span class="punt">.</span></span><svg viewBox="0 0 200 15" aria-hidden="true" focusable="false"><path d="M2.5 11.2C34 5.1 96 1.6 174 2.2c8 .1 16 .6 23.5 1.7-7.4.3-15 .1-22.6.1-60-.3-116 2.4-168.5 9.4-2.4.3-4.3-.6-3.9-2.2z" fill="currentColor"/></svg></span></p>
     <p class="regels">
       <a href="https://viswedstrijdapp.nl/">viswedstrijdapp.nl</a><span aria-hidden="true">&middot;</span><a href="mailto:info@viswedstrijdapp.nl">info@viswedstrijdapp.nl</a>

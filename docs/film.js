@@ -15,14 +15,21 @@
 
   // Op een smal scherm de staande versie: daar is de tekst in de liggende film te
   // klein. Dit gebeurt vóór het eerste laden (preload="none"), dus geen dubbele download.
-  if (window.matchMedia && window.matchMedia('(max-width: 600px)').matches) {
+  // De poster staat daarom als data-attribuut in de HTML: met een gewoon poster-attribuut
+  // haalde een telefoon eerst de liggende poster op en daarna de staande.
+  const staand = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
+  if (staand) {
     const bron = v.querySelector('source');
     bron.src = 'film/uitlegfilm-1080x1920.mp4';
-    v.poster = 'film/uitlegfilm-poster-staand.jpg';
     v.setAttribute('width', '1080'); v.setAttribute('height', '1920');
     v.closest('.film-kader').classList.add('staand');
-    v.load();
   }
+  v.poster = (staand && v.dataset.posterStaand) || v.dataset.poster || '';
+  if (staand) v.load();
+  // Zonder dit script houdt de film de bediening van de browser (controls in de HTML);
+  // met het script nemen de eigen knoppen het over.
+  v.controls = false;
+  speel.parentElement.hidden = false;
   let zelfGepauzeerd = false;
 
   const toonStand = () => {

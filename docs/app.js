@@ -1,7 +1,7 @@
 /* Viswedstrijden Plas van der Ende - app-logica */
 'use strict';
 
-const APP_VERSION = 112; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
+const APP_VERSION = 113; // gelijk houden met ELKE tenant-version.json (docs/*/version.json); verhogen bij elke release
 
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -78,7 +78,6 @@ const FOUTEN = {
   ongeldige_foto: 'De foto kon niet worden verwerkt (RAW-bestanden worden niet ondersteund). Kies een andere foto of maak een nieuwe.',
   ongeldige_subscription: 'Meldingen aanzetten is niet gelukt.',
   eind_voor_start: 'De eindtijd moet na de starttijd liggen.',
-  vangst_niet_gevonden: 'Vangst niet gevonden.',
   ongeldig_gewicht: 'Ongeldig gewicht: vul tussen 0,05 en 50 kg in.',
   team_heeft_vangsten: 'Dit team heeft (of had) vangsten en kan daarom niet verwijderd worden. Laat het team staan; vangsten corrigeren kan hieronder.',
   foto_al_gebruikt: 'Deze foto hoort al bij een andere vangst. Maak een nieuwe foto.',
@@ -93,6 +92,12 @@ const foutTekst = (e) => FOUTEN[e.message]
 // staan en loopt de poll-lus vol. Liever een nette fout en de volgende poll.
 const RPC_TIMEOUT_MS = 20000;
 const UPLOAD_TIMEOUT_MS = 60000;  // foto's zijn groter en het bereik trager
+
+// Storing of antwoord? Een verbroken verbinding (TypeError van fetch), een timeout of
+// een server die geen eigen foutcode teruggeeft is GEEN inhoudelijk nee. Wie op zo'n
+// fout een pin of een teamlink weggooit, logt mensen uit zodra het bereik hapert.
+const isStoring = (err) => !err || err.name === 'TypeError'
+  || err.message === 'geen_verbinding' || err.message === 'onbekende_fout';
 
 async function rpc(fn, args, wachtMs) {
   const stop = new AbortController();
@@ -180,7 +185,13 @@ const KLANT = () => (typeof TENANT !== 'undefined' ? TENANT : null);
 const fotoUrl = (pad) => `${SB_URL}/storage/v1/object/public/${FOTO_BUCKET}/${pad}`;
 
 function parseGewicht(txt) {
-  const n = parseFloat(String(txt).replace(',', '.').replace(/[^0-9.]/g, ''));
+  // Streng lezen: "12,45", "12.45" of "12,45 kg". Vroeger werd alles wat geen cijfer
+  // was weggegooid, waardoor "-5" vijf kilo werd en "1.2.3" gewoon 1,2. Liever een
+  // duidelijke foutmelding dan een gewicht dat de visser niet bedoelde.
+  const m = String(txt).trim().toLowerCase().replace(/\s*(kg|kilo)\.?$/, '')
+    .match(/^(\d{1,2})?(?:[.,](\d{1,3}))?$/);
+  if (!m || (m[1] === undefined && m[2] === undefined)) return null;
+  const n = parseFloat((m[1] || '0') + '.' + (m[2] || '0'));
   if (!isFinite(n)) return null;
   const gram = Math.round(n * 1000);
   if (gram < 50 || gram > 50000) return null;
@@ -262,7 +273,9 @@ async function compressFoto(file, maxDim = 1400, kwaliteit = 0.8) {
 
 // confirm()/alert() worden in iOS-beginscherm-apps stilletjes geblokkeerd;
 // daarom: eerste tik zet de knop op scherp, tweede tik binnen 5s voert uit.
+const SCHERP_TIMERS = new WeakMap();
 function tikNogmaals(knop, waarschuwing, actie) {
+  clearTimeout(SCHERP_TIMERS.get(knop));
   if (knop.dataset.scherp) {
     delete knop.dataset.scherp;
     knop.textContent = knop.dataset.orig;
@@ -272,12 +285,12 @@ function tikNogmaals(knop, waarschuwing, actie) {
   knop.dataset.scherp = '1';
   knop.dataset.orig = knop.textContent;
   knop.textContent = waarschuwing;
-  setTimeout(() => {
+  SCHERP_TIMERS.set(knop, setTimeout(() => {
     if (knop.dataset.scherp) {
       delete knop.dataset.scherp;
       knop.textContent = knop.dataset.orig;
     }
-  }, 5000);
+  }, 5000));
 }
 
 let toastTimer = null;
@@ -456,7 +469,7 @@ const zoneLabel = (naam) => {
 let SESSIE_GEN = 0;
 window.addEventListener('hashchange', route);
 window.addEventListener('DOMContentLoaded', () => {
-  localStorage.removeItem('recente'); // opruiming: Recent-sectie is vervallen
+  try { localStorage.removeItem('recente'); } catch { /* opslag geblokkeerd: de app start toch */ }
   $('#btn-terug').addEventListener('click', () => {
     // organisator in een wedstrijd -> terug naar het organisatie-overzicht; anders naar het startscherm
     if (CODE && ROL === 'organisator' && sessie.orgWw()) { location.hash = '#/org'; return; }
@@ -508,7 +521,10 @@ async function checkVersie() {
       // gezien (rooktest 21 sep, gevonden tijdens de uitrol van v107)
       const aanmeldBezig = AANMELD_BEZIG
         || !!($('#join-naam')?.value) || !!($('#herstel-code')?.value);
-      if (!typt && !alGeprobeerd && !WACHTRIJ_BEZIG && !vangstBezig && !aanmeldBezig) {
+      // en een wedstrijd aanmaken: herlaad je tussen verzoek en antwoord, dan bestaat
+      // de wedstrijd wel maar heeft de organisator code en pin niet gezien
+      const aanmaakBezig = NIEUW_BEZIG || !!($('#nw-naam')?.value);
+      if (!typt && !alGeprobeerd && !WACHTRIJ_BEZIG && !vangstBezig && !aanmeldBezig && !aanmaakBezig) {
         sessionStorage.setItem('herlaad-poging', String(j.v));
         location.reload();
       }
@@ -737,7 +753,7 @@ function renderTabs() {
   const actief = document.querySelector('#tabs button.actief');
   const actieveTab = zichtbaar.includes(actief?.dataset.tab) ? actief.dataset.tab : zichtbaar[0];
   if (!actief || actief.dataset.tab !== actieveTab) {
-    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('actief', x.dataset.tab === actieveTab));
+    document.querySelectorAll('#tabs button').forEach((x) => merkActief(x, x.dataset.tab === actieveTab));
     document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-' + actieveTab; });
   }
   merkOnderbalk(actieveTab);
@@ -858,6 +874,7 @@ function initHome() {
     knop.disabled = true;
     const oudeTekst = knop.textContent;
     knop.textContent = 'Bezig…';
+    NIEUW_BEZIG = true;
     try {
       const res = await rpc('w_maak_wedstrijd', {
         p_naam: $('#nw-naam').value.trim(),
@@ -902,8 +919,10 @@ function initHome() {
       $('#dn-kijk').textContent = DEEL_NIEUW.kijk;
       $('#dn-link').textContent = DEEL_NIEUW.link;
       $('#deel-nieuw').hidden = false;
+      $('#dn-deel')?.focus();
       location.hash = '#/w/' + res.code;
     } catch (err) { foutEl.textContent = foutTekst(err); foutEl.hidden = false; }
+    NIEUW_BEZIG = false;
     knop.disabled = false;
     knop.textContent = oudeTekst;
   });
@@ -914,6 +933,7 @@ let DUO_MAAT_GEZOCHT = false;  // eenmalige herstelpoging via w_mijn_team na her
 
 /* ---------- wedstrijd: state laden ---------- */
 let STATE_BEZIG = false;
+let STATE_BEZIG_GEN = -1;    // welke generatie de vlag vasthoudt
 let STATE_OK_OP = 0;         // wanneer de state voor het laatst met succes is opgehaald
 function verbindingBanner(aan) {
   let el = document.getElementById('verbinding-banner');
@@ -930,8 +950,13 @@ function verbindingBanner(aan) {
 
 async function laadState(eerste) {
   if (!CODE) return;
-  if (STATE_BEZIG && !eerste) return;
+  // Loopt er al een verzoek voor DIT scherm, dan deze overslaan, ook bij de eerste
+  // keer: zolang de eerste state niet binnen was startte elke poll een nieuw verzoek
+  // en liepen er op een trage verbinding drie door elkaar. Alleen een verzoek van een
+  // VORIG scherm (andere generatie) houdt een nieuw scherm niet tegen.
+  if (STATE_BEZIG && (!eerste || STATE_BEZIG_GEN === SESSIE_GEN)) return;
   STATE_BEZIG = true;
+  STATE_BEZIG_GEN = SESSIE_GEN;
   // vastleggen waarvoor DIT verzoek is; na elke await opnieuw vergelijken
   const mijnGen = SESSIE_GEN;
   const mijnCode = CODE;
@@ -947,13 +972,17 @@ async function laadState(eerste) {
     TIJD_OFFSET = new Date(s.server_now).getTime() - Date.now();
     if (eerste && !mijnKijker && PENDING_TOKEN) {
       const token = PENDING_TOKEN;
+      let storing = false;
       try {
         const team = await rpc('w_mijn_team', { p_code: mijnCode, p_token: token });
         if (verouderd()) return;
         if (team) sessie.zetTeam(mijnCode, { id: team.id, token, naam: team.naam });
-      } catch { /* ongeldige teamlink: negeren */ }
+      } catch (err) { storing = isStoring(err); /* anders: ongeldige teamlink, negeren */ }
       if (verouderd()) return;
-      PENDING_TOKEN = null;
+      // het token is al uit de adresbalk gehaald: bij een storing bewaren we het en
+      // probeert probeerTeamlink() het na elke volgende poll opnieuw, anders is de
+      // teamlink voorgoed weg
+      if (!storing) PENDING_TOKEN = null;
     }
     if (eerste && !mijnKijker) {
       const pin = sessie.pin(mijnCode);
@@ -962,9 +991,15 @@ async function laadState(eerste) {
           await rpc('w_admin_check', { p_code: mijnCode, p_pin: pin });
           if (verouderd()) return;
           ROL = 'organisator'; ADMIN_OPEN = true;
-        } catch {
+        } catch (err) {
           if (verouderd()) return;
-          sessionStorage.removeItem('pin:' + mijnCode); ROL = 'deelnemer';
+          if (isStoring(err)) {
+            // geen antwoord is geen foute pin: de organisator houdt zijn toegang.
+            // De server controleert de pin toch bij elke beheeractie opnieuw.
+            ROL = 'organisator'; ADMIN_OPEN = true;
+          } else {
+            sessionStorage.removeItem('pin:' + mijnCode); ROL = 'deelnemer';
+          }
         }
       } else { ROL = 'deelnemer'; }
       renderTabs();
@@ -976,6 +1011,7 @@ async function laadState(eerste) {
     renderAlles(eerste);
     checkAfsluiting();
     INIT_KLAAR = true;
+    if (!eerste && !mijnKijker && PENDING_TOKEN) probeerTeamlink();
     if (eerste && ROL === 'deelnemer' && !sessie.team(mijnCode) && s.wedstrijd.status === 'aanmelden') {
       // deelnemer met een gedeelde link start bij het invoeren van eigen gegevens
       activateTab('team');
@@ -993,6 +1029,29 @@ async function laadState(eerste) {
     // alleen de eigenaar van de huidige generatie geeft de vlag vrij; een laat
     // antwoord van een verlaten scherm mag het lopende verzoek niet vrijgeven
     if (mijnGen === SESSIE_GEN) STATE_BEZIG = false;
+  }
+}
+// Herhaalde poging om een teamlink te verzilveren nadat de eerste op een storing
+// stukliep. Bewust BUITEN laadState: daarbinnen zou elke poll tot twintig seconden op
+// dit verzoek wachten voordat de stand ververst (Codex op de diff van v113).
+let TEAMLINK_BEZIG = false;
+async function probeerTeamlink() {
+  if (TEAMLINK_BEZIG || !PENDING_TOKEN || !CODE || KIJKER) return;
+  TEAMLINK_BEZIG = true;
+  const token = PENDING_TOKEN, mijnCode = CODE, mijnGen = SESSIE_GEN;
+  const zelfde = () => mijnGen === SESSIE_GEN && mijnCode === CODE && PENDING_TOKEN === token;
+  try {
+    const team = await rpc('w_mijn_team', { p_code: mijnCode, p_token: token });
+    if (!zelfde()) return;
+    PENDING_TOKEN = null;
+    if (team) {
+      sessie.zetTeam(mijnCode, { id: team.id, token, naam: team.naam });
+      renderAlles(false);
+    }
+  } catch (err) {
+    if (zelfde() && !isStoring(err)) PENDING_TOKEN = null;   // ongeldige teamlink: niet blijven proberen
+  } finally {
+    TEAMLINK_BEZIG = false;
   }
 }
 function toonNietGevonden() {
@@ -1035,12 +1094,19 @@ function renderAlles(eerste) {
 
 // De knop in de onderbalk die bij de huidige tab hoort krijgt de actieve stijl.
 // 'loting' valt onder Kaart, alles wat niet in de balk staat onder Meer.
+// actieve knop: zichtbaar via de class, voor een schermlezer via aria-current
+function merkActief(knop, aan) {
+  knop.classList.toggle('actief', aan);
+  if (aan) knop.setAttribute('aria-current', 'page'); else knop.removeAttribute('aria-current');
+}
 function merkOnderbalk(tab) {
   const balk = $('#onderbalk');
   if (!balk) return;
   balk.querySelectorAll('button').forEach((b) => {
     const doel = b.dataset.ga;
-    b.classList.toggle('aan', doel ? doel === tab : !ONDERBALK.includes(tab));
+    const aan = doel ? doel === tab : !ONDERBALK.includes(tab);
+    b.classList.toggle('aan', aan);
+    if (aan) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
   // op het overzicht is de bovenste tabbalk dubbelop; in detailschermen blijft hij
   document.body.classList.toggle('op-overzicht', tab === 'overzicht');
@@ -1150,8 +1216,12 @@ let ORG_SEIZOENEN = null;      // lijst uit w_org_seizoenen
 let SEIZOEN_PER_CODE = {};     // wedstrijdcode -> { id, naam, ex }
 
 async function laadOrgSeizoenen() {
+  const mijnGen = SESSIE_GEN, mijnWw = sessie.orgWw();
   try {
-    ORG_SEIZOENEN = await rpc('w_org_seizoenen', { p_wachtwoord: sessie.orgWw() || '', p_klant: KLANT() });
+    const lijst = await rpc('w_org_seizoenen', { p_wachtwoord: mijnWw || '', p_klant: KLANT() });
+    // uitgelogd of ander scherm terwijl het antwoord onderweg was: niets meer vullen
+    if (mijnGen !== SESSIE_GEN || mijnWw !== sessie.orgWw()) return;
+    ORG_SEIZOENEN = lijst;
     SEIZOEN_PER_CODE = {};
     for (const z of ORG_SEIZOENEN) {
       for (const w of z.wedstrijden) SEIZOEN_PER_CODE[w.code] = { id: z.id, naam: z.naam, ex: w.ex_aequo || '' };
@@ -1209,6 +1279,7 @@ function renderOrgSeizoenen() {
 let SU_DATA = null;
 let SU_KLANT = null;   // geselecteerde klant in het beheeroverzicht
 let SU_ZOEK = '';      // zoekterm op wedstrijdnaam/code
+let SU_RESET_TIMER = null;
 let SU_REQ = 0;        // generatieteller: laat een laat antwoord nooit een verlaten scherm vullen (Codex v9 P2-4)
 let SU_LAATST = 0;     // laatste su-activiteit voor de inactiviteitslimiet (Codex v9 P2-5)
 let SU_OPGEHAALD = 0;  // Date.now() bij het ophalen van SU_DATA, voor een lopende klok
@@ -1233,6 +1304,7 @@ function wisOrgScherm() {
 }
 
 function wisSuScherm() {
+  SU_REQ += 1;   // een overzicht dat nog onderweg is hoort bij de sessie die nu eindigt
   if (SU_WAKER) { clearInterval(SU_WAKER); SU_WAKER = null; }
   SU_DATA = null;
   SU_KLANT = null;
@@ -2150,8 +2222,10 @@ function klassementRijen() {
 }
 
 function renderKlassement() {
-  $('#kl-totaal').classList.toggle('actief', KLASSEMENT_MODE === 'totaal');
-  $('#kl-grootste').classList.toggle('actief', KLASSEMENT_MODE === 'grootste');
+  [['#kl-totaal', 'totaal'], ['#kl-grootste', 'grootste']].forEach(([sel, modus]) => {
+    $(sel).classList.toggle('actief', KLASSEMENT_MODE === modus);
+    $(sel).setAttribute('aria-pressed', String(KLASSEMENT_MODE === modus));
+  });
   const el = $('#klassement-inhoud');
   const rijen = klassementRijen();
   // deel-knop alleen op een afgelopen wedstrijd met uitslag
@@ -2206,7 +2280,7 @@ function renderKlassement() {
         <td>${avatarHtml(r.team, 'k')}${teamNaamHtml(r.team)}</td>
         <td class="r"><b>${fmtKg(r.grootste.gewicht_gram)}</b></td>
         <td>${r.grootste.foto_path
-          ? `<img class="thumb" src="${esc(fotoUrl(r.grootste.foto_path))}" alt="grootste vis" data-groot="${esc(fotoUrl(r.grootste.foto_path))}">`
+          ? `<img class="thumb" src="${esc(fotoUrl(r.grootste.foto_path))}" alt="grootste vis, vergroot de foto" data-groot="${esc(fotoUrl(r.grootste.foto_path))}" tabindex="0" role="button">`
           : '<span class="foto-leeg thumb-maat">🎣</span>'}</td>
       </tr>`).join('')}
     </table>`;
@@ -2445,11 +2519,16 @@ function tekenVangstPlaceholder(ctx, B, H, top = 0) {
 // Plaats van deze visser in het totaalklassement, voor de chip linksboven.
 function vangstChipLinks(v, t) {
   if (!t) return 'nieuwe vangst';
-  const grootste = (STATE.vangsten || []).reduce((m, x) => (x.gewicht_gram > (m?.gewicht_gram || 0) ? x : m), null);
+  // dezelfde regels als het klassement: bij gelijk gewicht wint de vroegste vangst,
+  // en wie een plaats deelt krijgt allebei die plaats (niet eerste en tweede)
+  const grootste = klGrootsteWinnaar(klassementRijen())?.grootste;
   if (grootste && grootste.id === v.id) return 'grootste vis';
   const rijen = klSorteer(klassementRijen());
   const i = rijen.findIndex((r) => r.team.id === t.id);
-  return ['eerste plaats', 'tweede plaats', 'derde plaats'][i] || 'nieuwe vangst';
+  if (i < 0) return 'nieuwe vangst';
+  const sleutel = klRangSleutel(rijen[i]);
+  const rang = rijen.findIndex((r) => klRangSleutel(r) === sleutel);
+  return ['eerste plaats', 'tweede plaats', 'derde plaats'][rang] || 'nieuwe vangst';
 }
 
 async function tekenVangst(v, t) {
@@ -2801,8 +2880,8 @@ function vangstFotoHtml(v, maat) {
   }
   const url = esc(fotoUrl(v.foto_path));
   return maat === 'groot'
-    ? `<img src="${url}" alt="vangst" data-groot="${url}" loading="lazy">`
-    : `<img class="thumb" src="${url}" data-groot="${url}" alt="">`;
+    ? `<img src="${url}" alt="vangstfoto, vergroot" data-groot="${url}" loading="lazy" tabindex="0" role="button">`
+    : `<img class="thumb" src="${url}" data-groot="${url}" alt="vangstfoto, vergroot" tabindex="0" role="button">`;
 }
 
 
@@ -2858,12 +2937,13 @@ async function wachtrijAlles() {
 let FALLBACK_POGING = null;  // upload-poging van de directe route (geen IndexedDB)
 let FORMULIER_BEZIG = false;  // vangstformulier wordt verwerkt (compressie/opslag/verzenden)
 let AANMELD_BEZIG = false;    // w_join of een herstel loopt: nooit herladen (code gaat anders verloren)
+let NIEUW_BEZIG = false;      // w_maak_wedstrijd loopt: idem, anders zijn code en pin onzichtbaar aangemaakt
 
 // serverfouten die NIET vanzelf overgaan: opnieuw proberen heeft geen zin
 // kies_eerst_je_plek staat hier bewust NIET in: zodra de organisator alsnog
 // een plek toewijst moet de wachtende vangst vanzelf doorkomen (Codex)
 const WACHTRIJ_DEFINITIEF = ['ongeldig_gewicht', 'ongeldige_foto', 'team_niet_gevonden',
-                             'foto_al_gebruikt', 'geen_toegang'];
+                             'foto_al_gebruikt', 'geen_toegang', 'wedstrijd_niet_gevonden'];
 
 async function verstuurWachtrij() {
   if (WACHTRIJ_BEZIG) return;
@@ -3019,18 +3099,22 @@ function renderPushKnop() {
 async function pushToggle() {
   const knop = $('#btn-push');
   knop.disabled = true;
+  // de wedstrijd van de tik, niet die van na het wachten op toestemming of server
+  const mijnCode = CODE, mijnKijker = KIJKER;
   try {
     const reg = await navigator.serviceWorker.ready;
-    if (pushAan(CODE)) {
+    if (pushAan(mijnCode)) {
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
         // alleen DEZE wedstrijd uitschrijven; pas als er geen enkele koppeling
         // meer over is mag het browser-abonnement zelf weg (Codex v10)
-        const res = await rpc('w_push_unsubscribe', { p_endpoint: sub.endpoint, p_code: CODE })
-          .catch(() => null);
-        if (!res || res.resterend === 0) await sub.unsubscribe();
+        // Lukt het uitschrijven niet, dan weten we niet of er nog andere wedstrijden
+        // aan dit abonnement hangen: dan niets opzeggen en eerlijk zeggen dat het
+        // niet gelukt is (de fout loopt door naar de catch hieronder).
+        const res = await rpc('w_push_unsubscribe', { p_endpoint: sub.endpoint, p_code: mijnCode });
+        if (res && res.resterend === 0) await sub.unsubscribe();
       }
-      localStorage.removeItem('push:' + CODE);
+      localStorage.removeItem('push:' + mijnCode);
       toast('Meldingen over nieuwe vangsten staan uit.');
     } else {
       const perm = await Notification.requestPermission();
@@ -3043,17 +3127,17 @@ async function pushToggle() {
         applicationServerKey: vapidBytes(VAPID_PUBLIC),
       });
       const j = sub.toJSON();
-      const t = sessie.team(CODE);
+      const t = sessie.team(mijnCode);
       await rpc('w_push_subscribe', {
-        p_code: CODE, p_token: (!KIJKER && t) ? t.token : null,
+        p_code: mijnCode, p_token: (!mijnKijker && t) ? t.token : null,
         p_endpoint: sub.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth,
-        p_route: (KIJKER ? '#/k/' : '#/w/') + CODE,
+        p_route: (mijnKijker ? '#/k/' : '#/w/') + mijnCode,
       });
-      localStorage.setItem('push:' + CODE, '1');
+      localStorage.setItem('push:' + mijnCode, '1');
       toast('Je krijgt nu een melding bij elke nieuwe vangst 🐟');
     }
   } catch (err) {
-    toast('Meldingen aanzetten is niet gelukt.');
+    toast('Meldingen aan- of uitzetten is niet gelukt. Probeer het zo nog eens.');
   }
   knop.disabled = false;
   renderPushKnop();
@@ -3070,7 +3154,7 @@ function initWedstrijd() {
   $('#tabs').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-tab]');
     if (!b) return;
-    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('actief', x === b));
+    document.querySelectorAll('#tabs button').forEach((x) => merkActief(x, x === b));
     document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== 'tab-' + b.dataset.tab; });
     renderSnelVangst();  // knop hoort weg te zijn op de vangsten-tab zelf
     merkOnderbalk(b.dataset.tab);
@@ -3198,10 +3282,13 @@ function initWedstrijd() {
     e.preventDefault();
     const foutEl = $('#su-instel-fout'); foutEl.hidden = true;
     const knop = e.target.querySelector('button[type="submit"]');
-    if (!e.target.dataset.bevestigd) {
-      e.target.dataset.bevestigd = '1';
+    // de bevestiging geldt voor ÉÉN klant: wissel je binnen vijf seconden van klant,
+    // dan moet de tweede tik niet het wachtwoord van die andere klant resetten
+    clearTimeout(SU_RESET_TIMER);
+    if (e.target.dataset.bevestigd !== String(SU_KLANT)) {
+      e.target.dataset.bevestigd = String(SU_KLANT);
       knop.textContent = `\u26a0\ufe0f Nogmaals: alleen ${suKlantNaam()}`;
-      setTimeout(() => { delete e.target.dataset.bevestigd; knop.textContent = 'Reset'; }, 5000);
+      SU_RESET_TIMER = setTimeout(() => { delete e.target.dataset.bevestigd; knop.textContent = 'Reset'; }, 5000);
       return;
     }
     delete e.target.dataset.bevestigd;
@@ -3318,6 +3405,10 @@ function initWedstrijd() {
     e.preventDefault();
     const foutEl = $('#join-fout'); foutEl.hidden = true;
     AANMELD_BEZIG = true;
+    // vastleggen voor welke wedstrijd dit is: het antwoord kan binnenkomen nadat
+    // iemand terug is gegaan of een andere wedstrijd heeft geopend
+    const mijnCode = CODE, mijnGen = SESSIE_GEN;
+    const mijnNaam = $('#join-naam').value.trim();
     try {
       const isKoppel = STATE?.wedstrijd?.mode === 'koppel';
       const duoAan = !isKoppel && !!$('#join-duo')?.checked;
@@ -3327,17 +3418,23 @@ function initWedstrijd() {
         foutEl.hidden = false; return;
       }
       const res = await rpc('w_join', {
-        p_code: CODE,
-        p_naam: $('#join-naam').value.trim(),
+        p_code: mijnCode,
+        p_naam: mijnNaam,
         // alleen meesturen als hij betekenis heeft: koppelmaat of duo-maat
         p_naam2: (isKoppel || duoAan) ? (naam2 || null) : null,
         p_team_naam: $('#join-teamnaam').value.trim() || null,
         p_duo: duoAan,
         p_foto_toestemming: !!$('#join-foto-ok')?.checked,
       });
-      sessie.zetTeam(CODE, { id: res.team_id, token: res.token, naam: $('#join-naam').value.trim(), code: res.deelnemer_code });
+      // altijd bewaren onder de wedstrijd waarvoor is aangemeld, nooit onder wat er nu
+      // in beeld staat: anders is het teamtoken (en dus de deelname) onvindbaar
+      sessie.zetTeam(mijnCode, { id: res.team_id, token: res.token, naam: mijnNaam, code: res.deelnemer_code });
+      if (mijnCode !== CODE || mijnGen !== SESSIE_GEN) {
+        if (res.deelnemer_code) toast(`🔑 Je bent aangemeld. Je persoonlijke inlogcode: ${res.deelnemer_code}`);
+        return;
+      }
       BEWAAR_VOOR_CODE = null;   // nieuwe deelname: bewaar-knop weer tonen
-      DUO_MAAT = res.duo ? { code: CODE, ...res.duo } : null;
+      DUO_MAAT = res.duo ? { code: mijnCode, ...res.duo } : null;
       if (res.deelnemer_code) toast(`🔑 Bewaar je persoonlijke inlogcode: ${res.deelnemer_code}`);
       TOON_CODE_NA_RENDER = true;   // renderTeamTab pakt dit op zodra de teamkaart zichtbaar wordt
       $('#form-join')?.reset();
@@ -3422,7 +3519,10 @@ function initWedstrijd() {
     e.preventDefault();
     const foutEl = $('#v-fout'), okEl = $('#v-ok'), knop = $('#v-submit');
     foutEl.hidden = true; okEl.hidden = true;
-    const t = sessie.team(CODE);
+    // wedstrijd en team vastleggen vóór de eerste await: de compressie van een foto
+    // duurt op een oude telefoon seconden, en in die tijd kan het scherm wisselen
+    const mijnCode = CODE;
+    const t = sessie.team(mijnCode);
     const gram = parseGewicht($('#v-gewicht').value);
     const bestand = $('#v-foto').files[0];
     if (!gram) { foutEl.textContent = 'Vul een geldig gewicht in tussen 0,05 en 50 kg, bijv. 12,45.'; foutEl.hidden = false; return; }
@@ -3438,7 +3538,7 @@ function initWedstrijd() {
       const blob = await compressFoto(bestand);
       // eerst duurzaam vastleggen, dan pas versturen: valt het bereik weg of
       // sluit de visser de app, dan staat de vangst er nog steeds
-      const item = { id: crypto.randomUUID(), code: CODE, gewicht_gram: gram,
+      const item = { id: crypto.randomUUID(), code: mijnCode, gewicht_gram: gram,
                      blob, gemaakt_op: ingediendOp, pad: null,
                      team_id: t.id, team_naam: t.naam || '' };
       let inWachtrij = true;
@@ -3451,8 +3551,16 @@ function initWedstrijd() {
         $('#v-preview').hidden = true;
         $('#v-foto-label').textContent = '📷 Foto maken of kiezen';
         await verstuurWachtrij();
-        const rest = (await wachtrijAlles()).find((i) => i.id === item.id);
-        if (!rest) {
+        // een LEESFOUT is geen lege wachtrij: alleen als we de rij echt konden lezen
+        // en het item er niet meer in staat, is de vangst aantoonbaar verstuurd
+        let rest = null, gelezen = true;
+        try {
+          rest = ((await wachtrijActie('readonly', (st) => st.getAll())) || []).find((i) => i.id === item.id);
+        } catch { gelezen = false; }
+        if (!gelezen) {
+          okEl.textContent = `Vangst van ${fmtKg(gram)} opgeslagen. Kijk in de vangstenlijst of hij al verstuurd is.`;
+          okEl.hidden = false;
+        } else if (!rest) {
           okEl.textContent = `Vangst van ${fmtKg(gram)} geregistreerd! 🎉`;
           okEl.hidden = false;
         } else if (rest.status === 'geweigerd') {
@@ -3467,12 +3575,12 @@ function initWedstrijd() {
         // De poging overleeft een mislukte submit: een retry van dezelfde
         // vangst hergebruikt het pad, dus de idempotente registratie kan
         // nooit dubbel tellen (Codex pre-wedstrijd, hoog 6)
-        const kenmerk = gram + ':' + bestand.name + ':' + bestand.size;
+        const kenmerk = [mijnCode, t.id, gram, bestand.name, bestand.size, bestand.lastModified].join(':');
         if (!FALLBACK_POGING || FALLBACK_POGING.kenmerk !== kenmerk) {
           FALLBACK_POGING = { kenmerk, pad: null };
         }
-        const pad = FALLBACK_POGING.pad || await uploadFoto(FALLBACK_POGING, blob);
-        await rpc('w_registreer_vangst', { p_code: CODE, p_token: t.token, p_gewicht_gram: gram, p_foto_path: pad });
+        const pad = FALLBACK_POGING.pad || await uploadFoto(FALLBACK_POGING, blob, mijnCode);
+        await rpc('w_registreer_vangst', { p_code: mijnCode, p_token: t.token, p_gewicht_gram: gram, p_foto_path: pad });
         FALLBACK_POGING = null;
         okEl.textContent = `Vangst van ${fmtKg(gram)} geregistreerd! 🎉`;
         okEl.hidden = false;
@@ -3539,16 +3647,19 @@ function initWedstrijd() {
   $('#form-naam')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const foutEl = $('#naam-fout'); foutEl.hidden = true;
-    const t = sessie.team(CODE);
+    const mijnCode = CODE;
+    const t = sessie.team(mijnCode);
     if (!t) return;
     try {
       const res = await rpc('w_wijzig_team', {
-        p_code: CODE, p_token: t.token,
+        p_code: mijnCode, p_token: t.token,
         p_naam: $('#wn-naam').value.trim(),
         p_naam2: $('#wn-naam2').value.trim() || null,
         p_team_naam: $('#wn-teamnaam').value.trim() || null,
       });
-      sessie.zetTeam(CODE, { ...t, naam: res.naam });
+      // intussen uitgelogd of als iemand anders ingelogd: het oude team niet terugzetten
+      if (sessie.team(mijnCode)?.token === t.token) sessie.zetTeam(mijnCode, { ...t, naam: res.naam });
+      if (mijnCode !== CODE) return;
       $('#form-naam').hidden = true;
       $('#btn-naam-wijzig').hidden = false;
       toast('Naam aangepast.');
@@ -3602,7 +3713,16 @@ function initWedstrijd() {
     }
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') sluitFotoGroot();
+    if (e.key === 'Escape') {
+      sluitFotoGroot();
+      const dn = $('#deel-nieuw');
+      if (dn && !dn.hidden) dn.hidden = true;
+    }
+    // een foto die je kunt aantikken moet je ook met Enter of spatie kunnen openen
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('img[data-groot]')) {
+      e.preventDefault();
+      openFotoGroot(e.target.dataset.groot, e.target.dataset.grootAlt);
+    }
     if (e.key === 'Tab' && !$('#foto-groot').hidden) {
       e.preventDefault(); // simpele focuslus: de sluitknop is het enige bedienbare element
       $('#foto-groot .sluit')?.focus();
@@ -3849,25 +3969,26 @@ function initBeheerKnoppen() {
     const gram = parseGewicht($('#bv-gewicht').value);
     if (!gram) { foutEl.textContent = 'Vul een geldig gewicht in tussen 0,05 en 50 kg.'; foutEl.hidden = false; return; }
     if (!$('#bv-team').value) { foutEl.textContent = 'Kies een team.'; foutEl.hidden = false; return; }
+    // invoer vastleggen vóór de compressie: daarna leest niets meer uit de velden
+    const mijnCode = CODE, mijnTeam = $('#bv-team').value, bvTijd = $('#bv-tijd')?.value || '';
     knop.disabled = true; knop.textContent = 'Bezig…';
     try {
       const f = bvFoto.files[0];
       // één poging-object voor zowel het fotopad als de idempotentiesleutel,
       // ook zonder foto (Codex v10)
       const pogingKey = [f ? `${f.name}|${f.size}|${f.lastModified}` : 'geenfoto',
-                         gram, $('#bv-team').value, $('#bv-tijd')?.value || ''].join('|');
+                         gram, mijnCode, mijnTeam, bvTijd].join('|');
       if (!BV_POGING || BV_POGING.key !== pogingKey) {
         BV_POGING = { key: pogingKey, pad: null, id: crypto.randomUUID() };
       }
       let pad = null;
       if (f) {
         const blob = await compressFoto(f);
-        pad = await uploadFoto(BV_POGING, blob);
+        pad = await uploadFoto(BV_POGING, blob, mijnCode);
       }
-      const bvTijd = $('#bv-tijd')?.value || '';
       await rpc('w_admin_voeg_vangst', {
-        p_code: CODE, p_pin: sessie.pin(CODE),
-        p_team_id: $('#bv-team').value, p_gewicht_gram: gram, p_foto_path: pad,
+        p_code: mijnCode, p_pin: sessie.pin(mijnCode),
+        p_team_id: mijnTeam, p_gewicht_gram: gram, p_foto_path: pad,
         p_client_id: BV_POGING.id,
         p_gevangen_op: bvTijd ? new Date(bvTijd).toISOString() : null,
       });
@@ -3924,7 +4045,7 @@ function parseZones(tekst) {
       const reeks = deel.match(/^(\d+)\s*-\s*(\d+)$/);
       if (reeks) {
         const van = parseInt(reeks[1], 10), tot = parseInt(reeks[2], 10);
-        if (tot < van || tot - van > 100) throw new Error(`Ongeldige reeks: "${deel}"`);
+        if (!(van <= 9999 && tot <= 9999) || tot < van || tot - van > 100) throw new Error(`Ongeldige reeks: "${deel}"`);
         const stap = (van % 2 === tot % 2) ? 2 : 1;
         for (let s = van; s <= tot; s += stap) {
           if (STEK_POSITIE[String(s)]) stekken.add(s);
@@ -3975,14 +4096,16 @@ async function renderWachtende() {
   const kaart = $('#b-wacht-card'), el = $('#b-wachtende');
   if (!kaart || !el) return;
   let lijst = [];
+  const mijnCode = CODE;
   try {
-    lijst = await rpc('w_admin_wachtende', { p_code: CODE, p_pin: sessie.pin(CODE) }) || [];
-  } catch { kaart.hidden = true; return; }
+    lijst = await rpc('w_admin_wachtende', { p_code: mijnCode, p_pin: sessie.pin(mijnCode) }) || [];
+  } catch { if (mijnCode === CODE) kaart.hidden = true; return; }
+  if (mijnCode !== CODE) return;   // intussen een andere wedstrijd geopend
   if (!lijst.length) { kaart.hidden = true; el.innerHTML = ''; return; }
   kaart.hidden = false;
   el.innerHTML = lijst.map((v) => `
     <div class="b-rij">
-      ${v.foto_path ? `<img class="thumb" src="${esc(fotoUrl(v.foto_path))}" data-groot="${esc(fotoUrl(v.foto_path))}" alt="">` : ''}
+      ${v.foto_path ? `<img class="thumb" src="${esc(fotoUrl(v.foto_path))}" data-groot="${esc(fotoUrl(v.foto_path))}" alt="vangstfoto, vergroot" tabindex="0" role="button">` : ''}
       <span class="naam">${esc(v.naam)} · <b>${fmtKg(v.gewicht_gram)}</b></span>
       <span class="muted klein">gevangen ${esc(fmtDatumTijd(v.gevangen_op))} ·
         gemeld ${esc(fmtDatumTijd(v.gemeld_op))}</span>
@@ -4008,6 +4131,7 @@ async function beslisWachtende(id, goedkeuren) {
   } catch (err) { toast(foutTekst(err)); }
 }
 
+let VANGST_OPSLAAN = null;   // Map sleutel -> verzonden waarde van de rij die nu wordt opgeslagen
 async function renderBeheer(magPrefill) {
   if (ROL !== 'organisator' || !ADMIN_OPEN) { $('#beheer-inhoud').hidden = true; $('#pin-card').hidden = false; return; }
   $('#pin-card').hidden = true;
@@ -4081,7 +4205,9 @@ async function renderBeheer(magPrefill) {
   if (TEAMCODES_CACHE.sleutel === codesSleutel) {
     vulCodes(TEAMCODES_CACHE.codes);
   } else {
-    rpc('w_admin_teamcodes', { p_code: CODE, p_pin: sessie.pin(CODE) }).then((codes) => {
+    const mijnCode = CODE;
+    rpc('w_admin_teamcodes', { p_code: mijnCode, p_pin: sessie.pin(mijnCode) }).then((codes) => {
+      if (mijnCode !== CODE) return;
       TEAMCODES_CACHE = { sleutel: codesSleutel, codes: codes || [] };
       vulCodes(codes);
     }).catch(() => {});
@@ -4115,6 +4241,22 @@ async function renderBeheer(magPrefill) {
     if ([...teamSelect.options].some((o) => o.value === huidig)) teamSelect.value = huidig;
   }
 
+  // Wat de organisator in een rij heeft veranderd maar nog niet opgeslagen, mag een
+  // verversing niet wissen: tot nu toe verdween het zodra hij buiten het veld tikte
+  // en de volgende poll de lijst opnieuw opbouwde. De rij die NU wordt opgeslagen
+  // slaan we over, die moet juist de nieuwe serverwaarde tonen.
+  const conceptSleutel = (el) => (el.dataset.vangst ? 'g:' + el.dataset.vangst
+    : el.dataset.vangstTeam ? 't:' + el.dataset.vangstTeam : 'u:' + el.dataset.vangstTijd);
+  const concept = new Map();
+  $('#b-vangsten').querySelectorAll('[data-orig]').forEach((el) => {
+    const k = conceptSleutel(el);
+    if (el.value === el.dataset.orig) return;
+    // precies wat nu naar de server gaat is geen concept meer; wat de organisator
+    // tijdens het opslaan nog verder aanpaste wel
+    if (VANGST_OPSLAAN && VANGST_OPSLAAN.get(k) === el.value) return;
+    concept.set(k, el.value);
+  });
+
   const teamsBijId = new Map(STATE.teams.map((t) => [t.id, t]));
   const teamOpties = (gekozen) => STATE.teams.map((t) => `<option value="${t.id}"${t.id === gekozen ? ' selected' : ''}>${esc(teamNaam(t))}</option>`).join('');
   $('#b-vangsten').innerHTML = STATE.vangsten.length ? STATE.vangsten.map((v) => `
@@ -4127,6 +4269,15 @@ async function renderBeheer(magPrefill) {
       <button class="btn klein-btn" data-vangst-opslaan="${v.id}">opslaan</button>
       <button class="btn gevaar klein-btn" data-vangst-weg="${v.id}">verwijder</button>
     </div>`).join('') : '<p class="muted">Nog geen vangsten.</p>';
+  if (concept.size) {
+    $('#b-vangsten').querySelectorAll('[data-orig]').forEach((el) => {
+      const k = conceptSleutel(el);
+      if (!concept.has(k)) return;
+      el.value = concept.get(k);
+      // een keuzelijst neemt een waarde die niet meer bestaat niet over (team verwijderd)
+      if (el.value !== concept.get(k)) el.value = el.dataset.orig;
+    });
+  }
   $('#b-vangsten').querySelectorAll('[data-vangst-opslaan]').forEach((b) => {
     b.onclick = async () => {
       const id = b.dataset.vangstOpslaan;
@@ -4152,7 +4303,17 @@ async function renderBeheer(magPrefill) {
         args.p_gevangen_op = d.toISOString();
       }
       if (Object.keys(args).length === 1) { toast('Niets gewijzigd.'); return; }
-      await beheerActie('w_admin_vangst', args);
+      // vastleggen wat er NU verstuurd wordt: alleen dat geldt straks als opgeslagen,
+      // niet wat er tijdens het verzoek nog in een veld wordt getypt
+      const verzonden = new Map([['g:' + id, gewichtEl.value], ['t:' + id, teamEl.value], ['u:' + id, tijdEl.value]]);
+      VANGST_OPSLAAN = verzonden;
+      const gelukt = await beheerActie('w_admin_vangst', args);
+      VANGST_OPSLAAN = null;
+      // is de lijst intussen niet opnieuw opgebouwd (er liep al een poll), dan gelden
+      // de verzonden waarden als opgeslagen en mag de volgende verversing ze vervangen
+      if (gelukt) [[gewichtEl, 'g:'], [teamEl, 't:'], [tijdEl, 'u:']].forEach(([el, soort]) => {
+        if (el.isConnected) el.dataset.orig = verzonden.get(soort + id);
+      });
     };
   });
   $('#b-vangsten').querySelectorAll('[data-vangst-weg]').forEach((b) => {

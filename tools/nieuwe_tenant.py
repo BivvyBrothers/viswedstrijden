@@ -79,6 +79,8 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
                 f'<meta property="og:description" content="{nieuwe_desc}">', 1, 'index.html og:description')
     t = vervang(t, '<meta property="og:url" content="https://viswedstrijdapp.nl/nphv/">',
                 f'<meta property="og:url" content="https://viswedstrijdapp.nl/{slug}/">', 1, 'index.html og:url')
+    t = vervang(t, '<link rel="canonical" href="https://viswedstrijdapp.nl/nphv/">',
+                f'<link rel="canonical" href="https://viswedstrijdapp.nl/{slug}/">', 1, 'index.html canonical')
     t = vervang(t, '<meta name="apple-mobile-web-app-title" content="NPHV">',
                 f'<meta name="apple-mobile-web-app-title" content="{kh}">', 1, 'index.html app-title')
     t = vervang(t, 'class="brand-logo"> NPHV Viswedstrijden</a>',
@@ -107,6 +109,9 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     t = vervang(t, '<meta property="og:url" content="https://viswedstrijdapp.nl/nphv/instructies.html">',
                 f'<meta property="og:url" content="https://viswedstrijdapp.nl/{slug}/instructies.html">',
                 1, 'instructies og:url')
+    t = vervang(t, '<link rel="canonical" href="https://viswedstrijdapp.nl/nphv/instructies.html">',
+                f'<link rel="canonical" href="https://viswedstrijdapp.nl/{slug}/instructies.html">',
+                1, 'instructies canonical')
     t = vervang(t, 'class="brand-logo"> NPHV Viswedstrijden</a>',
                 f'class="brand-logo"> {kh} Viswedstrijden</a>', 1, 'instructies brand')
     t = vervang(t, 'tik op <b style="color:#fff">Inloggen</b> en kies daar <b style="color:var(--oranje)">NPHV</b>',
@@ -142,15 +147,18 @@ def bouw_bestanden(doel, slug, kort, volledig, water, stekken, zones, kaart_van)
     schrijf(os.path.join(doel, 'manifest.webmanifest'),
             json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 
-    # --- config.js: tenant-slug en de nieuwe navigatie ---
-    # Een NIEUWE klant begint meteen met het tegeloverzicht en de balk onderaan; NPHV
-    # houdt de oude indeling tot Patrick de vlag daar omzet (fase 4 en 5 van het ontwerp).
+    # --- config.js: tenant-slug en de navigatie ---
+    # Een nieuwe klant begint met het tegeloverzicht en de balk onderaan. Sinds v106
+    # (21 sep 2026) staat de vlag ook bij NPHV aan, dus het sjabloon heeft hem al op
+    # true; we controleren alleen dat hij er precies één keer staat. Tot 18 nov 2026
+    # zocht dit script nog naar `false` en brak het dus bij elke nieuwe tenant.
     t = lees(os.path.join(BRON, 'config.js'))
     t = vervang(t, "const TENANT = 'nphv';", f"const TENANT = '{slug}';", 1, 'config TENANT')
-    t = vervang(t, 'const NAV_TEGELS = false;', 'const NAV_TEGELS = true;', 1, 'config NAV_TEGELS')
-    t = t.replace('// Tegelnavigatie (fase 4 van het ontwerp, v101): staat hier nog UIT. Gaat aan\n'
-                  '// zodra de testmatrix op de demo groen is.',
-                  '// Tegelnavigatie (fase 4 en 5 van het ontwerp): nieuwe klanten beginnen hiermee.')
+    t = vervang(t, 'const NAV_TEGELS = true;', 'const NAV_TEGELS = true;', 1, 'config NAV_TEGELS')
+    t = vervang(t, '// Tegelnavigatie (fase 4 en 5 van het ontwerp): AAN sinds 21 sep 2026 (v106),\n'
+                   '// nadat de demo de hele testmatrix en de rooktest groen doorliep.',
+                '// Tegelnavigatie (fase 4 en 5 van het ontwerp): nieuwe klanten beginnen hiermee.',
+                1, 'config NAV_TEGELS-commentaar')
     schrijf(os.path.join(doel, 'config.js'), t)
     shutil.copy(os.path.join(BRON, 'version.json'), os.path.join(doel, 'version.json'))
 

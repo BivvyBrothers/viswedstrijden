@@ -345,7 +345,11 @@ async function main() {
     if (!stekken.length) throw new Error('de kaart tekent geen stekken (kaart.js van deze tenant?)');
     const uit = await js(`
       if (!mijnBeurtNu()) return { fout: 'de deelnemer is niet aan de beurt' };
-      klikStek(${stekken[0]});
+      // Werkt de wedstrijd met zones (NPHV: vaste indeling A t/m S), dan moet de tik op
+      // een stek vallen die IN een zone ligt; de eerste stek op de kaart ligt daar
+      // soms buiten en dan blijft de bevestigknop terecht op "Selecteer een zone" staan.
+      const zones = (STATE.wedstrijd.zones || []).filter((z) => (z.stekken || []).length);
+      klikStek(zones.length ? zones[0].stekken[0] : ${stekken[0]});
       await new Promise(r => setTimeout(r, 400));
       const knop = document.querySelector('#btn-kies');
       if (!knop || knop.disabled) return { fout: 'bevestigknop blijft uit: ' + (knop ? knop.textContent : 'knop ontbreekt') };
