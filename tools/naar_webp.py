@@ -23,7 +23,7 @@ BRONNEN = [
     "schermen/avondlicht-1600.jpg", "schermen/scherm-klassement.png", "schermen/scherm-overzicht.png",
     "schermen/scherm-kaart-nphv.png", "schermen/kaart3d-stekken.jpg", "schermen/uitsnede-klassement.jpg",
     "schermen/vangst-klassement.jpg", "schermen/uitsnede-seizoen.jpg", "schermen/uitslag-gedeeld.png",
-    "schermen/beginscherm-mockup.jpg", "film/uitlegfilm-poster.jpg", "film/uitlegfilm-poster-staand.jpg",
+    "schermen/beginscherm-mockup.jpg", "film/wedstrijdfilm-poster.jpg", "film/wedstrijdfilm-poster-staand.jpg",
 ]
 
 

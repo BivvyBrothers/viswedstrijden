@@ -1,5 +1,5 @@
-/* Uitlegfilm op de startpagina.
-   - Laadt pas als hij in beeld komt (preload="none"), dus geen 3 MB voor wie
+/* Film op de startpagina (het verhaal van een wedstrijd).
+   - Laadt pas als hij in beeld komt (preload="none"), dus geen 7 MB voor wie
      nooit zo ver scrolt, en pauzeert weer zodra hij uit beeld is.
    - Altijd eerst zonder geluid: browsers starten geen film met geluid zonder tik.
    - De knop "Geluid aan" verschijnt alleen als het bestand een geluidsspoor heeft.
@@ -20,7 +20,7 @@
   const staand = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
   if (staand) {
     const bron = v.querySelector('source');
-    bron.src = 'film/uitlegfilm-1080x1920.mp4';
+    bron.src = 'film/wedstrijdfilm-1080x1920.mp4';
     v.setAttribute('width', '1080'); v.setAttribute('height', '1920');
     v.closest('.film-kader').classList.add('staand');
   }

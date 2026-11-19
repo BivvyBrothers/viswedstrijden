@@ -29,7 +29,7 @@
 <link rel="stylesheet" href="landing.css">
 <link rel="icon" href="icon-192.png">
 <script src="landing.js"></script>
-<script src="film.js" defer></script>
+<script src="film.js?v=2" defer></script>
 </head>
 <body>
 
@@ -95,14 +95,14 @@
   <!-- 01b de film -->
   <section class="vlak groen film-blok" id="film">
     <div class="breed">
-      <span class="eyebrow">In 50 seconden</span>
-      <h2>Zo werkt <span class="accent">de app</span></h2>
+      <span class="eyebrow">In ruim een minuut</span>
+      <h2>Een wedstrijd, <span class="accent">van loting tot prijsuitreiking</span></h2>
       <div class="film-kader">
         <video id="uitlegfilm" muted loop playsinline controls preload="none"
-          data-poster="film/uitlegfilm-poster.webp" data-poster-staand="film/uitlegfilm-poster-staand.webp"
+          data-poster="film/wedstrijdfilm-poster.webp" data-poster-staand="film/wedstrijdfilm-poster-staand.webp"
           width="1920" height="1080"
-          aria-label="Uitlegfilm over de viswedstrijdapp" aria-describedby="film-uitleg">
-          <source src="film/uitlegfilm-1920x1080.mp4" type="video/mp4">
+          aria-label="Film: een viswedstrijd met de app, van aanmaken tot prijsuitreiking" aria-describedby="film-uitleg">
+          <source src="film/wedstrijdfilm-1920x1080.mp4" type="video/mp4">
         </video>
         <button type="button" class="film-groot" id="film-groot" aria-label="Film afspelen" hidden>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" fill="currentColor"/></svg>
@@ -112,9 +112,10 @@
           <button type="button" class="film-knop" id="film-geluid" aria-pressed="false" hidden>Geluid aan</button>
         </div>
       </div>
-      <p class="film-uitleg klein" id="film-uitleg">Een wedstrijd aanmaken, meedoen met een code,
-      loten en je stek kiezen, een vangst doorgeven en het live klassement, ook voor wie
-      thuis meekijkt.</p>
+      <p class="film-uitleg klein" id="film-uitleg">De organisator maakt de wedstrijd en deelt de
+      code. De vissers loten, kiezen hun stek en bouwen op. Elke vangst gaat met foto de app
+      in, thuis kijken ze live mee, en bij een vangst van een ander krijgt iedereen een
+      melding. Na de eindtijd staat de uitslag vast en volgt de prijsuitreiking.</p>
     </div>
   </section>
 

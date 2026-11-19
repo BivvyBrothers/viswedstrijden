@@ -1133,32 +1133,50 @@ vlak na een release toont een controleopname de VORIGE versie. `mobiel_screensho
 zet daarom `Network.setCacheDisabled`. Ziet een verificatie er onveranderd uit, kijk
 dan eerst naar `APP_VERSION` in de pagina voordat je de code gaat zoeken.
 
-## Uitlegfilm op de startpagina (17 okt 2026)
+## Film op de startpagina (versie 2 sinds 19 nov 2026)
 
 Blok `#film` direct onder de hero van `docs/index.html` (de knop "Zo werkt het" in
-de hero wijst ernaar). Bestanden in `docs/film/`: `uitlegfilm-1920x1080.mp4` (H.264,
-50 s, 3,1 MB) en `uitlegfilm-poster.jpg` (eindbeeld, 1600x900). Gemaakt door Patrick met
-het ontwerpgereedschap in Claude; prompt en bronbeelden in `ontwerp/film-werking/`.
+de hero wijst ernaar). **Sinds 19 nov 2026 staat hier versie 2: het verhaal van één
+visser door een hele wedstrijd** (organisator maakt de wedstrijd en deelt de code,
+aankomst en loting, stek en opbouwen, beet en vangst, registreren en delen, het
+thuisfront kijkt mee, een melding in de nacht, uitslag en prijsuitreiking), 77 seconden,
+getekende animatie met echte schermopnamen op de telefoon. De eerste film (17 okt,
+48 seconden, alleen schermen) is van de site af.
+
+Bestanden in `docs/film/`: `wedstrijdfilm-1920x1080.mp4` (7,2 MB) en
+`wedstrijdfilm-1080x1920.mp4` (6,7 MB), beide H.264 met AAC-geluid, plus de posters
+`wedstrijdfilm-poster.jpg` (1600x900) en `wedstrijdfilm-poster-staand.jpg` (720x1280) met
+hun WebP-versie (staan in de lijst van `tools/naar_webp.py`). Bron, draaiboek, render en
+muziek: `ontwerp/film-werking/` (`LEESMIJ.md`, `bron/film.html`, `bron/render.mjs`,
+`muziek/maak_muziek_v2.py`). De meesters met muziek staan in `ontwerp/film-werking/export/`.
+
+**De film vervangen:** nieuwe mp4's onder dezelfde namen neerzetten, de twee poster-jpg's
+vervangen en `python3 tools/naar_webp.py` draaien. Geen codewijziging en geen
+versieverhoging nodig (de startpagina valt buiten de service workers van de omgevingen).
+Verandert de inhoud, pas dan ook de kop, het `aria-label` en de alinea `#film-uitleg` in
+`docs/index.html` aan: die alinea is de tekstversie van de film voor wie hem niet ziet.
 
 `docs/film.js` (defer, apart bestand want de CSP staat geen inline script toe):
 - `preload="none"`: de film laadt pas als hij voor 40% in beeld is, en pauzeert weer
-  zodra hij eruit gaat. Geen 3 MB voor wie nooit zo ver scrolt.
+  zodra hij eruit gaat. Geen 7 MB voor wie nooit zo ver scrolt.
 - Altijd zonder geluid starten (browsers blokkeren automatisch geluid). De knop
   "Geluid aan" verschijnt ALLEEN als het bestand een geluidsspoor heeft
-  (`webkitAudioDecodedByteCount`/`audioTracks`), dus een nieuwe mp4 met muziek is
-  genoeg om hem te laten verschijnen; geen codewijziging nodig.
+  (`webkitAudioDecodedByteCount`/`audioTracks`).
 - Afspelen/Pauzeer-knop: bewegend beeld langer dan 5 seconden moet te pauzeren zijn.
 - `prefers-reduced-motion`: geen automatisch afspelen, alleen de poster.
 
 **Staande versie op telefoons:** `film.js` kiest bij `max-width: 600px` vóór het eerste
-laden `uitlegfilm-1080x1920.mp4` en `uitlegfilm-poster-staand.jpg` en zet `.staand` op
-het kader (9:16, maximaal 76vh hoog). Op 390 px was de tekst in de liggende film te klein.
+laden `wedstrijdfilm-1080x1920.mp4` en de staande poster en zet `.staand` op het kader
+(9:16, maximaal 76vh hoog). Op 390 px is de tekst in de liggende film te klein.
 
-**Muziek (17 okt):** zelf gecomponeerd en dus vrij van rechten, 50 s, 96 bpm, D groot
-(D-A-Bm-G), opbouw volgt de scènes; bron en script in `ontwerp/film-werking/muziek/`
-(`maak_muziek.py`, `voeg_samen.swift` voegt het AAC-geluid toe zonder het beeld
-opnieuw te coderen). Beide mp4's op de site hebben nu een geluidsspoor, dus de knop
-"Geluid aan" verschijnt vanzelf. De film start nog steeds zonder geluid.
+**Muziek:** zelf gecomponeerd en dus vrij van rechten, 77 s, 96 bpm, D groot (D-A-Bm-G),
+de opbouw volgt de scènes en er klinkt een belletje bij de twee meldingen. De film start
+altijd zonder geluid.
+
+**Controleren in de browserpreview:** op telefoonbreedte scrolt `scrollIntoView` niet
+(de pagina heeft `scroll-behavior: smooth`); gebruik `scrollTo({top, behavior:'instant'})`.
+De film start daar pas als er een beeld wordt opgevraagd (schermopname), dus `paused`
+direct na het scrollen zegt niets.
 
 ## Controle- en verbeterronde v113 (18 nov 2026)
 
