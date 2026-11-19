@@ -1377,16 +1377,17 @@ elke vangst") en de kopjes "Meedoen" en "Contact" in de voet.
   of historie): `scherm-home`, `scherm-vangsten`, `scherm-seizoen`, `scherm-afsluiting`,
   `uitslag-carpclassic-2026`. `vangst-klein.jpg` en `avondlicht-800.jpg` worden door
   gereedschap gebruikt (rooktest, advertentie, huisstijloverzicht): laten staan.
-- **`kaart3d-stekken`: alleen nog het water (19 nov, op aanwijzing van Patrick).** Hij tekende
-  in een schermafbeelding een zwarte lijn om het water; het weiland, de tweede plas en de
-  bebouwing eronder zijn weggesneden. Alle steknummers staan er nog op, ook de losse nummers
-  20 tot 28 en 99 die buiten de plaat zweven. Langs de weg onder de vaart is de snede recht
-  getrokken (de handlijn slingerde daar), de rest volgt zijn lijn, gladgestreken. Nieuw
-  formaat 1501 x 643 (was 1465 x 782); `width` en `height` in `index.html` zijn meegegaan.
-  Gereedschap en de lijn zelf: `tools/kaart3d/`. De ongesneden plaat staat in git
-  (`git show 7ce5077:docs/schermen/kaart3d-stekken.jpg`). **Niet aangepast:**
-  `docs/nphv/kaart-3d.jpg`, de 3D-kaart die de NPHV-app zelf opent (oorspronkelijke render,
-  met land en dieptelegenda).
+- **`kaart3d-stekken`: alleen het water, strak langs de waterrand (19 en 20 nov, op aanwijzing
+  van Patrick).** Eerst langs een lijn die hij in een schermafbeelding tekende; daarna wilde hij
+  hem "helemaal langs de groene kant" en de steknummers "aan de binnenkant of weg". De kaart
+  wordt nu opnieuw opgebouwd uit de bronrender: water herkend op kleur, de zuidrand recht
+  getrokken, de oude nummers uit het beeld gehaald en opnieuw getekend net binnen de rand, op
+  volgorde langs de oever. Van de 96 steknummers staan er 90 op; 17, 23, 27, 31, 33 en 35
+  (oostoever) zijn vervallen omdat de stekken daar in dit perspectief op elkaar liggen. Formaat
+  1500 x 593. **Gereedschap en uitleg: `Viswedstrijdapp/kaart-proef-tools/alleen-water/`** (buiten
+  deze repo, naast `render3d.py` en de bronrender). De eerste versie van 19 nov en de oude
+  plaat met land staan in git (`4193daa` en `7ce5077`). **Niet aangepast:**
+  `docs/nphv/kaart-3d.jpg`, de 3D-kaart die de NPHV-app zelf opent (met land en dieptelegenda).
 - **Twee oude fouten die hierbij aan het licht kwamen (Codex-review van de diff, nagemeten):**
   (1) de topbar bleef bij scrollen NIET bovenaan staan: `html, body { overflow-x: hidden }`
   maakt van `body` een scrollvak en dan plakt `position: sticky` niet. Nu
