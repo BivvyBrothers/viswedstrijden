@@ -26,9 +26,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
 <meta name="theme-color" content="#353d2a">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="landing.css">
+<link rel="stylesheet" href="landing.css?v=2">
 <link rel="icon" href="icon-192.png">
-<script src="landing.js"></script>
+<script src="landing.js?v=2"></script>
 <script src="film.js?v=2" defer></script>
 </head>
 <body>
@@ -36,7 +36,7 @@
 <a class="spring" href="#inhoud">Ga naar de inhoud</a>
 <header class="topbar">
   <a href="./" class="merk"><img src="logo-rond-112.webp" alt="" width="34" height="34"> Viswedstrijdapp</a>
-  <nav class="hoofdnav" aria-label="Hoofdmenu">
+  <nav class="hoofdnav" id="hoofdmenu" aria-label="Hoofdmenu">
     <a href="#zo-werkt-het">Zo werkt het</a>
     <a href="#mogelijkheden">Mogelijkheden</a>
     <a href="#ervaringen">Ervaringen</a>
@@ -44,6 +44,7 @@
     <a href="#vragen">Vragen</a>
   </nav>
   <a class="top-login" href="inloggen/">Inloggen</a>
+  <button type="button" class="menu-knop" aria-label="Menu" aria-expanded="false" aria-controls="hoofdmenu"><span></span><span></span></button>
 </header>
 
 <main id="inhoud">
@@ -66,7 +67,7 @@
     <div class="hero-waas"></div>
     <div class="hero-inhoud breed">
       <div class="duo">
-        <div>
+        <div data-toon>
           <span class="slogan-blok"><span class="tekst">Loot<span class="punt">.</span> Vis<span class="punt">.</span> Win<span class="punt">.</span></span><svg viewBox="0 0 200 15" aria-hidden="true" focusable="false"><path d="M2.5 11.2C34 5.1 96 1.6 174 2.2c8 .1 16 .6 23.5 1.7-7.4.3-15 .1-22.6.1-60-.3-116 2.4-168.5 9.4-2.4.3-4.3-.6-3.9-2.2z" fill="currentColor"/></svg></span>
           <h1>Jullie wedstrijd.<br><span class="accent">Alles geregeld.</span></h1>
           <p class="sub">Van loting tot live klassement. Voor je vereniging,
@@ -77,7 +78,9 @@
           </div>
           <p class="fijn">Deelnemen met een code en je naam. Geen account, geen App Store.</p>
         </div>
-        <div class="hero-telefoon">
+        <div class="hero-telefoon" data-toon style="--wacht:.12s">
+          <span class="hero-label een" aria-hidden="true"><i></i>Live klassement</span>
+          <span class="hero-label twee" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10.3 20a1.9 1.9 0 0 0 3.4 0"></path></svg>Melding bij elke vangst</span>
           <div class="telefoon-frame">
             <img src="schermen/scherm-klassement.webp" alt="Het live klassement in de app, met per visser het gewicht en de opbouw per gevangen vis, en onderin de vaste navigatiebalk" width="780" height="1688">
           </div>
@@ -95,9 +98,11 @@
   <!-- 01b de film -->
   <section class="vlak groen film-blok" id="film">
     <div class="breed">
-      <span class="eyebrow">In ruim een minuut</span>
-      <h2>Een wedstrijd, <span class="accent">van loting tot prijsuitreiking</span></h2>
-      <div class="film-kader">
+      <div class="kop midden" data-toon>
+        <span class="eyebrow">In ruim een minuut</span>
+        <h2>Een wedstrijd, <span class="accent">van loting tot prijsuitreiking</span></h2>
+      </div>
+      <div class="film-kader" data-toon>
         <video id="uitlegfilm" muted loop playsinline controls preload="none"
           data-poster="film/wedstrijdfilm-poster.webp" data-poster-staand="film/wedstrijdfilm-poster-staand.webp"
           width="1920" height="1080"
@@ -122,10 +127,12 @@
   <!-- 02 in de praktijk -->
   <section class="vlak" id="ervaringen">
     <div class="breed">
-      <span class="eyebrow">In de praktijk</span>
-      <h2>De Carpclassic Nootdorp, <span class="accent">van loting tot uitslag</span></h2>
+      <div class="kop" data-toon>
+        <span class="eyebrow">In de praktijk</span>
+        <h2>De Carpclassic Nootdorp, <span class="accent">van loting tot uitslag</span></h2>
+      </div>
       <div class="praktijk-balk">
-        <div>
+        <div data-toon>
           <p>September 2026, de NPHV aan de Plas van der Ende: 25 uur vissen, een loting
           via de telefoon, zones kiezen op de dieptekaart en elke karper met foto het
           klassement in. Thuis werd er vanaf ruim 100 telefoons live meegekeken, van de
@@ -133,7 +140,7 @@
           <blockquote class="citaat">&ldquo;Grote complimenten voor het maken van deze app,
           echt een verrijking.&rdquo;<footer>Berry, deelnemer</footer></blockquote>
         </div>
-        <div class="cijferrij">
+        <div class="cijferrij" data-toon style="--wacht:.1s">
           <div class="cijfer"><b>14</b><span>vissers deze wedstrijd</span></div>
           <div class="cijfer"><b>13</b><span>karpers deze wedstrijd</span></div>
           <div class="cijfer"><b>8,6</b><span>beoordeling door de deelnemers</span></div>
@@ -145,28 +152,30 @@
   <!-- 03 de wedstrijddag -->
   <section class="vlak zand-licht" id="zo-werkt-het">
     <div class="breed">
-      <span class="eyebrow">De wedstrijddag</span>
-      <h2>Zo loopt jullie <span class="accent">wedstrijddag</span></h2>
+      <div class="kop" data-toon>
+        <span class="eyebrow">De wedstrijddag</span>
+        <h2>Zo loopt jullie <span class="accent">wedstrijddag</span></h2>
+      </div>
       <div class="tijdlijn">
-        <div class="stap">
+        <div class="stap" data-toon>
           <span class="nr">01</span>
           <div><b>Vooraf</b><p>De organisator maakt de wedstrijd aan en deelt de code in
           de groepsapp. Vissers melden zich aan met hun naam.</p></div>
         </div>
-        <div class="stap">
+        <div class="stap" data-toon style="--wacht:.08s">
           <span class="nr">02</span>
           <div><b>Aan het water</b><p>Loten met één druk op de knop, om de beurt een stek
           kiezen op de kaart, en elke vangst met foto en gewicht vastleggen.</p></div>
         </div>
-        <div class="stap">
+        <div class="stap" data-toon style="--wacht:.16s">
           <span class="nr">03</span>
           <div><b>Na afloop</b><p>Op de eindtijd staat de uitslag vast. Iedereen krijgt een
           melding met de winnaar en de tijd van de prijsuitreiking.</p></div>
         </div>
       </div>
 
-      <div class="beeldduo scherm-duo" style="margin-top:clamp(26px,4vw,44px)">
-        <div>
+      <div class="beeldduo scherm-duo">
+        <div data-toon>
           <h3 class="groot">Alles vanaf <span class="accent">één scherm</span></h3>
           <p>Wie de app opent ziet meteen waar het om gaat. Onderin staat een vaste balk,
           zodat je met één tik naar de kaart of de vangsten gaat, ook met natte handen.</p>
@@ -185,8 +194,8 @@
             </li>
           </ul>
         </div>
-        <div class="beeld">
-          <div class="telefoon-frame" style="max-width:290px;margin:0 auto">
+        <div class="beeld toestel-vlak" data-toon style="--wacht:.1s">
+          <div class="telefoon-frame">
             <img src="schermen/scherm-overzicht.webp" alt="Het startscherm van een lopende wedstrijd in de app: de klok tot het einde, vier tegels voor viswater, loting, klassement en vangsten, en onderin een vaste navigatiebalk" width="780" height="1688" loading="lazy">
           </div>
         </div>
@@ -198,12 +207,7 @@
   <section class="vlak" id="mogelijkheden">
     <div class="breed">
       <div class="beeldduo omgekeerd">
-        <div class="beeld">
-          <div class="telefoon-frame" style="max-width:290px;margin:0 auto">
-            <img src="schermen/scherm-kaart-nphv.webp" alt="De dieptekaart van de Plas van der Ende in de app, met zones, dieptelijnen en vrije en bezette stekken" width="780" height="1688" loading="lazy">
-          </div>
-        </div>
-        <div>
+        <div data-toon>
           <span class="eyebrow">Loting &middot; kaart &amp; zones</span>
           <h2>Van lotnummer naar <span class="accent">jullie eigen stek</span></h2>
           <p>Eén druk op de knop bepaalt de kiesvolgorde. Iedereen ziet zijn lotnummer op
@@ -219,15 +223,20 @@
               <div><b>Jullie water, herkenbaar in beeld</b><span>De echte dieptekaart met steknummers en zones. Vrij is wit, bezet is rood, jouw plek is groen.</span></div>
             </li>
           </ul>
-          <p class="klein" style="margin-top:16px">Standaard richten we een
+          <p class="klein" style="margin-top:22px">Standaard richten we een
           standaardkaart in: een fictief water met jullie eigen stekken en zones. Hebben
           jullie een eigen waterkaart, plat of met dieptelijnen zoals hierboven? Die
           digitaliseren wij, dan staat jullie echte water in de app.</p>
         </div>
+        <div class="beeld toestel-vlak" data-toon style="--wacht:.1s">
+          <div class="telefoon-frame">
+            <img src="schermen/scherm-kaart-nphv.webp" alt="De dieptekaart van de Plas van der Ende in de app, met zones, dieptelijnen en vrije en bezette stekken" width="780" height="1688" loading="lazy">
+          </div>
+        </div>
       </div>
-      <figure style="margin:clamp(26px,4vw,44px) 0 0">
-        <img src="schermen/kaart3d-stekken.webp" alt="De 3D-dieptescan van de Plas van der Ende met de stekken en zones uit de app eroverheen" width="1465" height="782" loading="lazy" style="border-radius:16px">
-        <figcaption class="klein" style="margin-top:10px">Waar het mee begint: de dieptescan
+      <figure class="kaartplaat" data-toon>
+        <img src="schermen/kaart3d-stekken.webp" alt="De 3D-dieptescan van de Plas van der Ende met de stekken en zones uit de app eroverheen" width="1465" height="782" loading="lazy">
+        <figcaption class="klein">Waar het mee begint: de dieptescan
         van jullie water, hier in 3D met de stekken en zones uit de app eroverheen. Zo'n scan,
         een oude papieren kaart of een tekening; wij maken er de interactieve kaart van.</figcaption>
       </figure>
@@ -238,7 +247,7 @@
   <section class="vlak groen">
     <div class="breed">
       <div class="beeldduo">
-        <div>
+        <div data-toon>
           <span class="eyebrow">Live klassement</span>
           <h2>De vangst binnen.<br><span class="accent">Iedereen bijgepraat.</span></h2>
           <p style="color:var(--licht-op-groen)">Vangst registreren duurt 20 seconden:
@@ -263,12 +272,12 @@
             <a class="knop primair" href="demo/#/k/KIJKJE">Kijk mee in de demo &rarr;</a>
           </div>
         </div>
-        <div class="klassement-beeld">
+        <div class="klassement-beeld" data-toon style="--wacht:.1s">
           <img src="schermen/uitsnede-klassement.webp" alt="Het klassement in de app: per deelnemer het aantal vissen en het totaalgewicht" width="732" height="734" loading="lazy">
           <img src="schermen/vangst-klassement.webp" alt="Een vangst zoals de app die deelt: foto, gewicht en naam van de visser" width="864" height="1080" loading="lazy">
         </div>
       </div>
-      <p class="klein" style="margin-top:20px">Valt het bereik weg? Dan bewaart de app de
+      <p class="klein voetnoot">Valt het bereik weg? Dan bewaart de app de
       vangst op de telefoon en verstuurt hem zodra er weer verbinding is.</p>
     </div>
   </section>
@@ -277,7 +286,7 @@
   <section class="vlak">
     <div class="breed">
       <div class="kaartduo">
-        <div class="witte-kaart">
+        <div class="witte-kaart" data-toon>
           <span class="eyebrow">Seizoenscompetitie</span>
           <h3>Ook het <span class="accent">seizoen</span> telt mee</h3>
           <p class="klein">Koppel wedstrijden aan een seizoen en de app rekent de stand
@@ -286,7 +295,7 @@
           wedstrijden. Per seizoen en per wedstrijd instelbaar.</p>
           <img src="schermen/uitsnede-seizoen.webp" alt="Het seizoensklassement in de app: per deelnemer de plaats per wedstrijd, met doorgestreepte aftrekresultaten en het puntentotaal" width="732" height="734" loading="lazy">
         </div>
-        <div class="witte-kaart">
+        <div class="witte-kaart" data-toon style="--wacht:.1s">
           <span class="eyebrow">Delen</span>
           <h3>De uitslag zo in de <span class="accent">groepsapp</span></h3>
           <p class="klein">De einduitslag, de seizoensstand en elke gevangen vis deel je met
@@ -302,9 +311,11 @@
   <!-- 07 zonder gedoe en privacy -->
   <section class="vlak zand-licht">
     <div class="breed">
-      <h2>Makkelijk meedoen. <span class="accent">Zorgvuldig met gegevens.</span></h2>
-      <div class="duo-lijst" style="margin-top:22px">
-        <div class="kolom">
+      <div class="kop" data-toon>
+        <h2>Makkelijk meedoen. <span class="accent">Zorgvuldig met gegevens.</span></h2>
+      </div>
+      <div class="duo-lijst">
+        <div class="kolom" data-toon>
           <div class="kolom-kop">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
             <h3>Zonder gedoe</h3>
@@ -316,7 +327,7 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg><span>De organisator maakt een wedstrijd in een minuut aan</span></li>
           </ul>
         </div>
-        <div class="kolom">
+        <div class="kolom donker" data-toon style="--wacht:.1s">
           <div class="kolom-kop">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
             <h3>Privacy</h3>
@@ -329,15 +340,15 @@
           </ul>
         </div>
       </div>
-      <div class="beeldduo mockup-duo" style="margin-top:clamp(26px,4vw,44px)">
-        <div>
-          <h3>Geen accounts, geen App Store</h3>
+      <div class="beeldduo mockup-duo">
+        <div data-toon>
+          <h3 class="groot">Geen accounts, <span class="accent">geen App Store</span></h3>
           <p class="klein">De app werkt op iPhone en Android en komt als icoon op het
           beginscherm, zodat meldingen binnenkomen. Deelnemers loggen in met een
           wedstrijdcode en hun naam; hun persoonlijke code kunnen ze in de wachtwoorden van
           hun telefoon bewaren.</p>
         </div>
-        <div class="beeld">
+        <div class="beeld" data-toon style="--wacht:.1s">
           <img src="schermen/beginscherm-mockup.webp" alt="Het icoon van de viswedstrijdapp op het beginscherm van een iPhone, tussen de andere apps" width="1600" height="1200" loading="lazy">
         </div>
       </div>
@@ -347,15 +358,17 @@
   <!-- 08 van kaart naar wedstrijddag -->
   <section class="vlak" id="starten">
     <div class="breed">
-      <span class="eyebrow">Van aanvraag naar wedstrijddag</span>
-      <h2>In vier stappen naar <span class="accent">de eerste wedstrijd</span></h2>
-      <div class="startstappen">
+      <div class="kop" data-toon>
+        <span class="eyebrow">Van aanvraag naar wedstrijddag</span>
+        <h2>In vier stappen naar <span class="accent">de eerste wedstrijd</span></h2>
+      </div>
+      <div class="startstappen" data-toon>
         <div class="stap groen-nr"><span class="nr">1</span><div><b>Aanleveren</b><p>Stuur jullie stekken, zones en wedstrijdregels. Hebben jullie een eigen waterkaart? Een dieptescan, een oude kaart of een schets met pen is genoeg.</p></div></div>
         <div class="stap groen-nr"><span class="nr">2</span><div><b>Inrichten</b><p>Wij zetten jullie eigen omgeving klaar op viswedstrijdapp.nl, met een standaardkaart (fictief water, jullie stekken) of jullie eigen waterkaart gedigitaliseerd.</p></div></div>
         <div class="stap groen-nr"><span class="nr">3</span><div><b>Proefdraaien</b><p>Samen testen we alles: loting, vangst doorgeven en het klassement.</p></div></div>
         <div class="stap groen-nr"><span class="nr">4</span><div><b>Vissen</b><p>Jullie zijn klaar voor de eerste wedstrijd. Wij blijven op de achtergrond voor vragen.</p></div></div>
       </div>
-      <div class="prijsblok">
+      <div class="prijsblok" data-toon>
         <div>
           <div class="bedrag">Vanaf &euro; 79 per wedstrijd <small>alles inbegrepen</small></div>
           <ul class="staffel">
@@ -365,6 +378,11 @@
             <li><span>26 tot 50 deelnemers</span><b>&euro; 159</b></li>
             <li class="jaar"><span>een heel jaar, onbeperkt</span><b>vanaf &euro; 199</b></li>
           </ul>
+          <div class="knoppen">
+            <a class="knop primair" href="mailto:info@viswedstrijdapp.nl?subject=Prijzenblad%20viswedstrijdapp&amp;body=Hallo%2C%0A%0AWij%20ontvangen%20graag%20het%20prijzenblad.%0A%0AOrganisatie%3A%0ANaam%20van%20het%20water%3A%0ADatum%20van%20de%20wedstrijd%3A%0ADuur%20%28van%20hoe%20laat%20tot%20hoe%20laat%29%3A%0AVerwacht%20aantal%20deelnemers%3A%0ALosse%20wedstrijd%20of%20een%20heel%20jaar%20onbeperkt%3A%0AEigen%20waterkaart%20digitaliseren%3A%20ja%20/%20nee%0A%0AHebben%20jullie%20een%20kaart%2C%20plattegrond%20of%20foto%20van%20het%20water%3F%0AStuur%20die%20mee%20als%20bijlage%20bij%20deze%20mail.%0A%0AGroeten%2C%0A">Vraag het prijzenblad aan &rarr;</a>
+          </div>
+        </div>
+        <div>
           <p>Inbegrepen: jullie eigen omgeving met eigen adres, een standaardkaart met
           jullie stekken en zones, loting, live klassement, vangsten met foto, onbeperkt
           kijkers en hulp op de wedstrijddag. Zo'n standaardkaart is een fictief water:
@@ -376,9 +394,6 @@
           dan digitaliseren wij die: eenmalig &euro; 195, of &euro; 95 bij een
           seizoen.</p>
         </div>
-        <div class="knoppen">
-          <a class="knop primair" href="mailto:info@viswedstrijdapp.nl?subject=Prijzenblad%20viswedstrijdapp&amp;body=Hallo%2C%0A%0AWij%20ontvangen%20graag%20het%20prijzenblad.%0A%0AOrganisatie%3A%0ANaam%20van%20het%20water%3A%0ADatum%20van%20de%20wedstrijd%3A%0ADuur%20%28van%20hoe%20laat%20tot%20hoe%20laat%29%3A%0AVerwacht%20aantal%20deelnemers%3A%0ALosse%20wedstrijd%20of%20een%20heel%20jaar%20onbeperkt%3A%0AEigen%20waterkaart%20digitaliseren%3A%20ja%20/%20nee%0A%0AHebben%20jullie%20een%20kaart%2C%20plattegrond%20of%20foto%20van%20het%20water%3F%0AStuur%20die%20mee%20als%20bijlage%20bij%20deze%20mail.%0A%0AGroeten%2C%0A">Vraag het prijzenblad aan &rarr;</a>
-        </div>
       </div>
     </div>
   </section>
@@ -386,9 +401,12 @@
   <!-- 09 vragen -->
   <section class="vlak zand-licht" id="vragen">
     <div class="breed">
-      <span class="eyebrow">Vragen</span>
-      <h2>Nog <span class="accent">vragen?</span></h2>
-      <div class="vragen">
+      <div class="vragen-rooster">
+      <div class="kop" data-toon>
+        <span class="eyebrow">Vragen</span>
+        <h2>Nog <span class="accent">vragen?</span></h2>
+      </div>
+      <div class="vragen" data-toon style="--wacht:.1s">
         <details>
           <summary>Moeten deelnemers iets installeren?</summary>
           <p>Nee. De app werkt direct in de browser via een link of code. Wie wil, zet hem
@@ -440,6 +458,7 @@
           ieder een eigen score.</p>
         </details>
       </div>
+      </div>
     </div>
   </section>
 
@@ -449,7 +468,7 @@
       <img src="schermen/avondlicht-1600.webp" alt="" width="1600" height="900" loading="lazy">
     </div>
     <div class="hero-waas"></div>
-    <div class="binnen breed">
+    <div class="binnen breed" data-toon>
       <h2>Ook voor <span class="accent">jullie wedstrijd?</span></h2>
       <p>Voor verenigingen, viswaters en vriendengroepen. Iedere organisatie krijgt een
       eigen omgeving met een eigen kaart, loting en klassement.</p>
@@ -464,22 +483,32 @@
 
 <footer class="voet">
   <div class="breed">
-    <img class="logo" src="logo-rond-512.png" alt="Viswedstrijdapp" width="92" height="92" loading="lazy">
-    <p class="slogan-voet"><span class="slogan-blok"><span class="tekst">Loot<span class="punt">.</span> Vis<span class="punt">.</span> Win<span class="punt">.</span></span><svg viewBox="0 0 200 15" aria-hidden="true" focusable="false"><path d="M2.5 11.2C34 5.1 96 1.6 174 2.2c8 .1 16 .6 23.5 1.7-7.4.3-15 .1-22.6.1-60-.3-116 2.4-168.5 9.4-2.4.3-4.3-.6-3.9-2.2z" fill="currentColor"/></svg></span></p>
-    <p class="regels">
-      <a href="https://viswedstrijdapp.nl/">viswedstrijdapp.nl</a><span aria-hidden="true">&middot;</span><a href="mailto:info@viswedstrijdapp.nl">info@viswedstrijdapp.nl</a>
-    </p>
-    <p class="regels"><a href="instructies.html">Uitleg voor deelnemers</a><span aria-hidden="true">&middot;</span><a href="inloggen/">Inloggen bij mijn organisatie</a></p>
-    <nav class="socials" aria-label="Volg de viswedstrijdapp op social media">
-      <a href="https://www.instagram.com/viswedstrijdapp/" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-        <span>Instagram</span>
-      </a>
-      <a href="https://www.facebook.com/profile.php?id=61591695216719" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-        <span>Facebook</span>
-      </a>
-    </nav>
+    <div class="voet-rooster">
+      <div class="voet-merk">
+        <img class="logo" src="logo-rond-512.png" alt="Viswedstrijdapp" width="104" height="104" loading="lazy">
+        <p class="slogan-voet"><span class="slogan-blok"><span class="tekst">Loot<span class="punt">.</span> Vis<span class="punt">.</span> Win<span class="punt">.</span></span><svg viewBox="0 0 200 15" aria-hidden="true" focusable="false"><path d="M2.5 11.2C34 5.1 96 1.6 174 2.2c8 .1 16 .6 23.5 1.7-7.4.3-15 .1-22.6.1-60-.3-116 2.4-168.5 9.4-2.4.3-4.3-.6-3.9-2.2z" fill="currentColor"/></svg></span></p>
+      </div>
+      <div>
+        <h3>Meedoen</h3>
+        <p class="regels"><a href="instructies.html">Uitleg voor deelnemers</a><a href="inloggen/">Inloggen bij mijn organisatie</a></p>
+      </div>
+      <div>
+        <h3>Contact</h3>
+        <p class="regels">
+          <a href="https://viswedstrijdapp.nl/">viswedstrijdapp.nl</a><a href="mailto:info@viswedstrijdapp.nl">info@viswedstrijdapp.nl</a>
+        </p>
+        <nav class="socials" aria-label="Volg de viswedstrijdapp op social media">
+          <a href="https://www.instagram.com/viswedstrijdapp/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            <span>Instagram</span>
+          </a>
+          <a href="https://www.facebook.com/profile.php?id=61591695216719" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+            <span>Facebook</span>
+          </a>
+        </nav>
+      </div>
+    </div>
     <p class="kemblinck">Een product van <a href="https://kemblinck.nl" target="_blank" rel="noopener">KemblincK</a> &nbsp;&middot;&nbsp; <a href="https://kemblinck.nl" target="_blank" rel="noopener">kemblinck.nl</a></p>
   </div>
 </footer>

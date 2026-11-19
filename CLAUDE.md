@@ -1313,6 +1313,57 @@ noemen de vaste prijzen).
   `sjablonen/vangstposts/gen_vangstposts.py`. De drie Carpclassic-generators onder
   `klanten/NPHV/social/` zijn geschiedenis en bewust niet aangepast.
 
+## Vormgeving van de startpagina (19 nov 2026, na v114)
+
+Opdracht Patrick: "doe nu hetzelfde voor de viswedstrijd website", na kemblinck.nl en
+tweehuizen.com: de pagina moet eruitzien alsof hij duizenden euro's heeft gekost, binnen
+de huisstijl. **Alleen de vorm is veranderd.** Alle teksten, prijzen, de drie plekken van
+de startactie, de JSON-LD en alle ankers (`#film`, `#ervaringen`, `#zo-werkt-het`,
+`#mogelijkheden`, `#starten`, `#vragen`) zijn gelijk gebleven; met een script nagelopen.
+Nieuw zijn alleen twee labels bij de telefoon in de hero ("Live klassement", "Melding bij
+elke vangst") en de kopjes "Meedoen" en "Contact" in de voet.
+
+- **Bestanden:** `docs/landing.css` (opnieuw opgebouwd, zelfde klassenamen), `docs/index.html`
+  (zelfde inhoud, nieuwe indeling) en `docs/landing.js` (het doorstuurdeel bovenaan is
+  ONGEWIJZIGD; eronder een blok voor het menu en het in beeld komen). `film.js`, de app,
+  `styles.css`, de omgevingen en de service workers zijn niet aangeraakt, dus **geen
+  versieverhoging**. `docs/404.html` gebruikt hetzelfde stijlblad en is meegecontroleerd.
+- **Cache:** `landing.css?v=2` en `landing.js?v=2` in `index.html`. Verhoog het nummer bij
+  een volgende wijziging van een van die twee, anders ziet een terugkerende bezoeker tien
+  minuten lang nieuwe HTML met een oud stijlblad.
+- **Wat er anders uitziet:** grotere koppen en ruimere secties; hero met de telefoon die
+  de hoogte van het venster volgt (staat bij het openen helemaal in beeld) en de prijsbalk
+  eronder; de praktijkcijfers als drie grote tegels naast een donker citaatblok; de drie
+  stappen van de wedstrijddag en de vier startstappen als kaarten; telefoons op een rustig
+  vlak (`.toestel-vlak`); "Zonder gedoe" licht en "Privacy" donker naast elkaar; het
+  prijsblok in twee kolommen (links bedrag, staffel en knop, rechts wat erbij zit); de
+  vragen naast hun kop; de voet in drie kolommen.
+- **Menu op een smal scherm:** knop `.menu-knop` (alleen zichtbaar met script, onder 940 px).
+  Zonder script is er net als voorheen geen menu, alleen Inloggen. Onder 360 px toont de
+  topbar alleen het logo; de naam blijft voor schermlezers bestaan (`font-size: 0`).
+- **In beeld komen:** blokken met `data-toon` schuiven 22 px omhoog en vagen in. `landing.js`
+  zet `js` op `<html>` (dat kan, het laadt in de head) en `in` op het blok via een gewone
+  scrollcontrole. Zonder script, bij "minder beweging" en bij print staat alles er meteen.
+  Gaat het blok in `landing.js` fout, dan haalt de vangregel `js` weer weg.
+- **Telefoon altijd helemaal in beeld** (voorkeur Patrick, 19 nov, uitgesproken bij
+  tweehuizen.com): geen telefoon die uit een vlak loopt. De hoekopname
+  `beginscherm-mockup` is een bestaand beeld waarop de telefoon bewust half te zien is;
+  die is niet vervangen en ligt als vraag bij Patrick.
+- **Twee oude fouten die hierbij aan het licht kwamen (Codex-review van de diff, nagemeten):**
+  (1) de topbar bleef bij scrollen NIET bovenaan staan: `html, body { overflow-x: hidden }`
+  maakt van `body` een scrollvak en dan plakt `position: sticky` niet. Nu
+  `overflow-x: clip` (met `hidden` als terugval voor oudere browsers). (2) De rand van een
+  telefoon buiten de hero was te dik: procenten in `padding` rekenen met de breedte van het
+  omringende vak, niet van de telefoon. `.toestel-vlak .telefoon-frame` rekent nu
+  `calc(min(100%, 300px) * 0.0297)`, gemeten 8,9 px bij 300 px breed.
+- **Codex vond acht punten, zeven verwerkt** (verder: foutafhandeling ook in de
+  scrollcontrole, volgorde van de mediaqueries voor de smalste topbar, de drie cijfers onder
+  560 px onder elkaar, sociale knoppen die mogen afbreken, filmknoppen binnen een smal
+  staand kader). Bewust niet: een menu zonder script op smalle schermen (was er nooit).
+- **Controleren:** headless Chrome met `--blink-settings=lazyLoadEnabled=false` laadt ook de
+  afbeeldingen onder de vouw (anders blijven die leeg in een schermopname van de hele
+  pagina) en `--force-prefers-reduced-motion` toont alle blokken zonder te scrollen.
+
 ## Release-checklist (multi-tenant, sinds v36)
 
 Bij elke release controleren:
