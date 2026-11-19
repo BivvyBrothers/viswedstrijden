@@ -1370,13 +1370,23 @@ elke vangst") en de kopjes "Meedoen" en "Contact" in de voet.
      tabbalk onder de topbar staat. Het beeld toont "Jij bent aan de beurt", de kaart
      met vrije en bezette stekken en de eerste regels van "Loting & volgorde".
   **Wel actueel en dus gelaten:** `scherm-klassement` (hero; vergeleken met een verse
-  opname, zelfde vormgeving), `scherm-overzicht`, `scherm-kaart-nphv`, `kaart3d-stekken`,
+  opname, zelfde vormgeving), `scherm-overzicht`, `scherm-kaart-nphv`,
   `uitsnede-seizoen`, `uitslag-gedeeld`, `vangst-klassement` (alle 18 nov), de filmposters
   (19 nov), `og.png`, de twee advertenties (telefoon helemaal in beeld) en beide A4's
   (geen telefoon). **Niet meer in gebruik op de site** (oude vormgeving, alleen nog bron
   of historie): `scherm-home`, `scherm-vangsten`, `scherm-seizoen`, `scherm-afsluiting`,
   `uitslag-carpclassic-2026`. `vangst-klein.jpg` en `avondlicht-800.jpg` worden door
   gereedschap gebruikt (rooktest, advertentie, huisstijloverzicht): laten staan.
+- **`kaart3d-stekken`: alleen nog het water (19 nov, op aanwijzing van Patrick).** Hij tekende
+  in een schermafbeelding een zwarte lijn om het water; het weiland, de tweede plas en de
+  bebouwing eronder zijn weggesneden. Alle steknummers staan er nog op, ook de losse nummers
+  20 tot 28 en 99 die buiten de plaat zweven. Langs de weg onder de vaart is de snede recht
+  getrokken (de handlijn slingerde daar), de rest volgt zijn lijn, gladgestreken. Nieuw
+  formaat 1501 x 643 (was 1465 x 782); `width` en `height` in `index.html` zijn meegegaan.
+  Gereedschap en de lijn zelf: `tools/kaart3d/`. De ongesneden plaat staat in git
+  (`git show 7ce5077:docs/schermen/kaart3d-stekken.jpg`). **Niet aangepast:**
+  `docs/nphv/kaart-3d.jpg`, de 3D-kaart die de NPHV-app zelf opent (oorspronkelijke render,
+  met land en dieptelegenda).
 - **Twee oude fouten die hierbij aan het licht kwamen (Codex-review van de diff, nagemeten):**
   (1) de topbar bleef bij scrollen NIET bovenaan staan: `html, body { overflow-x: hidden }`
   maakt van `body` een scrollvak en dan plakt `position: sticky` niet. Nu
