@@ -1,28 +1,35 @@
 <!DOCTYPE html>
 <html lang="nl"><head><meta charset="utf-8">
 <style>
+  /* Beginscherm-mockup voor de site en de uitlegpagina's (versie 2, 19 nov 2026).
+     De telefoon staat RECHTOP en HELEMAAL in beeld, in de echte toestelverhouding
+     (78 x 163,4 mm) met de titaniumkleurige rand uit de huisstijl; rechts een vergrootglas
+     op het icoon van de app. Maken: headless Chrome, venster 1200x900 op schaal 2, daarna
+     verkleinen naar 1600x1200 en `python3 tools/naar_webp.py`. Zie CLAUDE.md. */
   * { margin:0; padding:0; box-sizing:border-box; }
   body { width:1200px; height:900px; overflow:hidden; position:relative;
          background: linear-gradient(150deg, #2c331f, #4d5839 60%, #6d7355);
          font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
-  .phone { position:absolute; left:150px; top:105px; width:980px; height:2000px;
-           border-radius:170px; background:#0d0f0a; padding:16px;
-           border:6px solid #a8a79f; box-shadow: 0 40px 90px rgba(0,0,0,.45), inset 0 0 0 5px #6d6c66;
-           transform: rotate(-10deg); transform-origin: 0 0; }
-  .side { position:absolute; left:-15px; width:9px; background:#8f8e88; border-radius:4px; }
+  /* De telefoon is getekend op 980 x 2053 en daarna verkleind, zodat de maten van de iconen kloppen. */
+  .toestel { position:absolute; left:205px; top:56px; width:980px; height:2053px;
+             transform: scale(.384); transform-origin: 0 0; }
+  .phone { position:absolute; inset:0; padding:29px; border-radius:125px;
+           background: linear-gradient(145deg, #7b7d70 0%, #24271e 12%, #1b1e16 50%, #24271e 88%, #7b7d70 100%);
+           box-shadow: 0 70px 150px rgba(0,0,0,.5), inset 0 0 0 3px rgba(255,255,255,.1); }
+  .side { position:absolute; left:-9px; width:9px; background:#3a3d33; border-radius:4px 0 0 4px; }
   .side.a { top:330px; height:90px; } .side.b { top:470px; height:170px; } .side.c { top:680px; height:170px; }
-  .screen { width:100%; height:100%; border-radius:150px; overflow:hidden; position:relative;
+  .screen { width:100%; height:100%; border-radius:98px; overflow:hidden; position:relative;
             background: radial-gradient(circle at 30% 20%, #7b8462 0, #4d5839 45%, #2c331f 100%); }
   .blob { position:absolute; border-radius:50%; filter: blur(60px); opacity:.55; }
   .b1 { width:520px; height:520px; left:-120px; top:380px; background:#8a9466; }
-  .b2 { width:600px; height:600px; right:-200px; top:900px; background:#3a4a2a; }
+  .b2 { width:600px; height:600px; right:-200px; top:1100px; background:#3a4a2a; }
   .island { position:absolute; left:50%; top:26px; transform:translateX(-50%); width:250px; height:72px; border-radius:40px; background:#000; }
   .status { position:absolute; top:42px; left:90px; right:90px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; font-size:40px; }
   .status .r { display:flex; align-items:center; gap:14px; }
   .bars { display:flex; align-items:flex-end; gap:4px; } .bars i { display:block; width:8px; background:#fff; border-radius:2px; }
   .wifi { width:34px; height:26px; border:5px solid #fff; border-color:#fff transparent transparent transparent; border-radius:50% 50% 0 0; }
   .batt { width:60px; height:28px; border:4px solid #fff; border-radius:9px; padding:3px; } .batt i { display:block; height:100%; width:80%; background:#fff; border-radius:3px; }
-  .grid { position:absolute; top:190px; left:70px; right:70px; display:grid; grid-template-columns:repeat(4, 1fr); row-gap:44px; column-gap:18px; }
+  .grid { position:absolute; top:200px; left:62px; right:62px; display:grid; grid-template-columns:repeat(4, 1fr); row-gap:56px; column-gap:18px; }
   .app { display:flex; flex-direction:column; align-items:center; gap:14px; }
   .ico { width:172px; height:172px; border-radius:40px; box-shadow:0 10px 24px rgba(0,0,0,.28); display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
   .app span { color:#fff; font-size:26px; font-weight:500; text-shadow:0 2px 6px rgba(0,0,0,.4); letter-spacing:.2px; }
@@ -35,8 +42,34 @@
   .notitie { background:#fff; flex-direction:column; justify-content:flex-start; } .notitie b { display:block; width:100%; height:48px; background:#f5d353; } .notitie i { display:block; width:110px; height:8px; background:#cfcfcf; border-radius:4px; margin-top:22px; box-shadow:0 22px 0 #cfcfcf, 0 44px 0 #cfcfcf; }
   .klok { background:#111; } .klok i { width:120px; height:120px; border-radius:50%; background:#fff; position:relative; } .klok i::before, .klok i::after { content:''; position:absolute; left:50%; top:50%; background:#111; transform-origin:0 50%; height:5px; } .klok i::before { width:40px; transform:rotate(-60deg); } .klok i::after { width:52px; transform:rotate(30deg); background:#f0a04b; height:4px; }
   .muziek { background:linear-gradient(#ff6a7a,#e0263c); } .muziek i { width:26px; height:26px; border-radius:50%; background:#fff; box-shadow:44px -18px 0 #fff; position:relative; } .muziek i::before { content:''; position:absolute; left:20px; top:-52px; width:6px; height:60px; background:#fff; box-shadow:44px -18px 0 #fff; }
+  .fotos { background:#fff; } .fotos i { width:120px; height:120px; border-radius:50%; background: conic-gradient(#f0a04b 0 16%, #e0402f 0 33%, #9a4fd0 0 50%, #3e8ad9 0 66%, #49b56a 0 83%, #f5d353 0); position:relative; } .fotos i::after { content:''; position:absolute; inset:38px; border-radius:50%; background:#fff; }
+  .telefoon { background:linear-gradient(#5fd66a,#2fae45); } .telefoon i { width:74px; height:74px; border:14px solid #fff; border-radius:50%; border-right-color:transparent; border-top-color:transparent; transform:rotate(20deg); }
+  .bericht { background:linear-gradient(#5fd66a,#2fae45); } .bericht i { width:104px; height:78px; background:#fff; border-radius:40px; position:relative; } .bericht i::after { content:''; position:absolute; left:16px; bottom:-14px; border:14px solid transparent; border-top-color:#fff; border-left-color:#fff; }
+  .instel { background:linear-gradient(#9a9aa0,#5d5d63); } .instel i { width:104px; height:104px; border-radius:50%; border:18px dashed #e6e6ea; position:relative; } .instel i::after { content:''; position:absolute; inset:14px; border-radius:50%; background:#e6e6ea; }
+  .reken { background:#1c1c1e; } .reken i { width:104px; height:104px; background:
+      radial-gradient(circle at 25% 25%, #a5a5aa 0 17px, transparent 18px), radial-gradient(circle at 75% 25%, #f0a04b 0 17px, transparent 18px),
+      radial-gradient(circle at 25% 75%, #5a5a5e 0 17px, transparent 18px), radial-gradient(circle at 75% 75%, #f0a04b 0 17px, transparent 18px); }
+  .mappen { background:#fff; } .mappen i { width:112px; height:80px; border-radius:12px; background:#3aa0f5; position:relative; } .mappen i::before { content:''; position:absolute; left:0; top:-14px; width:52px; height:22px; border-radius:10px 10px 0 0; background:#3aa0f5; }
+  .wallet { background:#111; flex-direction:column; gap:7px; } .wallet b { display:block; width:112px; height:22px; border-radius:7px; } .wallet b:nth-child(1) { background:#3e8ad9; } .wallet b:nth-child(2) { background:#f5d353; } .wallet b:nth-child(3) { background:#49b56a; } .wallet b:nth-child(4) { background:#e0402f; }
+  .gezond { background:#fff; } .gezond i { width:70px; height:70px; background:#ff4d6a; transform:rotate(45deg); border-radius:14px 0 0 0; position:relative; } .gezond i::before, .gezond i::after { content:''; position:absolute; width:70px; height:70px; border-radius:50%; background:#ff4d6a; } .gezond i::before { left:-35px; top:0; } .gezond i::after { left:0; top:-35px; }
+  .podcast { background:linear-gradient(#b35cf0,#7a2fd0); } .podcast i { width:44px; height:44px; border-radius:50%; background:#fff; box-shadow:0 0 0 22px rgba(255,255,255,.28), 0 0 0 44px rgba(255,255,255,.14); }
+  .boeken { background:linear-gradient(#ffa13a,#f06a1a); } .boeken i { width:104px; height:84px; border:10px solid #fff; border-radius:8px; position:relative; } .boeken i::after { content:''; position:absolute; left:50%; top:-10px; bottom:-10px; width:10px; margin-left:-5px; background:#fff; }
+  .dock { position:absolute; left:34px; right:34px; bottom:40px; height:232px; border-radius:66px; background:rgba(255,255,255,.2);
+          display:grid; grid-template-columns:repeat(4, 1fr); align-items:center; justify-items:center; padding:0 28px; }
+  .stip { position:absolute; left:0; right:0; bottom:306px; display:flex; justify-content:center; gap:18px; } .stip i { width:14px; height:14px; border-radius:50%; background:rgba(255,255,255,.4); } .stip i:first-child { background:#fff; }
+  .ico.eigen { box-shadow:0 10px 24px rgba(0,0,0,.28), 0 0 0 8px #f0a04b; }
+  /* vergrootglas: het icoon van de app nog eens groot, met een lijn naar de plek op het scherm */
+  .lijn { position:absolute; left:550px; top:281px; width:200px; height:3px; background:#f0a04b; transform-origin:0 50%; transform:rotate(23.5deg); border-radius:2px; }
+  .lijn::before { content:''; position:absolute; left:-7px; top:-6px; width:15px; height:15px; border-radius:50%; background:#f0a04b; }
+  .glas { position:absolute; left:715px; top:240px; width:400px; height:400px; border-radius:50%; overflow:hidden;
+          background: radial-gradient(circle at 35% 25%, #7b8462 0, #4d5839 55%, #2c331f 100%);
+          border:8px solid #f0a04b; box-shadow:0 30px 70px rgba(0,0,0,.45);
+          display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; }
+  .glas img { width:196px; height:196px; border-radius:46px; box-shadow:0 14px 34px rgba(0,0,0,.4); display:block; }
+  .glas span { color:#fff; font-size:34px; font-weight:600; letter-spacing:.2px; text-shadow:0 2px 8px rgba(0,0,0,.45); }
 </style></head>
 <body>
+  <div class="toestel">
   <div class="phone">
     <div class="side a"></div><div class="side b"></div><div class="side c"></div>
     <div class="screen">
@@ -48,12 +81,29 @@
         <div class="app"><div class="ico weer"><i></i></div><span>Weer</span></div>
         <div class="app"><div class="ico camera"><i></i></div><span>Camera</span></div>
         <div class="app"><div class="ico kaart"><i></i></div><span>Kaarten</span></div>
-        <div class="app"><div class="ico"><img src="../docs/icon-512.png" alt=""></div><span>Viswedstrijd</span></div>
-        <div class="app"><div class="ico mail"><i></i></div><span>Mail</span></div>
+        <div class="app"><div class="ico fotos"><i></i></div><span>Foto's</span></div>
         <div class="app"><div class="ico notitie"><b></b><i></i></div><span>Notities</span></div>
         <div class="app"><div class="ico klok"><i></i></div><span>Klok</span></div>
+        <div class="app"><div class="ico eigen"><img src="../docs/icon-512.png" alt=""></div><span>Viswedstrijd</span></div>
+        <div class="app"><div class="ico reken"><i></i></div><span>Rekenmachine</span></div>
+        <div class="app"><div class="ico mappen"><i></i></div><span>Bestanden</span></div>
+        <div class="app"><div class="ico wallet"><b></b><b></b><b></b><b></b></div><span>Wallet</span></div>
+        <div class="app"><div class="ico instel"><i></i></div><span>Instellingen</span></div>
+        <div class="app"><div class="ico gezond"><i></i></div><span>Gezondheid</span></div>
+        <div class="app"><div class="ico podcast"><i></i></div><span>Podcasts</span></div>
+        <div class="app"><div class="ico boeken"><i></i></div><span>Boeken</span></div>
         <div class="app"><div class="ico muziek"><i></i></div><span>Muziek</span></div>
+      </div>
+      <div class="stip"><i></i><i></i><i></i></div>
+      <div class="dock">
+        <div class="ico telefoon"><i></i></div>
+        <div class="ico bericht"><i></i></div>
+        <div class="ico mail"><i></i></div>
+        <div class="ico weer" style="background:linear-gradient(#f4f4f6,#d6d6da)"><i style="background:#3e8ad9; box-shadow:none; width:96px; height:96px; border:10px solid #fff"></i></div>
       </div>
     </div>
   </div>
+  </div>
+  <div class="lijn"></div>
+  <div class="glas"><img src="../docs/icon-512.png" alt=""><span>Viswedstrijd</span></div>
 </body></html>

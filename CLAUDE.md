@@ -863,9 +863,15 @@ technische details die bij het bouwen nodig zijn.
   en naam. Generator: `tools/gen_vangstbeeld_site.py`. Besluit Patrick 20 sep 2026;
   daarbij is ook de bronvermelding BivvyBrothers van de landing gehaald (eigen foto).
 - **Beginscherm-mockup:** `docs/schermen/beginscherm-mockup.jpg` (1600x1200) uit
-  `tools/mockup_beginscherm.html` (headless screenshot 1200x900 @2x, daarna verkleind):
-  iPhone-hoek met het icoon tussen generieke apps, op de hero-gradient. Staat op de
-  landing (sectie "Geen accounts, geen App Store") en op de drie instructiepagina's.
+  `tools/mockup_beginscherm.html`. **Sinds 19 nov 2026 versie 2: de telefoon staat rechtop
+  en HELEMAAL in beeld** (echte toestelverhouding, titaniumkleurige rand), met het icoon
+  rechts in de tweede rij en een vergrootglas ernaast waarin het icoon en de naam groot
+  staan. De eerste versie was een schuine hoek van een telefoon; Patrick wil een telefoon
+  altijd helemaal zien. Maken: `chrome --headless=new --force-device-scale-factor=2
+  --window-size=1200,900 --screenshot=uit.png file://.../tools/mockup_beginscherm.html`,
+  verkleinen naar 1600x1200 (jpg, kwaliteit 88) en `python3 tools/naar_webp.py`. Staat op
+  de landing (sectie "Geen accounts, geen App Store") en op de drie instructiepagina's
+  (die laden de jpg, de landing de webp).
 - **Regenereren na een stijlwijziging:** `gen_profielfoto.py`, `tools/og_image.html`
   (screenshot 1200x630), beide A4's (print-to-pdf + pymupdf-PNG op 110 dpi), de
   social-generators in `marketing/` en `klanten/NPHV/social/`.
@@ -1346,9 +1352,31 @@ elke vangst") en de kopjes "Meedoen" en "Contact" in de voet.
   scrollcontrole. Zonder script, bij "minder beweging" en bij print staat alles er meteen.
   Gaat het blok in `landing.js` fout, dan haalt de vangregel `js` weer weg.
 - **Telefoon altijd helemaal in beeld** (voorkeur Patrick, 19 nov, uitgesproken bij
-  tweehuizen.com): geen telefoon die uit een vlak loopt. De hoekopname
-  `beginscherm-mockup` is een bestaand beeld waarop de telefoon bewust half te zien is;
-  die is niet vervangen en ligt als vraag bij Patrick.
+  tweehuizen.com): geen telefoon die uit een vlak loopt. Daarom is ook de
+  `beginscherm-mockup` opnieuw gemaakt (zie de sectie Huisstijl).
+- **Beelden nagelopen op 19 nov (opdracht Patrick: "kijk direct of er nog meer nieuwe
+  opnamen nodig zijn"), drie vervangen:**
+  1. `beginscherm-mockup`: telefoon rechtop en helemaal in beeld.
+  2. `uitsnede-klassement` (naast "De vangst binnen"): stond sinds 19 sep nog in de oude
+     letter en met witte kaarten. Nu een uitsnede uit `scherm-klassement.png`
+     (vak 28, 274 tot 760, 1008; 732 x 734), dus dezelfde opname als in de hero.
+  3. `scherm-loting.png`: was de opname van 14 sep in de oude vormgeving. Wordt op deze
+     site niet getoond, maar stond wel op kemblinck.nl (`assets/vis-loting.webp`, daar ook
+     vervangen). Nieuwe opname: `/demo/#/w/DEMOJA`, toestand in de browser geënsceneerd
+     (geen databasewijziging): `clearInterval(POLL)`, status `stekkeuze`, start over twee
+     uur, `STATE.vangsten = []`, lotnummers 1 tot en met 12, de eerste drie houden hun
+     stek, `localStorage['team:' + CODE]` op het vierde team (dan is die aan de beurt),
+     `renderAlles(true)`, `activateTab('kaart')`, `#topcode` leeg en scrollen tot de
+     tabbalk onder de topbar staat. Het beeld toont "Jij bent aan de beurt", de kaart
+     met vrije en bezette stekken en de eerste regels van "Loting & volgorde".
+  **Wel actueel en dus gelaten:** `scherm-klassement` (hero; vergeleken met een verse
+  opname, zelfde vormgeving), `scherm-overzicht`, `scherm-kaart-nphv`, `kaart3d-stekken`,
+  `uitsnede-seizoen`, `uitslag-gedeeld`, `vangst-klassement` (alle 18 nov), de filmposters
+  (19 nov), `og.png`, de twee advertenties (telefoon helemaal in beeld) en beide A4's
+  (geen telefoon). **Niet meer in gebruik op de site** (oude vormgeving, alleen nog bron
+  of historie): `scherm-home`, `scherm-vangsten`, `scherm-seizoen`, `scherm-afsluiting`,
+  `uitslag-carpclassic-2026`. `vangst-klein.jpg` en `avondlicht-800.jpg` worden door
+  gereedschap gebruikt (rooktest, advertentie, huisstijloverzicht): laten staan.
 - **Twee oude fouten die hierbij aan het licht kwamen (Codex-review van de diff, nagemeten):**
   (1) de topbar bleef bij scrollen NIET bovenaan staan: `html, body { overflow-x: hidden }`
   maakt van `body` een scrollvak en dan plakt `position: sticky` niet. Nu
